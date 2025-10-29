@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Download, ExternalLink, Tag, StickyNote } from "lucide-react";
+import { Download, ExternalLink, Tag, StickyNote, ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Lead {
@@ -22,14 +22,25 @@ interface Lead {
   tags: string[];
   notes: string | null;
   created_at: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface LeadsTableProps {
   leads: Lead[];
   onUpdateLead: (id: string, updates: Partial<Lead>) => void;
+  currentPage?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
 }
 
-export const LeadsTable = ({ leads, onUpdateLead }: LeadsTableProps) => {
+export const LeadsTable = ({ 
+  leads, 
+  onUpdateLead, 
+  currentPage = 1, 
+  totalPages = 1, 
+  onPageChange 
+}: LeadsTableProps) => {
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [notesValue, setNotesValue] = useState("");
   const [tagInput, setTagInput] = useState("");
@@ -81,10 +92,35 @@ export const LeadsTable = ({ leads, onUpdateLead }: LeadsTableProps) => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Leads ({leads.length})</h2>
-        <Button onClick={handleExport} variant="outline" className="gap-2">
-          <Download className="h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2 items-center">
+          {onPageChange && totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                variant="outline"
+                size="sm"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                variant="outline"
+                size="sm"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          <Button onClick={handleExport} variant="outline" className="gap-2">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-lg border bg-card overflow-hidden">

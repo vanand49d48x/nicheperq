@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NicheSelector } from "@/components/NicheSelector";
 import { LocationInput } from "@/components/LocationInput";
 import { LeadsTable } from "@/components/LeadsTable";
+import { LeadsMap } from "@/components/LeadsMap";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Zap } from "lucide-react";
+import { Search, Zap, Map, List } from "lucide-react";
 
 interface Lead {
   id: string;
@@ -23,15 +25,26 @@ interface Lead {
   tags: string[];
   notes: string | null;
   created_at: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
+
+const ITEMS_PER_PAGE = 25;
 
 const Index = () => {
   const [niche, setNiche] = useState("");
   const [city, setCity] = useState("");
   const [radius, setRadius] = useState("25");
   const [isLoading, setIsLoading] = useState(false);
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
+
+  const totalPages = Math.ceil(allLeads.length / ITEMS_PER_PAGE);
+  const paginatedLeads = allLeads.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const handleFetchLeads = async () => {
     if (!niche || !city) {
@@ -64,7 +77,8 @@ const Index = () => {
       }
 
       console.log('Received leads:', data);
-      setLeads(data.leads || []);
+      setAllLeads(data.leads || []);
+      setCurrentPage(1);
       
       toast({
         title: "Leads Fetched Successfully",
@@ -91,7 +105,7 @@ const Index = () => {
 
       if (error) throw error;
 
-      setLeads(leads.map((lead) => (lead.id === id ? { ...lead, ...updates } : lead)));
+      setAllLeads(allLeads.map((lead) => (lead.id === id ? { ...lead, ...updates } : lead)));
       
       toast({
         title: "Lead Updated",
@@ -144,9 +158,46 @@ const Index = () => {
           </Button>
         </Card>
 
-        {/* Results Table */}
-        {leads.length > 0 && (
-          <LeadsTable leads={leads} onUpdateLead={handleUpdateLead} />
+        {/* Results */}
+        {allLeads.length > 0 && (
+          <Tabs defaultValue="table" className="w-full">
+            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+              <TabsTrigger value="table" className="gap-2">
+                <List className="h-4 w-4" />
+                Table View
+              </TabsTrigger>
+              <TabsTrigger value="map" className="gap-2">
+                <Map className="h-4 w-4" />
+                Map View
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="table" className="mt-6">
+              <LeadsTable 
+                leads={paginatedLeads} 
+                onUpdateLead={handleUpdateLead}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            </TabsContent>
+            
+            <TabsContent value="map" className="mt-6">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-semibold">Map View ({allLeads.length} leads)</h2>
+                </div>
+                <LeadsMap leads={allLeads} />
+                <LeadsTable 
+                  leads={paginatedLeads} 
+                  onUpdateLead={handleUpdateLead}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
         )}
       </div>
     </div>
