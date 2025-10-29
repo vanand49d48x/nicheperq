@@ -15,9 +15,10 @@ interface Lead {
 interface LeadsMapProps {
   leads: Lead[];
   onBoundsChange?: (bounds: mapboxgl.LngLatBounds) => void;
+  mapboxToken?: string;
 }
 
-export const LeadsMap = ({ leads, onBoundsChange }: LeadsMapProps) => {
+export const LeadsMap = ({ leads, onBoundsChange, mapboxToken }: LeadsMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
@@ -25,15 +26,16 @@ export const LeadsMap = ({ leads, onBoundsChange }: LeadsMapProps) => {
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Get Mapbox token from environment
-    const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
+    // Determine Mapbox token from props, env, or localStorage
+    const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('mapbox_public_token') : null;
+    const token = mapboxToken || import.meta.env.VITE_MAPBOX_TOKEN || tokenFromStorage || "";
     
     console.log("Checking Mapbox token availability...", {
-      hasToken: !!mapboxToken,
-      tokenLength: mapboxToken?.length || 0
+      hasToken: !!token,
+      tokenLength: token?.length || 0
     });
     
-    if (!mapboxToken) {
+    if (!token) {
       console.error("Mapbox token not found in environment variables");
       // Show error message in the map container
       if (mapContainer.current) {
@@ -50,7 +52,7 @@ export const LeadsMap = ({ leads, onBoundsChange }: LeadsMapProps) => {
     }
 
     console.log("Initializing Mapbox map with valid token");
-    mapboxgl.accessToken = mapboxToken;
+    mapboxgl.accessToken = token;
 
     // Initialize map
     map.current = new mapboxgl.Map({
@@ -75,7 +77,7 @@ export const LeadsMap = ({ leads, onBoundsChange }: LeadsMapProps) => {
       markers.current.forEach((marker) => marker.remove());
       map.current?.remove();
     };
-  }, [onBoundsChange]);
+  }, [onBoundsChange, mapboxToken]);
 
   useEffect(() => {
     if (!map.current) return;
@@ -95,6 +97,10 @@ export const LeadsMap = ({ leads, onBoundsChange }: LeadsMapProps) => {
     validLeads.forEach((lead) => {
       if (lead.latitude == null || lead.longitude == null) return;
 
+      const lat = Number(lead.latitude);
+      const lng = Number(lead.longitude);
+      if (!isFinite(lat) || !isFinite(lng)) return;
+
       const el = document.createElement("div");
       el.className = "marker";
       el.style.width = "24px";
@@ -106,7 +112,7 @@ export const LeadsMap = ({ leads, onBoundsChange }: LeadsMapProps) => {
       el.style.boxShadow = "0 2px 4px rgba(0,0,0,0.3)";
 
       const marker = new mapboxgl.Marker(el)
-        .setLngLat([lead.longitude, lead.latitude])
+        .setLngLat([lng, lat])
         .setPopup(
           new mapboxgl.Popup({ offset: 25 }).setHTML(
             `<div style="padding: 8px;">
@@ -126,7 +132,11 @@ export const LeadsMap = ({ leads, onBoundsChange }: LeadsMapProps) => {
       const bounds = new mapboxgl.LngLatBounds();
       validLeads.forEach((lead) => {
         if (lead.latitude != null && lead.longitude != null) {
-          bounds.extend([lead.longitude, lead.latitude]);
+          const lat = Number(lead.latitude);
+          const lng = Number(lead.longitude);
+          if (isFinite(lat) && isFinite(lng)) {
+            bounds.extend([lng, lat]);
+          }
         }
       });
       map.current.fitBounds(bounds, { padding: 50, maxZoom: 14 });

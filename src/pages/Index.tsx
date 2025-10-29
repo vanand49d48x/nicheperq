@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { NicheSelector } from "@/components/NicheSelector";
 import { LocationInput } from "@/components/LocationInput";
 import { LeadsTable } from "@/components/LeadsTable";
@@ -38,10 +41,27 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [mapboxToken, setMapboxToken] = useState<string>("");
+  const [filterByBounds, setFilterByBounds] = useState(false);
+  const [bounds, setBounds] = useState<{ n: number; s: number; e: number; w: number } | null>(null);
   const { toast } = useToast();
 
-  const totalPages = Math.ceil(allLeads.length / ITEMS_PER_PAGE);
-  const paginatedLeads = allLeads.slice(
+  useEffect(() => {
+    const stored = localStorage.getItem('mapbox_public_token');
+    if (stored) setMapboxToken(stored);
+  }, []);
+
+  const displayedLeads = filterByBounds && bounds
+    ? allLeads.filter((l) => {
+        const lat = Number(l.latitude);
+        const lng = Number(l.longitude);
+        if (!isFinite(lat) || !isFinite(lng)) return false;
+        return lat <= bounds.n && lat >= bounds.s && lng <= bounds.e && lng >= bounds.w;
+      })
+    : allLeads;
+
+  const totalPages = Math.ceil(displayedLeads.length / ITEMS_PER_PAGE) || 1;
+  const paginatedLeads = displayedLeads.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -183,11 +203,37 @@ const Index = () => {
             </TabsContent>
             
             <TabsContent value="map" className="mt-6">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-semibold">Map View ({allLeads.length} leads)</h2>
+                <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+                  <h2 className="text-2xl font-semibold">Map View ({displayedLeads.length} leads)</h2>
+                  <div className="flex flex-col md:flex-row gap-3 md:items-center">
+                    <div className="flex items-center gap-2">
+                      <Switch id="filter-bounds" checked={filterByBounds} onCheckedChange={setFilterByBounds} />
+                      <Label htmlFor="filter-bounds">Filter by current map view</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder="Mapbox public token"
+                        value={mapboxToken}
+                        onChange={(e) => setMapboxToken(e.target.value)}
+                        className="w-72"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          localStorage.setItem('mapbox_public_token', mapboxToken);
+                          toast({ title: 'Mapbox token saved', description: 'Refresh the page if the map does not load.' });
+                        }}
+                      >
+                        Save Token
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-                <LeadsMap leads={allLeads} />
+                <LeadsMap 
+                  leads={allLeads} 
+                  mapboxToken={mapboxToken}
+                  onBoundsChange={(b) => setBounds({ n: b.getNorth(), s: b.getSouth(), e: b.getEast(), w: b.getWest() })}
+                />
                 <LeadsTable 
                   leads={paginatedLeads} 
                   onUpdateLead={handleUpdateLead}
@@ -195,7 +241,6 @@ const Index = () => {
                   totalPages={totalPages}
                   onPageChange={setCurrentPage}
                 />
-              </div>
             </TabsContent>
           </Tabs>
         )}
