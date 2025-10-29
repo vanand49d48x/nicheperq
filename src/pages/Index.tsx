@@ -46,40 +46,35 @@ const Index = () => {
     setIsLoading(true);
     
     try {
-      // For demo purposes, create sample leads
-      // In production, this would call Outscraper/Apify API
-      const sampleLeads = Array.from({ length: 10 }, (_, i) => ({
-        niche,
-        business_name: `${niche} Business ${i + 1}`,
-        address: `${100 + i} Main Street`,
-        city,
-        state: "GA",
-        zipcode: "30009",
-        phone: `(555) ${String(100 + i).padStart(3, "0")}-${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}`,
-        website: `https://example${i + 1}.com`,
-        rating: Math.round((3.5 + Math.random() * 1.5) * 10) / 10,
-        review_count: Math.floor(Math.random() * 200) + 10,
-      }));
+      console.log('Calling scrape-leads function with:', { niche, city, radius });
+      
+      // Call the edge function to scrape real leads
+      const { data, error } = await supabase.functions.invoke('scrape-leads', {
+        body: { niche, city, radius },
+      });
 
-      // Insert into database
-      const { data, error } = await supabase
-        .from("leads")
-        .insert(sampleLeads)
-        .select();
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
-      if (error) throw error;
+      if (data.error) {
+        console.error('API error:', data.error, data.details);
+        throw new Error(data.error);
+      }
 
-      setLeads(data || []);
+      console.log('Received leads:', data);
+      setLeads(data.leads || []);
       
       toast({
         title: "Leads Fetched Successfully",
-        description: `Found ${data?.length || 0} leads for ${niche} in ${city}`,
+        description: `Found ${data.count || 0} leads for ${niche} in ${city}`,
       });
     } catch (error) {
       console.error("Error fetching leads:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch leads. Please try again.",
+        description: error.message || "Failed to fetch leads. Please try again.",
         variant: "destructive",
       });
     } finally {
