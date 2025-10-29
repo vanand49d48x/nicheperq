@@ -232,6 +232,7 @@ const Index = () => {
                 <LeadsMap 
                   leads={allLeads} 
                   mapboxToken={mapboxToken}
+                  locationQuery={city}
                   onBoundsChange={(b) => setBounds({ n: b.getNorth(), s: b.getSouth(), e: b.getEast(), w: b.getWest() })}
                 />
                 <LeadsTable 
