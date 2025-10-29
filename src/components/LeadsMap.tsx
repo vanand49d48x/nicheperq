@@ -25,18 +25,23 @@ export const LeadsMap = ({ leads, onBoundsChange }: LeadsMapProps) => {
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Get Mapbox token from environment or use placeholder
+    // Get Mapbox token from environment
     const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
     
+    console.log("Checking Mapbox token availability...", {
+      hasToken: !!mapboxToken,
+      tokenLength: mapboxToken?.length || 0
+    });
+    
     if (!mapboxToken) {
-      console.error("Mapbox token not found. Please add VITE_MAPBOX_TOKEN to your environment variables.");
+      console.error("Mapbox token not found in environment variables");
       // Show error message in the map container
       if (mapContainer.current) {
         mapContainer.current.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f3f4f6; color: #374151; padding: 20px; text-align: center;">
             <div>
-              <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600;">Map Unavailable</h3>
-              <p style="margin: 0; font-size: 14px;">Mapbox token is required to display the map. Please configure VITE_MAPBOX_TOKEN.</p>
+              <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600;">Map Configuration Required</h3>
+              <p style="margin: 0; font-size: 14px;">Please refresh the page after adding your Mapbox token.</p>
             </div>
           </div>
         `;
@@ -44,7 +49,7 @@ export const LeadsMap = ({ leads, onBoundsChange }: LeadsMapProps) => {
       return;
     }
 
-    console.log("Initializing Mapbox map...");
+    console.log("Initializing Mapbox map with valid token");
     mapboxgl.accessToken = mapboxToken;
 
     // Initialize map
