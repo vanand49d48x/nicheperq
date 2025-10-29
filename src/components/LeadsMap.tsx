@@ -25,12 +25,26 @@ export const LeadsMap = ({ leads, onBoundsChange }: LeadsMapProps) => {
   useEffect(() => {
     if (!mapContainer.current) return;
 
+    // Get Mapbox token from environment or use placeholder
     const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
+    
     if (!mapboxToken) {
-      console.error("Mapbox token not found");
+      console.error("Mapbox token not found. Please add VITE_MAPBOX_TOKEN to your environment variables.");
+      // Show error message in the map container
+      if (mapContainer.current) {
+        mapContainer.current.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f3f4f6; color: #374151; padding: 20px; text-align: center;">
+            <div>
+              <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600;">Map Unavailable</h3>
+              <p style="margin: 0; font-size: 14px;">Mapbox token is required to display the map. Please configure VITE_MAPBOX_TOKEN.</p>
+            </div>
+          </div>
+        `;
+      }
       return;
     }
 
+    console.log("Initializing Mapbox map...");
     mapboxgl.accessToken = mapboxToken;
 
     // Initialize map
