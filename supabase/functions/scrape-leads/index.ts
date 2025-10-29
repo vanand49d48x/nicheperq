@@ -37,7 +37,7 @@ serve(async (req) => {
     const query = `${niche} in ${city}`;
     
     // Call Outscraper Google Maps API
-    const outscraperUrl = `https://api.app.outscraper.com/maps/search-v3?query=${encodeURIComponent(query)}&limit=50&language=en&region=us`;
+    const outscraperUrl = `https://api.app.outscraper.com/maps/search-v3?query=${encodeURIComponent(query)}&limit=50&language=en&region=us&async=false`;
     
     console.log('Calling Outscraper API:', outscraperUrl);
     
@@ -61,32 +61,70 @@ serve(async (req) => {
     console.log('Outscraper response received, processing...');
     console.log('Full response structure:', JSON.stringify(outscraperData, null, 2));
 
-    // Transform Outscraper data to our leads format
-    const leads = [];
-    
-    if (outscraperData.data && outscraperData.data.length > 0) {
-      for (const result of outscraperData.data) {
-        if (result && Array.isArray(result)) {
-          for (const business of result) {
-            // Extract location info
-            const addressParts = business.full_address?.split(',') || [];
-            const stateZip = addressParts[addressParts.length - 1]?.trim().split(' ') || [];
-            
-            leads.push({
-              niche,
-              business_name: business.name || 'Unknown',
-              address: business.street || business.full_address || null,
-              city: business.city || city,
-              state: business.state || stateZip[0] || null,
-              zipcode: business.postal_code || stateZip[1] || null,
-              phone: business.phone || null,
-              website: business.site || null,
-              rating: business.rating ? parseFloat(business.rating) : null,
-              review_count: business.reviews ? parseInt(business.reviews) : null,
-            });
+    // Normalize Outscraper response and transform to leads
+    const leads: Array<{
+      niche: string;
+      business_name: string;
+      address: string | null;
+      city: string;
+      state: string | null;
+      zipcode: string | null;
+      phone: string | null;
+      website: string | null;
+      rating: number | null;
+      review_count: number | null;
+    }> = [];
+
+    let results: any[] = [];
+
+    if (Array.isArray(outscraperData)) {
+      results = outscraperData;
+    } else if (outscraperData?.data) {
+      if (Array.isArray(outscraperData.data)) {
+        for (const block of outscraperData.data) {
+          if (Array.isArray(block)) {
+            results.push(...block);
+          } else if (Array.isArray(block?.places)) {
+            results.push(...(block.places as any[]));
+          } else if (Array.isArray(block?.data)) {
+            results.push(...(block.data as any[]));
+          } else if (block) {
+            results.push(block);
           }
         }
       }
+    } else if (Array.isArray(outscraperData?.results)) {
+      results = outscraperData.results;
+    }
+
+    for (const business of results) {
+      const fullAddress: string | undefined = business.full_address || business.address;
+      const addressParts = fullAddress ? String(fullAddress).split(',') : [];
+      const lastPart = addressParts.length > 0 ? addressParts[addressParts.length - 1].trim() : '';
+      const stateZip = lastPart ? lastPart.split(' ') : [];
+
+      const name = business.name || business.title || business.company || 'Unknown';
+      const website = business.site || business.website || business.domain || null;
+      const phone = business.phone || business.phone_number || null;
+
+      const ratingRaw = business.rating ?? business.rating_value ?? business.stars ?? null;
+      const rating = ratingRaw != null ? parseFloat(String(ratingRaw)) : null;
+
+      const reviewsRaw = business.reviews ?? business.review_count ?? business.reviews_count ?? null;
+      const review_count = reviewsRaw != null ? parseInt(String(reviewsRaw)) : null;
+
+      leads.push({
+        niche,
+        business_name: String(name),
+        address: business.street || fullAddress || null,
+        city: business.city || city,
+        state: business.state || business.region || (stateZip[0] || null),
+        zipcode: business.postal_code || business.zip || (stateZip[1] || null),
+        phone,
+        website,
+        rating,
+        review_count,
+      });
     }
 
     console.log(`Processed ${leads.length} leads`);
