@@ -73,6 +73,8 @@ serve(async (req) => {
       website: string | null;
       rating: number | null;
       review_count: number | null;
+      latitude: number | null;
+      longitude: number | null;
     }> = [];
 
     let results: any[] = [];
@@ -113,6 +115,9 @@ serve(async (req) => {
       const reviewsRaw = business.reviews ?? business.review_count ?? business.reviews_count ?? null;
       const review_count = reviewsRaw != null ? parseInt(String(reviewsRaw)) : null;
 
+      const latitude = business.latitude ?? business.lat ?? null;
+      const longitude = business.longitude ?? business.lng ?? business.lon ?? null;
+
       leads.push({
         niche,
         business_name: String(name),
@@ -124,6 +129,8 @@ serve(async (req) => {
         website,
         rating,
         review_count,
+        latitude: latitude != null ? parseFloat(String(latitude)) : null,
+        longitude: longitude != null ? parseFloat(String(longitude)) : null,
       });
     }
 
