@@ -59,6 +59,7 @@ serve(async (req) => {
 
     const outscraperData = await response.json();
     console.log('Outscraper response received, processing...');
+    console.log('Full response structure:', JSON.stringify(outscraperData, null, 2));
 
     // Transform Outscraper data to our leads format
     const leads = [];
