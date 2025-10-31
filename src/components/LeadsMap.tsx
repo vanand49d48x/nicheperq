@@ -174,7 +174,7 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
       });
       map.current.fitBounds(bounds, { padding: 50 });
     }
-  }, [leads, onLeadHover]);
+  }, [leads]);
 
   // Update marker appearance when hoveredLeadId changes
   useEffect(() => {
