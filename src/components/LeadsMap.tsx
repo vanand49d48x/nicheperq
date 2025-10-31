@@ -118,7 +118,8 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
       el.style.border = "3px solid white";
       el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
       el.style.cursor = "pointer";
-      el.style.transition = "all 0.2s ease";
+      el.style.transition = "background-color 0.2s ease, box-shadow 0.2s ease, border 0.2s ease, width 0.2s ease, height 0.2s ease";
+      el.style.willChange = "background-color, box-shadow, border, width, height";
       el.style.pointerEvents = "auto";
 
       const lat = Number(lead.latitude);
