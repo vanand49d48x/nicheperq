@@ -204,7 +204,7 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery }: 
   }, [locationQuery, mapboxToken]);
 
   return (
-    <div className="relative w-full h-[500px] rounded-lg overflow-hidden border">
+    <div className="relative w-full h-full">
       <div ref={mapContainer} className="absolute inset-0" />
     </div>
   );

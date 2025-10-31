@@ -203,45 +203,98 @@ const Index = () => {
             </TabsContent>
             
             <TabsContent value="map" className="mt-6">
-                <div className="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-                  <h2 className="text-2xl font-semibold">Map View ({displayedLeads.length} leads)</h2>
-                  <div className="flex flex-col md:flex-row gap-3 md:items-center">
+              <div className="flex flex-col gap-4 mb-4">
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+                  <h2 className="text-xl font-semibold">Results ({displayedLeads.length})</h2>
+                  <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
                     <div className="flex items-center gap-2">
                       <Switch id="filter-bounds" checked={filterByBounds} onCheckedChange={setFilterByBounds} />
-                      <Label htmlFor="filter-bounds">Filter by current map view</Label>
+                      <Label htmlFor="filter-bounds" className="text-sm">Filter by map view</Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <Input
-                        placeholder="Mapbox public token"
+                        placeholder="Mapbox token"
                         value={mapboxToken}
                         onChange={(e) => setMapboxToken(e.target.value)}
-                        className="w-72"
+                        className="w-48"
                       />
                       <Button
                         variant="outline"
+                        size="sm"
                         onClick={() => {
                           localStorage.setItem('mapbox_public_token', mapboxToken);
-                          toast({ title: 'Mapbox token saved', description: 'Refresh the page if the map does not load.' });
+                          toast({ title: 'Token saved' });
                         }}
                       >
-                        Save Token
+                        Save
                       </Button>
                     </div>
                   </div>
                 </div>
-                <LeadsMap 
-                  leads={allLeads} 
-                  mapboxToken={mapboxToken}
-                  locationQuery={city}
-                  onBoundsChange={(b) => setBounds({ n: b.getNorth(), s: b.getSouth(), e: b.getEast(), w: b.getWest() })}
-                />
-                <LeadsTable 
-                  leads={paginatedLeads} 
-                  onUpdateLead={handleUpdateLead}
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                />
+              </div>
+
+              <div className="flex gap-4 h-[calc(100vh-280px)] min-h-[600px]">
+                {/* Results sidebar */}
+                <div className="w-80 flex-shrink-0 overflow-y-auto border rounded-lg bg-card">
+                  <div className="p-4 space-y-3">
+                    {paginatedLeads.map((lead) => (
+                      <Card key={lead.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer">
+                        <h3 className="font-semibold text-sm mb-1">{lead.business_name}</h3>
+                        <p className="text-xs text-muted-foreground mb-2">{lead.address}</p>
+                        <div className="flex items-center gap-2 text-xs">
+                          {lead.rating && (
+                            <span className="flex items-center gap-1">
+                              ⭐ {lead.rating}
+                            </span>
+                          )}
+                          {lead.review_count && (
+                            <span className="text-muted-foreground">({lead.review_count})</span>
+                          )}
+                        </div>
+                        {lead.phone && (
+                          <p className="text-xs mt-2 text-muted-foreground">{lead.phone}</p>
+                        )}
+                      </Card>
+                    ))}
+                    {paginatedLeads.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-8">No results found</p>
+                    )}
+                  </div>
+                  {totalPages > 1 && (
+                    <div className="p-4 border-t flex items-center justify-between">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Map */}
+                <div className="flex-1 rounded-lg overflow-hidden border">
+                  <LeadsMap 
+                    leads={allLeads} 
+                    mapboxToken={mapboxToken}
+                    locationQuery={city}
+                    onBoundsChange={(b) => setBounds({ n: b.getNorth(), s: b.getSouth(), e: b.getEast(), w: b.getWest() })}
+                  />
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         )}
