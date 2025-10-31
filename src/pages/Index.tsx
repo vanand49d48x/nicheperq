@@ -303,6 +303,7 @@ const Index = () => {
                     locationQuery={city}
                     hoveredLeadId={hoveredLeadId}
                     onLeadHover={setHoveredLeadId}
+                    searchRadius={Number(radius)}
                     onBoundsChange={(b) => setBounds({ n: b.getNorth(), s: b.getSouth(), e: b.getEast(), w: b.getWest() })}
                   />
                 </div>

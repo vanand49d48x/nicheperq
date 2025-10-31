@@ -19,9 +19,10 @@ interface LeadsMapProps {
   locationQuery?: string;
   hoveredLeadId?: string | null;
   onLeadHover?: (id: string | null) => void;
+  searchRadius?: number;
 }
 
-export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, hoveredLeadId, onLeadHover }: LeadsMapProps) => {
+export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, hoveredLeadId, onLeadHover, searchRadius = 10 }: LeadsMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<Map<string, { marker: mapboxgl.Marker; element: HTMLDivElement; lead: Lead }>>(new Map());
@@ -225,10 +226,15 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
         locationMarker.current?.remove();
         locationMarker.current = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map.current!);
 
-        // Only zoom if there are no valid lead markers shown
-        if (markers.current.size === 0) {
-          map.current!.easeTo({ center: [lng, lat], zoom: 12 });
-        }
+        // Calculate bounds based on search radius
+        // Approximate conversion: 1 mile ≈ 0.0145 degrees at mid-latitudes
+        const radiusInDegrees = searchRadius * 0.0145;
+        const bounds = new mapboxgl.LngLatBounds(
+          [lng - radiusInDegrees, lat - radiusInDegrees],
+          [lng + radiusInDegrees, lat + radiusInDegrees]
+        );
+        
+        map.current!.fitBounds(bounds, { padding: 50 });
       } catch (e) {
         // ignore aborts
       }
@@ -236,7 +242,7 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
 
     fetchGeocode();
     return () => controller.abort();
-  }, [locationQuery, mapboxToken]);
+  }, [locationQuery, mapboxToken, searchRadius]);
 
   return (
     <div className="relative w-full h-full">
