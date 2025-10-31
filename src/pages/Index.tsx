@@ -44,6 +44,7 @@ const Index = () => {
   const [mapboxToken, setMapboxToken] = useState<string>("");
   const [filterByBounds, setFilterByBounds] = useState(false);
   const [bounds, setBounds] = useState<{ n: number; s: number; e: number; w: number } | null>(null);
+  const [hoveredLeadId, setHoveredLeadId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -238,7 +239,16 @@ const Index = () => {
                 <div className="w-80 flex-shrink-0 overflow-y-auto border rounded-lg bg-card">
                   <div className="p-4 space-y-3">
                     {paginatedLeads.map((lead) => (
-                      <Card key={lead.id} className="p-4 hover:shadow-md transition-shadow cursor-pointer">
+                      <Card 
+                        key={lead.id} 
+                        className={`p-4 transition-all cursor-pointer ${
+                          hoveredLeadId === lead.id 
+                            ? 'shadow-lg border-primary ring-2 ring-primary' 
+                            : 'hover:shadow-md'
+                        }`}
+                        onMouseEnter={() => setHoveredLeadId(lead.id)}
+                        onMouseLeave={() => setHoveredLeadId(null)}
+                      >
                         <h3 className="font-semibold text-sm mb-1">{lead.business_name}</h3>
                         <p className="text-xs text-muted-foreground mb-2">{lead.address}</p>
                         <div className="flex items-center gap-2 text-xs">
@@ -291,6 +301,8 @@ const Index = () => {
                     leads={allLeads} 
                     mapboxToken={mapboxToken}
                     locationQuery={city}
+                    hoveredLeadId={hoveredLeadId}
+                    onLeadHover={setHoveredLeadId}
                     onBoundsChange={(b) => setBounds({ n: b.getNorth(), s: b.getSouth(), e: b.getEast(), w: b.getWest() })}
                   />
                 </div>

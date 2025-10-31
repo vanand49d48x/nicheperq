@@ -6,10 +6,10 @@ interface Lead {
   id: string;
   business_name: string;
   address: string | null;
-  city: string;
-  state: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  rating?: number | null;
+  review_count?: number | null;
 }
 
 interface LeadsMapProps {
@@ -17,35 +17,39 @@ interface LeadsMapProps {
   onBoundsChange?: (bounds: mapboxgl.LngLatBounds) => void;
   mapboxToken?: string;
   locationQuery?: string;
+  hoveredLeadId?: string | null;
+  onLeadHover?: (id: string | null) => void;
 }
 
-export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery }: LeadsMapProps) => {
+export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, hoveredLeadId, onLeadHover }: LeadsMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const markers = useRef<mapboxgl.Marker[]>([]);
+  const markers = useRef<Map<string, { marker: mapboxgl.Marker; element: HTMLDivElement; lead: Lead }>>(new Map());
   const locationMarker = useRef<mapboxgl.Marker | null>(null);
 
   useEffect(() => {
     if (!mapContainer.current) return;
+    if (map.current) return; // Initialize map only once
 
-    // Determine Mapbox token from props, env, or localStorage
+    // Resolve token: props -> env -> localStorage
     const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('mapbox_public_token') : null;
     const token = mapboxToken || import.meta.env.VITE_MAPBOX_TOKEN || tokenFromStorage || "";
-    
-    console.log("Checking Mapbox token availability...", {
-      hasToken: !!token,
-      tokenLength: token?.length || 0
-    });
-    
+
+    console.log("Checking for Mapbox token...");
+    console.log("Token from props:", mapboxToken ? "exists" : "none");
+    console.log("Token from env (VITE_MAPBOX_TOKEN):", import.meta.env.VITE_MAPBOX_TOKEN ? "exists" : "none");
+    console.log("Token from localStorage:", tokenFromStorage ? "exists" : "none");
+    console.log("Final token used:", token ? "exists" : "MISSING");
+
     if (!token) {
-      console.error("Mapbox token not found in environment variables");
-      // Show error message in the map container
+      console.error("No Mapbox token available. Map cannot be initialized.");
       if (mapContainer.current) {
         mapContainer.current.innerHTML = `
-          <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f3f4f6; color: #374151; padding: 20px; text-align: center;">
+          <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f5f5f5; color: #666; font-family: system-ui, sans-serif; padding: 20px; text-align: center;">
             <div>
-              <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 600;">Map Configuration Required</h3>
-              <p style="margin: 0; font-size: 14px;">Please refresh the page after adding your Mapbox token.</p>
+              <p style="margin-bottom: 8px; font-weight: 600;">Mapbox token required</p>
+              <p style="font-size: 14px;">Please enter your Mapbox public token above and click "Save".</p>
+              <p style="font-size: 12px; margin-top: 8px; color: #999;">Get your token at <a href="https://mapbox.com" target="_blank" style="color: #0066cc;">mapbox.com</a></p>
             </div>
           </div>
         `;
@@ -65,13 +69,13 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery }: 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/streets-v12",
-      center: [-84.39, 33.95], // Default to Atlanta area
-      zoom: 10,
+      center: [-98.5795, 39.8283], // Center of US
+      zoom: 3,
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
 
-    // Add bounds change listener
+    // Track bounds changes
     if (onBoundsChange) {
       map.current.on("moveend", () => {
         if (map.current) {
@@ -82,7 +86,8 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery }: 
 
     return () => {
       locationMarker.current?.remove();
-      markers.current.forEach((marker) => marker.remove());
+      markers.current.forEach(({ marker }) => marker.remove());
+      markers.current.clear();
       map.current?.remove();
     };
   }, [mapboxToken]);
@@ -90,49 +95,56 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery }: 
   useEffect(() => {
     if (!map.current) return;
 
-    // Remove existing markers
-    markers.current.forEach((marker) => marker.remove());
-    markers.current = [];
+    // Clear existing markers
+    markers.current.forEach(({ marker }) => marker.remove());
+    markers.current.clear();
 
-    // Filter leads with valid coordinates
-    const validLeads = leads.filter(
-      (lead) => lead.latitude != null && lead.longitude != null
-    );
+    const validLeads = leads.filter((l) => {
+      const lat = Number(l.latitude);
+      const lng = Number(l.longitude);
+      return isFinite(lat) && isFinite(lng);
+    });
 
-    if (validLeads.length === 0) return;
+    console.log(`Rendering ${validLeads.length} valid markers on map`);
 
-    // Add new markers
+    // Add markers for each valid lead
     validLeads.forEach((lead) => {
-      if (lead.latitude == null || lead.longitude == null) return;
-
-      const lat = Number(lead.latitude);
-      const lng = Number(lead.longitude);
-      if (!isFinite(lat) || !isFinite(lng)) return;
-
       const el = document.createElement("div");
-      el.className = "marker";
       el.style.width = "24px";
       el.style.height = "24px";
       el.style.borderRadius = "50%";
-      el.style.backgroundColor = "hsl(var(--primary))";
-      el.style.border = "2px solid white";
+      el.style.backgroundColor = "hsl(var(--destructive))";
+      el.style.border = "3px solid white";
+      el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
       el.style.cursor = "pointer";
-      el.style.boxShadow = "0 2px 4px rgba(0,0,0,0.3)";
+      el.style.transition = "all 0.2s ease";
+
+      const lat = Number(lead.latitude);
+      const lng = Number(lead.longitude);
 
       const marker = new mapboxgl.Marker(el)
         .setLngLat([lng, lat])
         .setPopup(
-          new mapboxgl.Popup({ offset: 25 }).setHTML(
-            `<div style="padding: 8px;">
-              <h3 style="margin: 0 0 4px 0; font-weight: 600; font-size: 14px;">${lead.business_name}</h3>
-              <p style="margin: 0; font-size: 12px; color: #666;">${lead.address || ""}</p>
-              <p style="margin: 4px 0 0 0; font-size: 12px; color: #666;">${lead.city}${lead.state ? `, ${lead.state}` : ""}</p>
-            </div>`
-          )
+          new mapboxgl.Popup({ offset: 25 }).setHTML(`
+            <div style="font-family: system-ui, sans-serif;">
+              <strong style="display: block; margin-bottom: 4px;">${lead.business_name}</strong>
+              <div style="font-size: 12px; color: #666; margin-bottom: 4px;">${lead.address || "N/A"}</div>
+              ${lead.rating ? `<div style="font-size: 12px;">⭐ ${lead.rating} ${lead.review_count ? `(${lead.review_count} reviews)` : ""}</div>` : ""}
+            </div>
+          `)
         )
         .addTo(map.current!);
 
-      markers.current.push(marker);
+      // Add hover event listeners to marker
+      el.addEventListener('mouseenter', () => {
+        onLeadHover?.(lead.id);
+      });
+
+      el.addEventListener('mouseleave', () => {
+        onLeadHover?.(null);
+      });
+
+      markers.current.set(lead.id, { marker, element: el, lead });
     });
 
     // Fit map to show all markers
@@ -154,9 +166,32 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery }: 
           }
         }
       });
-      map.current.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+      map.current.fitBounds(bounds, { padding: 50 });
     }
-  }, [leads]);
+  }, [leads, onLeadHover]);
+
+  // Update marker appearance when hoveredLeadId changes
+  useEffect(() => {
+    markers.current.forEach(({ element, lead }) => {
+      if (hoveredLeadId === lead.id) {
+        // Highlight this marker
+        element.style.width = "32px";
+        element.style.height = "32px";
+        element.style.backgroundColor = "hsl(var(--primary))";
+        element.style.border = "4px solid white";
+        element.style.boxShadow = "0 4px 12px rgba(0,0,0,0.4)";
+        element.style.zIndex = "1000";
+      } else {
+        // Reset to normal
+        element.style.width = "24px";
+        element.style.height = "24px";
+        element.style.backgroundColor = "hsl(var(--destructive))";
+        element.style.border = "3px solid white";
+        element.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
+        element.style.zIndex = "";
+      }
+    });
+  }, [hoveredLeadId]);
 
   // Geocode the requested location and focus map when there are no markers
   useEffect(() => {
@@ -191,7 +226,7 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery }: 
         locationMarker.current = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map.current!);
 
         // Only zoom if there are no valid lead markers shown
-        if (markers.current.length === 0) {
+        if (markers.current.size === 0) {
           map.current!.easeTo({ center: [lng, lat], zoom: 12 });
         }
       } catch (e) {
