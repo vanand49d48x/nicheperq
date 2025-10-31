@@ -222,6 +222,7 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
         const feature = json?.features?.[0];
         if (!feature?.center) return;
         const [lng, lat] = feature.center;
+        
         // Add or update a distinct marker for the searched location
         const el = document.createElement("div");
         el.style.width = "18px";
@@ -234,8 +235,66 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
         locationMarker.current?.remove();
         locationMarker.current = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map.current!);
 
+        // Add circle layer to show search radius
+        const sourceId = 'search-radius';
+        const layerId = 'search-radius-layer';
+        
+        // Remove existing circle if present
+        if (map.current!.getLayer(layerId)) {
+          map.current!.removeLayer(layerId);
+        }
+        if (map.current!.getSource(sourceId)) {
+          map.current!.removeSource(sourceId);
+        }
+
+        // Create circle using turf-like calculation
+        const radiusInKm = searchRadius * 1.60934; // Convert miles to km
+        const points = 64;
+        const coords = [];
+        for (let i = 0; i < points; i++) {
+          const angle = (i / points) * 2 * Math.PI;
+          const dx = radiusInKm * Math.cos(angle);
+          const dy = radiusInKm * Math.sin(angle);
+          const pointLng = lng + (dx / (111.32 * Math.cos(lat * Math.PI / 180)));
+          const pointLat = lat + (dy / 110.574);
+          coords.push([pointLng, pointLat]);
+        }
+        coords.push(coords[0]); // Close the polygon
+
+        map.current!.addSource(sourceId, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: {
+              type: 'Polygon',
+              coordinates: [coords]
+            },
+            properties: {}
+          }
+        });
+
+        map.current!.addLayer({
+          id: layerId,
+          type: 'fill',
+          source: sourceId,
+          paint: {
+            'fill-color': 'hsl(var(--primary))',
+            'fill-opacity': 0.1
+          }
+        });
+
+        map.current!.addLayer({
+          id: `${layerId}-outline`,
+          type: 'line',
+          source: sourceId,
+          paint: {
+            'line-color': 'hsl(var(--primary))',
+            'line-width': 2,
+            'line-opacity': 0.5
+          }
+        });
+
         // Calculate bounds based on search radius
-        // Approximate conversion: 1 mile ≈ 0.0145 degrees at mid-latitudes
         const radiusInDegrees = searchRadius * 0.0145;
         const bounds = new mapboxgl.LngLatBounds(
           [lng - radiusInDegrees, lat - radiusInDegrees],
