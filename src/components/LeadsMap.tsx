@@ -238,19 +238,13 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
         // Add circle layer to show search radius
         const sourceId = 'search-radius';
         const layerId = 'search-radius-layer';
+        const outlineLayerId = `${layerId}-outline`;
         
-        // Remove existing circle if present
-        if (map.current!.getLayer(layerId)) {
-          map.current!.removeLayer(layerId);
-        }
-        if (map.current!.getSource(sourceId)) {
-          map.current!.removeSource(sourceId);
-        }
-
+        // Remove existing circle if present and (re)add once style is ready
         // Create circle using turf-like calculation
         const radiusInKm = searchRadius * 1.60934; // Convert miles to km
         const points = 64;
-        const coords = [];
+        const coords: [number, number][] = [];
         for (let i = 0; i < points; i++) {
           const angle = (i / points) * 2 * Math.PI;
           const dx = radiusInKm * Math.cos(angle);
@@ -261,38 +255,61 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
         }
         coords.push(coords[0]); // Close the polygon
 
-        map.current!.addSource(sourceId, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: {
-              type: 'Polygon',
-              coordinates: [coords]
-            },
-            properties: {}
-          }
-        });
+        // Resolve a real CSS color from our design token
+        const root = document.documentElement;
+        const hslPrimary = getComputedStyle(root).getPropertyValue('--primary').trim();
+        const fillColor = `hsl(${hslPrimary})`;
 
-        map.current!.addLayer({
-          id: layerId,
-          type: 'fill',
-          source: sourceId,
-          paint: {
-            'fill-color': 'hsl(var(--primary))',
-            'fill-opacity': 0.1
+        const addCircleLayers = () => {
+          if (map.current!.getLayer(outlineLayerId)) {
+            map.current!.removeLayer(outlineLayerId);
           }
-        });
+          if (map.current!.getLayer(layerId)) {
+            map.current!.removeLayer(layerId);
+          }
+          if (map.current!.getSource(sourceId)) {
+            map.current!.removeSource(sourceId);
+          }
 
-        map.current!.addLayer({
-          id: `${layerId}-outline`,
-          type: 'line',
-          source: sourceId,
-          paint: {
-            'line-color': 'hsl(var(--primary))',
-            'line-width': 2,
-            'line-opacity': 0.5
-          }
-        });
+          map.current!.addSource(sourceId, {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              geometry: {
+                type: 'Polygon',
+                coordinates: [coords]
+              },
+              properties: {}
+            }
+          });
+
+          map.current!.addLayer({
+            id: layerId,
+            type: 'fill',
+            source: sourceId,
+            paint: {
+              'fill-color': fillColor,
+              'fill-opacity': 0.12
+            }
+          });
+
+          map.current!.addLayer({
+            id: outlineLayerId,
+            type: 'line',
+            source: sourceId,
+            paint: {
+              'line-color': fillColor,
+              'line-width': 2,
+              'line-opacity': 0.5
+            }
+          });
+        };
+
+        if (map.current!.isStyleLoaded()) {
+          addCircleLayers();
+        } else {
+          map.current!.once('style.load', addCircleLayers);
+        }
 
         // Calculate bounds based on search radius
         const radiusInDegrees = searchRadius * 0.0145;
