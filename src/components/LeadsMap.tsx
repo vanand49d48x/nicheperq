@@ -255,54 +255,59 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
         }
         coords.push(coords[0]); // Close the polygon
 
-        // Resolve a real CSS color from our design token
+        // Resolve a real CSS color from our design token (fallback to a safe blue)
         const root = document.documentElement;
-        const hslPrimary = getComputedStyle(root).getPropertyValue('--primary').trim();
-        const fillColor = `hsl(${hslPrimary})`;
+        const hslPrimaryRaw = getComputedStyle(root).getPropertyValue('--primary').trim();
+        const fillColor = hslPrimaryRaw ? `hsl(${hslPrimaryRaw})` : '#2563eb';
 
         const addCircleLayers = () => {
-          if (map.current!.getLayer(outlineLayerId)) {
-            map.current!.removeLayer(outlineLayerId);
-          }
-          if (map.current!.getLayer(layerId)) {
-            map.current!.removeLayer(layerId);
-          }
-          if (map.current!.getSource(sourceId)) {
-            map.current!.removeSource(sourceId);
-          }
-
-          map.current!.addSource(sourceId, {
-            type: 'geojson',
-            data: {
-              type: 'Feature',
-              geometry: {
-                type: 'Polygon',
-                coordinates: [coords]
-              },
-              properties: {}
+          try {
+            // Clean old layers/sources if present
+            if (map.current!.getLayer(outlineLayerId)) {
+              map.current!.removeLayer(outlineLayerId);
             }
-          });
-
-          map.current!.addLayer({
-            id: layerId,
-            type: 'fill',
-            source: sourceId,
-            paint: {
-              'fill-color': fillColor,
-              'fill-opacity': 0.12
+            if (map.current!.getLayer(layerId)) {
+              map.current!.removeLayer(layerId);
             }
-          });
-
-          map.current!.addLayer({
-            id: outlineLayerId,
-            type: 'line',
-            source: sourceId,
-            paint: {
-              'line-color': fillColor,
-              'line-width': 2,
-              'line-opacity': 0.5
+            if (map.current!.getSource(sourceId)) {
+              map.current!.removeSource(sourceId);
             }
-          });
+
+            map.current!.addSource(sourceId, {
+              type: 'geojson',
+              data: {
+                type: 'Feature',
+                geometry: {
+                  type: 'Polygon',
+                  coordinates: [coords]
+                },
+                properties: {}
+              }
+            });
+
+            map.current!.addLayer({
+              id: layerId,
+              type: 'fill',
+              source: sourceId,
+              paint: {
+                'fill-color': fillColor,
+                'fill-opacity': 0.15
+              }
+            });
+
+            map.current!.addLayer({
+              id: outlineLayerId,
+              type: 'line',
+              source: sourceId,
+              paint: {
+                'line-color': fillColor,
+                'line-width': 2.5,
+                'line-opacity': 0.6
+              }
+            });
+          } catch (err) {
+            console.error('Failed to add/update search radius layers', err);
+          }
         };
 
         if (map.current!.isStyleLoaded()) {
