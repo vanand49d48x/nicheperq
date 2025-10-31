@@ -111,14 +111,15 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
     // Add markers for each valid lead
     validLeads.forEach((lead) => {
       const el = document.createElement("div");
-      el.style.width = "24px";
-      el.style.height = "24px";
+      el.style.width = "32px";
+      el.style.height = "32px";
       el.style.borderRadius = "50%";
       el.style.backgroundColor = "hsl(var(--destructive))";
       el.style.border = "3px solid white";
       el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
       el.style.cursor = "pointer";
       el.style.transition = "all 0.2s ease";
+      el.style.pointerEvents = "auto";
 
       const lat = Number(lead.latitude);
       const lng = Number(lead.longitude);
@@ -126,7 +127,7 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
       const marker = new mapboxgl.Marker(el)
         .setLngLat([lng, lat])
         .setPopup(
-          new mapboxgl.Popup({ offset: 25 }).setHTML(`
+          new mapboxgl.Popup({ offset: 25, closeButton: false }).setHTML(`
             <div style="font-family: system-ui, sans-serif;">
               <strong style="display: block; margin-bottom: 4px;">${lead.business_name}</strong>
               <div style="font-size: 12px; color: #666; margin-bottom: 4px;">${lead.address || "N/A"}</div>
@@ -136,13 +137,17 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
         )
         .addTo(map.current!);
 
-      // Add hover event listeners to marker
-      el.addEventListener('mouseenter', () => {
+      // Add hover event listeners to marker with better detection
+      el.addEventListener('mouseenter', (e) => {
+        e.stopPropagation();
         onLeadHover?.(lead.id);
+        marker.getPopup().addTo(map.current!);
       });
 
-      el.addEventListener('mouseleave', () => {
+      el.addEventListener('mouseleave', (e) => {
+        e.stopPropagation();
         onLeadHover?.(null);
+        marker.getPopup().remove();
       });
 
       markers.current.set(lead.id, { marker, element: el, lead });
@@ -173,23 +178,25 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
 
   // Update marker appearance when hoveredLeadId changes
   useEffect(() => {
-    markers.current.forEach(({ element, lead }) => {
+    markers.current.forEach(({ element, lead, marker }) => {
       if (hoveredLeadId === lead.id) {
         // Highlight this marker
-        element.style.width = "32px";
-        element.style.height = "32px";
+        element.style.width = "40px";
+        element.style.height = "40px";
         element.style.backgroundColor = "hsl(var(--primary))";
         element.style.border = "4px solid white";
         element.style.boxShadow = "0 4px 12px rgba(0,0,0,0.4)";
         element.style.zIndex = "1000";
+        marker.getPopup().addTo(map.current!);
       } else {
         // Reset to normal
-        element.style.width = "24px";
-        element.style.height = "24px";
+        element.style.width = "32px";
+        element.style.height = "32px";
         element.style.backgroundColor = "hsl(var(--destructive))";
         element.style.border = "3px solid white";
         element.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)";
         element.style.zIndex = "";
+        marker.getPopup().remove();
       }
     });
   }, [hoveredLeadId]);
