@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Users, TrendingUp, Calendar } from "lucide-react";
 
-type AppRole = 'admin' | 'pro' | 'free';
+type AppRole = 'admin' | 'advanced' | 'standard' | 'basic' | 'pro' | 'free';
 
 interface UserData {
   id: string;

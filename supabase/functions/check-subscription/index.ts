@@ -69,9 +69,15 @@ serve(async (req) => {
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       productId = subscription.items.data[0].price.product as string;
       
-      // Determine role based on product
-      if (productId === 'prod_TSg4XHceHcjcvD') {
-        role = 'pro';
+      // Determine role based on product ID
+      if (productId === 'prod_TSgJxCyzLdR4eT') {
+        role = 'basic';  // Basic Plan - 100 leads
+      } else if (productId === 'prod_TSgJCRhzQ9on3B') {
+        role = 'standard';  // Standard Plan - 250 leads
+      } else if (productId === 'prod_TSgJEs83PT8pM2') {
+        role = 'advanced';  // Advanced Plan - 1000 leads
+      } else if (productId === 'prod_TSg4XHceHcjcvD') {
+        role = 'pro';  // Legacy Pro Plan
       }
       
       logStep("Active subscription found", { subscriptionId: subscription.id, role });
