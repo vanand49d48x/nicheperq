@@ -11,7 +11,8 @@ import { LeadsTable } from "@/components/LeadsTable";
 import { LeadsMap } from "@/components/LeadsMap";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Zap, Map, List } from "lucide-react";
+import { DashboardLayout } from "@/components/DashboardLayout";
+import { Search, Map, List } from "lucide-react";
 
 interface Lead {
   id: string;
@@ -143,21 +144,18 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8 px-4 max-w-7xl">
+    <DashboardLayout>
+      <div className="container mx-auto py-8 px-6 max-w-7xl animate-fade-in">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <Zap className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold text-foreground">Lead Generator</h1>
-          </div>
-          <p className="text-muted-foreground text-lg">
-            Find high-quality business leads in any niche and location
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Find Leads</h1>
+          <p className="text-muted-foreground">
+            Search for high-quality business leads in any niche and location
           </p>
         </div>
 
         {/* Search Form */}
-        <Card className="p-6 mb-8">
+        <Card className="p-6 mb-8 shadow-lg border-border/50">
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <NicheSelector value={niche} onChange={setNiche} />
             <LocationInput
@@ -312,7 +310,7 @@ const Index = () => {
           </Tabs>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 
