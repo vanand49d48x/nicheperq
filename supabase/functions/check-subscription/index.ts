@@ -66,8 +66,18 @@ serve(async (req) => {
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      logStep("Processing subscription", { subscriptionId: subscription.id, currentPeriodEnd: subscription.current_period_end });
+      
+      try {
+        if (subscription.current_period_end) {
+          subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+        }
+      } catch (error) {
+        logStep("Error converting subscription end date", { error: error instanceof Error ? error.message : String(error) });
+      }
+      
       productId = subscription.items.data[0].price.product as string;
+      logStep("Found product ID", { productId });
       
       // Determine role based on product ID
       if (productId === 'prod_TSgCmlQrmOhUOP') {
@@ -80,7 +90,7 @@ serve(async (req) => {
         role = 'pro';  // Legacy Pro Plan
       }
       
-      logStep("Active subscription found", { subscriptionId: subscription.id, role });
+      logStep("Active subscription found", { subscriptionId: subscription.id, role, productId });
 
       // Update user role in database
       const { error: roleError } = await supabaseClient
