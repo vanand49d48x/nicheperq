@@ -12,7 +12,16 @@ import { LeadsMap } from "@/components/LeadsMap";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Search, Map, List } from "lucide-react";
+import { Search, Map, List, Save } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Lead {
   id: string;
@@ -46,12 +55,23 @@ const Index = () => {
   const [filterByBounds, setFilterByBounds] = useState(false);
   const [bounds, setBounds] = useState<{ n: number; s: number; e: number; w: number } | null>(null);
   const [hoveredLeadId, setHoveredLeadId] = useState<string | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [searchName, setSearchName] = useState("");
   const { toast } = useToast();
+  const location = useLocation();
 
   useEffect(() => {
     const stored = localStorage.getItem('mapbox_public_token');
     if (stored) setMapboxToken(stored);
-  }, []);
+
+    // Check if we're coming from History page with search params
+    if (location.state) {
+      const { niche: stateNiche, city: stateCity, radius: stateRadius } = location.state as any;
+      if (stateNiche) setNiche(stateNiche);
+      if (stateCity) setCity(stateCity);
+      if (stateRadius) setRadius(stateRadius);
+    }
+  }, [location]);
 
   const displayedLeads = filterByBounds && bounds
     ? allLeads.filter((l) => {
@@ -155,6 +175,57 @@ const Index = () => {
     }
   };
 
+  const handleSaveSearch = async () => {
+    if (!searchName.trim()) {
+      toast({
+        title: "Name Required",
+        description: "Please enter a name for this search",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to save searches",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('saved_searches')
+        .insert({
+          user_id: user.id,
+          name: searchName,
+          niche,
+          city,
+          radius,
+          lead_count: allLeads.length,
+          last_run_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Search Saved",
+        description: "You can find this search in your history",
+      });
+      setShowSaveDialog(false);
+      setSearchName("");
+    } catch (error) {
+      console.error('Error saving search:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save search",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="container mx-auto py-8 px-6 max-w-7xl animate-fade-in">
@@ -178,15 +249,28 @@ const Index = () => {
             />
           </div>
           
-          <Button
-            onClick={handleFetchLeads}
-            disabled={isLoading}
-            className="w-full gap-2"
-            size="lg"
-          >
-            <Search className="h-5 w-5" />
-            {isLoading ? "Fetching Leads..." : "Fetch Leads"}
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              onClick={handleFetchLeads}
+              disabled={isLoading}
+              className="flex-1 gap-2"
+              size="lg"
+            >
+              <Search className="h-5 w-5" />
+              {isLoading ? "Fetching Leads..." : "Fetch Leads"}
+            </Button>
+            {allLeads.length > 0 && (
+              <Button
+                onClick={() => setShowSaveDialog(true)}
+                variant="outline"
+                size="lg"
+                className="gap-2"
+              >
+                <Save className="h-5 w-5" />
+                Save
+              </Button>
+            )}
+          </div>
         </Card>
 
         {/* Results */}
@@ -321,6 +405,32 @@ const Index = () => {
             </TabsContent>
           </Tabs>
         )}
+
+        {/* Save Search Dialog */}
+        <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Save Search</DialogTitle>
+              <DialogDescription>
+                Give this search a name so you can easily find it later
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Input
+                placeholder="e.g., NYC Dentists"
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveSearch()}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveSearch}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

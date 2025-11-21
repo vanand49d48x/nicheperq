@@ -115,6 +115,50 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_searches: {
+        Row: {
+          city: string
+          created_at: string
+          id: string
+          last_run_at: string | null
+          lead_count: number | null
+          name: string
+          niche: string
+          radius: string
+          user_id: string
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          id?: string
+          last_run_at?: string | null
+          lead_count?: number | null
+          name: string
+          niche: string
+          radius: string
+          user_id: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          id?: string
+          last_run_at?: string | null
+          lead_count?: number | null
+          name?: string
+          niche?: string
+          radius?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_searches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
