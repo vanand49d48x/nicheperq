@@ -16,7 +16,7 @@ serve(async (req) => {
     const { niche, city, radius } = await req.json();
     console.log('Request body:', { niche, city, radius });
     
-    // Get the authorization header for the authenticated user
+    // Extract JWT token from Authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -25,31 +25,27 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
-    
-    if (!supabaseUrl || !supabaseKey) {
+    // Decode JWT to get user ID (JWT is already verified by Supabase when verify_jwt=true)
+    const token = authHeader.replace('Bearer ', '');
+    const parts = token.split('.');
+    if (parts.length !== 3) {
       return new Response(
-        JSON.stringify({ error: 'Database not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const supabaseClient = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    
-    if (userError || !user) {
-      console.error('Authentication failed:', userError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Invalid token format' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    console.log('User authenticated:', user.id);
+    const payload = JSON.parse(atob(parts[1]));
+    const userId = payload.sub;
+    
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid token payload' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log('User authenticated:', userId);
     
     if (!niche || !city) {
       return new Response(
@@ -168,7 +164,7 @@ serve(async (req) => {
         review_count,
         latitude: latitude != null ? parseFloat(String(latitude)) : null,
         longitude: longitude != null ? parseFloat(String(longitude)) : null,
-        user_id: user.id,
+        user_id: userId,
       });
     }
 
