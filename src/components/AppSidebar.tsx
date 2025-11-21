@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Home, Settings, LogOut, Search, User, History, Shield } from "lucide-react";
+import { Home, Settings, LogOut, Search, User, History, Shield, Receipt } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ const mainItems = [
 
 const settingsItems = [
   { title: "Settings", url: "/settings", icon: Settings },
+  { title: "Billing", url: "/billing", icon: Receipt },
 ];
 
 export function AppSidebar() {
