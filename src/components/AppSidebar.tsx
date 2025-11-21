@@ -36,6 +36,7 @@ export function AppSidebar() {
   const [userEmail, setUserEmail] = useState<string>("");
   const [userInitials, setUserInitials] = useState<string>("U");
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<string>("free");
   const collapsed = state === "collapsed";
 
   useEffect(() => {
@@ -45,9 +46,10 @@ export function AppSidebar() {
         setUserEmail(user.email);
         setUserInitials(user.email.charAt(0).toUpperCase());
         
-        // Check if user is admin
+        // Check if user is admin and get role
         const { data: roleData } = await supabase.rpc('get_user_role', { user_id: user.id });
         setIsAdmin(roleData === 'admin');
+        setUserRole(roleData || 'free');
       }
     };
     loadUserData();
@@ -162,7 +164,7 @@ export function AppSidebar() {
                 <p className="text-sm font-medium text-sidebar-foreground truncate">
                   {userEmail}
                 </p>
-                <p className="text-xs text-muted-foreground">Free Plan</p>
+                <p className="text-xs text-muted-foreground capitalize">{userRole} Plan</p>
               </div>
             </div>
             <Button

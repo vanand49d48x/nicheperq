@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check, Crown } from "lucide-react";
 import { z } from "zod";
+import { Badge } from "@/components/ui/badge";
 
 const profileSchema = z.object({
   full_name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
@@ -19,9 +20,13 @@ export default function Settings() {
   const [fullName, setFullName] = useState("");
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
+  const [currentRole, setCurrentRole] = useState<string>("free");
+  const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
 
   useEffect(() => {
     loadProfile();
+    checkSubscription();
   }, []);
 
   const loadProfile = async () => {
@@ -39,6 +44,63 @@ export default function Settings() {
     if (profile) {
       setFullName(profile.full_name || "");
       setCompany(profile.company || "");
+    }
+
+    // Get user role
+    const { data: roleData } = await supabase.rpc('get_user_role', { user_id: user.id });
+    if (roleData) {
+      setCurrentRole(roleData);
+    }
+  };
+
+  const checkSubscription = async () => {
+    setCheckingSubscription(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('check-subscription');
+      if (error) throw error;
+      
+      if (data) {
+        setCurrentRole(data.role || 'free');
+        setSubscriptionEnd(data.subscription_end);
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+    } finally {
+      setCheckingSubscription(false);
+    }
+  };
+
+  const handleUpgrade = async () => {
+    try {
+      toast.loading("Redirecting to checkout...");
+      const { data, error } = await supabase.functions.invoke('create-checkout');
+      
+      if (error) throw error;
+      
+      if (data?.url) {
+        window.open(data.url, '_blank');
+        toast.dismiss();
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      toast.error("Failed to start checkout process");
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      toast.loading("Opening subscription portal...");
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      
+      if (error) throw error;
+      
+      if (data?.url) {
+        window.open(data.url, '_blank');
+        toast.dismiss();
+      }
+    } catch (error) {
+      console.error('Error opening customer portal:', error);
+      toast.error("Failed to open subscription portal");
     }
   };
 
@@ -137,23 +199,115 @@ export default function Settings() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Subscription</CardTitle>
-              <CardDescription>Manage your subscription plan</CardDescription>
+              <CardTitle>Subscription Plans</CardTitle>
+              <CardDescription>Choose the plan that fits your needs</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                  <div>
-                    <p className="font-medium">Current Plan</p>
-                    <p className="text-sm text-muted-foreground">Free Tier</p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {/* Free Plan */}
+                  <div className={`relative p-6 rounded-lg border-2 ${currentRole === 'free' ? 'border-primary' : 'border-border'}`}>
+                    {currentRole === 'free' && (
+                      <Badge className="absolute top-4 right-4">Current Plan</Badge>
+                    )}
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-xl font-bold">Free</h3>
+                        <div className="mt-2">
+                          <span className="text-3xl font-bold">$0</span>
+                          <span className="text-muted-foreground">/month</span>
+                        </div>
+                      </div>
+                      <ul className="space-y-2">
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">50 leads per month</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Basic search</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Email support</span>
+                        </li>
+                      </ul>
+                    </div>
                   </div>
-                  <Button variant="outline" disabled>
-                    Upgrade (Coming Soon)
-                  </Button>
+
+                  {/* Pro Plan */}
+                  <div className={`relative p-6 rounded-lg border-2 ${currentRole === 'pro' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    {currentRole === 'pro' && (
+                      <Badge className="absolute top-4 right-4">Current Plan</Badge>
+                    )}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Crown className="h-5 w-5 text-primary" />
+                        <h3 className="text-xl font-bold">Pro</h3>
+                      </div>
+                      <div className="mt-2">
+                        <span className="text-3xl font-bold">$29</span>
+                        <span className="text-muted-foreground">/month</span>
+                      </div>
+                      <ul className="space-y-2">
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">1,000 leads per month</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Advanced filters</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Priority support</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Export to CSV</span>
+                        </li>
+                      </ul>
+                      {currentRole === 'pro' ? (
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          onClick={handleManageSubscription}
+                        >
+                          Manage Subscription
+                        </Button>
+                      ) : (
+                        <Button 
+                          className="w-full" 
+                          onClick={handleUpgrade}
+                        >
+                          Upgrade to Pro
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Free plan includes up to 50 leads per month
-                </p>
+
+                {subscriptionEnd && currentRole === 'pro' && (
+                  <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      Your subscription renews on {new Date(subscriptionEnd).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                )}
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={checkSubscription}
+                  disabled={checkingSubscription}
+                >
+                  {checkingSubscription && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Refresh Subscription Status
+                </Button>
               </div>
             </CardContent>
           </Card>
