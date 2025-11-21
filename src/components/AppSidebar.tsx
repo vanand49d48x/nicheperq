@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Home, Settings, LogOut, Search, User, History, Shield, Receipt } from "lucide-react";
+import { Home, Settings, LogOut, Search, User, History, Shield, Receipt, Users } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 const mainItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Find Leads", url: "/", icon: Search },
+  { title: "CRM Pipeline", url: "/crm", icon: Users },
   { title: "History", url: "/history", icon: History },
 ];
 

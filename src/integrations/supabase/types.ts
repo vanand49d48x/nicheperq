@@ -46,15 +46,53 @@ export type Database = {
           },
         ]
       }
+      contact_notes: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string
+          note_text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id: string
+          note_text: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string
+          note_text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           address: string | null
           business_name: string
           city: string
+          contact_status: string | null
           created_at: string
           id: string
+          last_contacted_at: string | null
           latitude: number | null
           longitude: number | null
+          next_follow_up_at: string | null
           niche: string
           notes: string | null
           phone: string | null
@@ -71,10 +109,13 @@ export type Database = {
           address?: string | null
           business_name: string
           city: string
+          contact_status?: string | null
           created_at?: string
           id?: string
+          last_contacted_at?: string | null
           latitude?: number | null
           longitude?: number | null
+          next_follow_up_at?: string | null
           niche: string
           notes?: string | null
           phone?: string | null
@@ -91,10 +132,13 @@ export type Database = {
           address?: string | null
           business_name?: string
           city?: string
+          contact_status?: string | null
           created_at?: string
           id?: string
+          last_contacted_at?: string | null
           latitude?: number | null
           longitude?: number | null
+          next_follow_up_at?: string | null
           niche?: string
           notes?: string | null
           phone?: string | null
