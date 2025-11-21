@@ -13,13 +13,18 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Edge function called');
     const { niche, city, radius } = await req.json();
+    console.log('Request body:', { niche, city, radius });
     
     // Get the user from the authorization header
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.error('Missing Authorization header');
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized - Missing auth token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -39,13 +44,17 @@ serve(async (req) => {
     });
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    console.log('User auth result:', { hasUser: !!user, error: userError?.message });
     
     if (userError || !user) {
+      console.error('User authentication failed:', userError);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized - Invalid auth token', details: userError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
+    console.log('User authenticated:', user.id);
     
     if (!niche || !city) {
       return new Response(
