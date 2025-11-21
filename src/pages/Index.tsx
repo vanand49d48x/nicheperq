@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { NicheSelector } from "@/components/NicheSelector";
@@ -47,6 +48,7 @@ const ITEMS_PER_PAGE = 25;
 
 const Index = () => {
   const [niche, setNiche] = useState("");
+  const [customCriteria, setCustomCriteria] = useState("");
   const [city, setCity] = useState("");
   const [radius, setRadius] = useState("25");
   const [isLoading, setIsLoading] = useState(false);
@@ -90,10 +92,12 @@ const Index = () => {
   );
 
   const handleFetchLeads = async () => {
-    if (!niche || !city) {
+    const searchCriteria = customCriteria.trim() || niche;
+    
+    if (!searchCriteria || !city) {
       toast({
         title: "Missing Information",
-        description: "Please select a niche and enter a city or zipcode.",
+        description: "Please select a niche or enter custom search criteria, and enter a city or zipcode.",
         variant: "destructive",
       });
       return;
@@ -114,11 +118,11 @@ const Index = () => {
         return;
       }
 
-      console.log('Calling scrape-leads function with:', { niche, city, radius });
+      console.log('Calling scrape-leads function with:', { niche: searchCriteria, city, radius });
       
       // Call the edge function to scrape real leads
       const { data, error } = await supabase.functions.invoke('scrape-leads', {
-        body: { niche, city, radius },
+        body: { niche: searchCriteria, city, radius },
       });
 
       if (error) {
@@ -149,7 +153,7 @@ const Index = () => {
       
       toast({
         title: "Leads Fetched Successfully",
-        description: `Found ${data.count || 0} leads for ${niche} in ${city}`,
+        description: `Found ${data.count || 0} leads for ${searchCriteria} in ${city}`,
       });
     } catch (error) {
       console.error("Error fetching leads:", error);
@@ -198,6 +202,8 @@ const Index = () => {
       return;
     }
 
+    const searchCriteria = customCriteria.trim() || niche;
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -214,7 +220,7 @@ const Index = () => {
         .insert({
           user_id: user.id,
           name: searchName,
-          niche,
+          niche: searchCriteria,
           city,
           radius,
           lead_count: allLeads.length,
@@ -258,7 +264,24 @@ const Index = () => {
         {/* Search Form */}
         <Card className="p-6 mb-8 shadow-lg border-border/50">
           <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <NicheSelector value={niche} onChange={setNiche} />
+            <div className="space-y-4">
+              <NicheSelector value={niche} onChange={setNiche} />
+              <div className="space-y-2">
+                <label htmlFor="custom-criteria" className="text-sm font-medium text-foreground">
+                  Or Enter Custom Search Criteria
+                </label>
+                <Textarea
+                  id="custom-criteria"
+                  placeholder="e.g., Organic restaurants with outdoor seating..."
+                  value={customCriteria}
+                  onChange={(e) => setCustomCriteria(e.target.value)}
+                  className="min-h-[80px]"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter your own search terms instead of selecting a predefined niche
+                </p>
+              </div>
+            </div>
             <LocationInput
               city={city}
               onCityChange={setCity}
