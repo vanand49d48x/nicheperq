@@ -46,6 +46,52 @@ serve(async (req) => {
     }
     
     console.log('User authenticated:', userId);
+
+    // Get Supabase service client for checking limits
+    const supabaseServiceUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseServiceUrl || !supabaseServiceKey) {
+      return new Response(
+        JSON.stringify({ error: 'Database not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseService = createClient(supabaseServiceUrl, supabaseServiceKey);
+
+    // Check user's monthly limit and current usage
+    const { data: limitData, error: limitError } = await supabaseService
+      .rpc('get_user_monthly_limit', { p_user_id: userId });
+
+    const { data: usageData, error: usageError } = await supabaseService
+      .rpc('get_monthly_usage', { p_user_id: userId });
+
+    if (limitError || usageError) {
+      console.error('Error checking limits:', limitError || usageError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to check usage limits' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const monthlyLimit = limitData as number;
+    const currentUsage = usageData as number;
+
+    console.log('User limits:', { monthlyLimit, currentUsage });
+
+    // Check if user has exceeded their limit (-1 means unlimited for admin)
+    if (monthlyLimit !== -1 && currentUsage >= monthlyLimit) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Monthly limit reached',
+          details: `You've reached your monthly limit of ${monthlyLimit} leads. Upgrade your plan for more.`,
+          currentUsage,
+          monthlyLimit
+        }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     
     if (!niche || !city) {
       return new Response(
@@ -177,20 +223,22 @@ serve(async (req) => {
       );
     }
 
-    // Save leads to database
-    const supabaseServiceUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (!supabaseServiceUrl || !supabaseServiceKey) {
-      console.error('Supabase service credentials not found');
+    // Check if adding these leads would exceed the limit
+    if (monthlyLimit !== -1 && (currentUsage + leads.length) > monthlyLimit) {
+      const remainingLeads = monthlyLimit - currentUsage;
       return new Response(
-        JSON.stringify({ error: 'Database not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'Would exceed monthly limit',
+          details: `This search would give you ${leads.length} leads, but you only have ${remainingLeads} remaining this month. Upgrade your plan for more.`,
+          currentUsage,
+          monthlyLimit,
+          remainingLeads
+        }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const supabaseService = createClient(supabaseServiceUrl, supabaseServiceKey);
-
+    // Save leads to database
     const { data: savedLeads, error: dbError } = await supabaseService
       .from('leads')
       .insert(leads)
@@ -206,8 +254,31 @@ serve(async (req) => {
 
     console.log(`Successfully saved ${savedLeads?.length || 0} leads to database`);
 
+    // Track API usage
+    const { error: trackingError } = await supabaseService
+      .from('api_usage')
+      .insert({
+        user_id: userId,
+        search_type: 'lead_scrape',
+        leads_count: savedLeads?.length || 0,
+      });
+
+    if (trackingError) {
+      console.error('Failed to track usage:', trackingError);
+      // Don't fail the request if usage tracking fails
+    }
+
     return new Response(
-      JSON.stringify({ success: true, leads: savedLeads, count: savedLeads?.length || 0 }),
+      JSON.stringify({ 
+        success: true, 
+        leads: savedLeads, 
+        count: savedLeads?.length || 0,
+        usage: {
+          current: currentUsage + (savedLeads?.length || 0),
+          limit: monthlyLimit,
+          remaining: monthlyLimit === -1 ? -1 : monthlyLimit - currentUsage - (savedLeads?.length || 0)
+        }
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

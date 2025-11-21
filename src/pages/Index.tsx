@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { UsageIndicator } from "@/components/UsageIndicator";
 
 interface Lead {
   id: string;
@@ -127,6 +128,18 @@ const Index = () => {
 
       if (data.error) {
         console.error('API error:', data.error, data.details);
+        
+        // Handle rate limit errors specially
+        if (data.error === 'Monthly limit reached' || data.error === 'Would exceed monthly limit') {
+          toast({
+            title: "Usage Limit Reached",
+            description: data.details || "You've reached your monthly limit. Upgrade your plan for more leads.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+        
         throw new Error(data.error);
       }
 
@@ -235,6 +248,11 @@ const Index = () => {
           <p className="text-muted-foreground">
             Search for high-quality business leads in any niche and location
           </p>
+        </div>
+
+        {/* Usage Indicator */}
+        <div className="mb-6">
+          <UsageIndicator />
         </div>
 
         {/* Search Form */}
