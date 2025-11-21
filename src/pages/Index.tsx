@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { NicheSelector } from "@/components/NicheSelector";
 import { LocationInput } from "@/components/LocationInput";
 import { LeadsTable } from "@/components/LeadsTable";
@@ -14,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Search, Map, List, Save } from "lucide-react";
+import { Search, Map, List, Save, CheckCircle2, Phone, Mail, RefreshCw, Briefcase, MapPin, Radius } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import {
   Dialog,
@@ -46,6 +47,12 @@ interface Lead {
 }
 
 const ITEMS_PER_PAGE = 25;
+
+const POPULAR_NICHES = [
+  "Probate Attorneys",
+  "Property Managers", 
+  "Home Inspectors"
+];
 
 const Index = () => {
   const [niche, setNiche] = useState("");
@@ -264,15 +271,38 @@ const Index = () => {
     }
   };
 
+  const leadsWithEmail = allLeads.filter(lead => lead.website || lead.phone).length;
+  const leadsWithPhone = allLeads.filter(lead => lead.phone).length;
+
   return (
     <DashboardLayout>
       <div className="container mx-auto py-8 px-6 max-w-7xl animate-fade-in">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Find Leads</h1>
-          <p className="text-muted-foreground">
-            Search for high-quality business leads in any niche and location
+          <h1 className="text-3xl font-bold text-foreground mb-3">Find Leads</h1>
+          <p className="text-lg text-muted-foreground mb-4">
+            Discover verified referral partners in any niche — powered by real-time data
           </p>
+          
+          {/* Trust Badges */}
+          <div className="flex flex-wrap gap-3 mt-4">
+            <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Verified Data
+            </Badge>
+            <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
+              <Phone className="h-3.5 w-3.5" />
+              Phone Included
+            </Badge>
+            <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
+              <Mail className="h-3.5 w-3.5" />
+              Contact Info
+            </Badge>
+            <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
+              <RefreshCw className="h-3.5 w-3.5" />
+              Updated Daily
+            </Badge>
+          </div>
         </div>
 
         {/* Usage Indicator */}
@@ -281,10 +311,32 @@ const Index = () => {
         </div>
 
         {/* Search Form */}
-        <Card className="p-6 mb-8 shadow-lg border-border/50">
+        <Card className="p-6 mb-8 shadow-lg border-border/50 rounded-lg">
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                <Label className="text-sm font-medium">Select Business Niche</Label>
+              </div>
               <NicheSelector value={niche} onChange={setNiche} />
+              
+              {/* Quick Start Chips */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Popular Niches:</Label>
+                <div className="flex flex-wrap gap-2">
+                  {POPULAR_NICHES.map((popularNiche) => (
+                    <Button
+                      key={popularNiche}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setNiche(popularNiche)}
+                      className="h-7 text-xs hover:bg-primary hover:text-primary-foreground transition-colors"
+                    >
+                      {popularNiche}
+                    </Button>
+                  ))}
+                </div>
+              </div>
               <div className="space-y-2">
                 <label htmlFor="custom-criteria" className="text-sm font-medium text-foreground">
                   Or Enter Custom Search Criteria
@@ -300,24 +352,39 @@ const Index = () => {
                   Enter your own search terms instead of selecting a predefined niche
                 </p>
               </div>
+              
+              {/* Preview Example */}
+              <Card className="bg-muted/30 border-dashed p-4">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Example search:</p>
+                <p className="text-sm text-foreground mb-2">"probate attorney alpharetta ga"</p>
+                <p className="text-xs text-muted-foreground">
+                  Returns: <span className="font-semibold text-foreground">126 verified professionals</span> with phone + contact info
+                </p>
+              </Card>
             </div>
-            <LocationInput
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <Label className="text-sm font-medium">Location & Radius</Label>
+              </div>
+              <LocationInput
               city={city}
-              onCityChange={setCity}
-              radius={radius}
-              onRadiusChange={setRadius}
-            />
+                onCityChange={setCity}
+                radius={radius}
+                onRadiusChange={setRadius}
+              />
+            </div>
           </div>
           
           <div className="flex gap-3">
             <Button
               onClick={handleFetchLeads}
               disabled={isLoading}
-              className="flex-1 gap-2"
+              className="flex-1 gap-2 shadow-glow hover:shadow-lg transition-all"
               size="lg"
             >
               <Search className="h-5 w-5" />
-              {isLoading ? "Fetching Leads..." : "Fetch Leads"}
+              {isLoading ? "Searching..." : "🔍 Find Leads Now"}
             </Button>
             {allLeads.length > 0 && (
               <Button
@@ -335,8 +402,27 @@ const Index = () => {
 
         {/* Results */}
         {allLeads.length > 0 && (
-          <Tabs defaultValue="table" className="w-full">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+          <>
+            {/* Result Count Banner */}
+            <Card className="p-4 mb-6 bg-gradient-subtle border-border/50 rounded-lg shadow-md">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">
+                    {displayedLeads.length} leads found in {city}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    ({leadsWithPhone} with phone numbers{leadsWithEmail > 0 && `, ${leadsWithEmail} with contact info`})
+                  </p>
+                </div>
+                <Badge variant="default" className="text-sm py-1.5 px-4">
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Verified Results
+                </Badge>
+              </div>
+            </Card>
+
+            <Tabs defaultValue="table" className="w-full">
+              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
               <TabsTrigger value="table" className="gap-2">
                 <List className="h-4 w-4" />
                 Table View
@@ -497,7 +583,16 @@ const Index = () => {
               </div>
             </TabsContent>
           </Tabs>
+        </>
         )}
+
+        {/* Powered By Footer */}
+        <div className="mt-12 text-center">
+          <p className="text-xs text-muted-foreground">
+            Powered by <span className="font-semibold text-foreground">Alpharetta Referral Intelligence Exchange</span>
+          </p>
+          <p className="text-xs text-accent mt-1">Private Beta Access — You're In ✨</p>
+        </div>
 
         {/* Save Search Dialog */}
         <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
