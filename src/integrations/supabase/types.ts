@@ -231,6 +231,15 @@ export type Database = {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_user_usage_stats: {
+        Args: { p_user_id: string }
+        Returns: {
+          last_search_date: string
+          monthly_leads: number
+          total_leads: number
+        }[]
+      }
+      is_admin: { Args: { user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "pro" | "free"
