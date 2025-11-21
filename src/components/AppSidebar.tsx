@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Home, Settings, LogOut, Search, User, History } from "lucide-react";
+import { Home, Settings, LogOut, Search, User, History, Shield } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -35,15 +35,22 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const [userEmail, setUserEmail] = useState<string>("");
   const [userInitials, setUserInitials] = useState<string>("U");
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const collapsed = state === "collapsed";
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    const loadUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
         setUserEmail(user.email);
         setUserInitials(user.email.charAt(0).toUpperCase());
+        
+        // Check if user is admin
+        const { data: roleData } = await supabase.rpc('get_user_role', { user_id: user.id });
+        setIsAdmin(roleData === 'admin');
       }
-    });
+    };
+    loadUserData();
   }, []);
 
   const handleLogout = async () => {
@@ -118,6 +125,28 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {isAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/admin")}
+                    className="transition-all duration-200"
+                  >
+                    <a href="/admin" className="flex items-center gap-3">
+                      <Shield className="h-5 w-5" />
+                      {!collapsed && <span>Dashboard</span>}
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
