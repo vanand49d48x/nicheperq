@@ -10,6 +10,7 @@ import { NicheSelector } from "@/components/NicheSelector";
 import { LocationInput } from "@/components/LocationInput";
 import { LeadsTable } from "@/components/LeadsTable";
 import { LeadsMap } from "@/components/LeadsMap";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -60,6 +61,7 @@ const Index = () => {
   const [hoveredLeadId, setHoveredLeadId] = useState<string | null>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [searchName, setSearchName] = useState("");
+  const [sortBy, setSortBy] = useState<string>("default");
   const { toast } = useToast();
   const location = useLocation();
 
@@ -76,7 +78,7 @@ const Index = () => {
     }
   }, [location]);
 
-  const displayedLeads = filterByBounds && bounds
+  const filteredLeads = filterByBounds && bounds
     ? allLeads.filter((l) => {
         const lat = Number(l.latitude);
         const lng = Number(l.longitude);
@@ -84,6 +86,23 @@ const Index = () => {
         return lat <= bounds.n && lat >= bounds.s && lng <= bounds.e && lng >= bounds.w;
       })
     : allLeads;
+
+  const sortedLeads = [...filteredLeads].sort((a, b) => {
+    switch (sortBy) {
+      case "rating-high":
+        return (b.rating || 0) - (a.rating || 0);
+      case "rating-low":
+        return (a.rating || 0) - (b.rating || 0);
+      case "reviews-high":
+        return (b.review_count || 0) - (a.review_count || 0);
+      case "reviews-low":
+        return (a.review_count || 0) - (b.review_count || 0);
+      default:
+        return 0;
+    }
+  });
+
+  const displayedLeads = sortedLeads;
 
   const totalPages = Math.ceil(displayedLeads.length / ITEMS_PER_PAGE) || 1;
   const paginatedLeads = displayedLeads.slice(
@@ -329,6 +348,24 @@ const Index = () => {
             </TabsList>
             
             <TabsContent value="table" className="mt-6">
+              <div className="mb-4 flex justify-between items-center">
+                <h2 className="text-xl font-semibold">Results ({displayedLeads.length})</h2>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="sort-by" className="text-sm">Sort by:</Label>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger id="sort-by" className="w-[180px]">
+                      <SelectValue placeholder="Default" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">Default</SelectItem>
+                      <SelectItem value="rating-high">Rating: High to Low</SelectItem>
+                      <SelectItem value="rating-low">Rating: Low to High</SelectItem>
+                      <SelectItem value="reviews-high">Reviews: Most to Least</SelectItem>
+                      <SelectItem value="reviews-low">Reviews: Least to Most</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <LeadsTable 
                 leads={paginatedLeads} 
                 onUpdateLead={handleUpdateLead}
@@ -343,6 +380,21 @@ const Index = () => {
                 <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
                   <h2 className="text-xl font-semibold">Results ({displayedLeads.length})</h2>
                   <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="sort-by-map" className="text-sm">Sort by:</Label>
+                      <Select value={sortBy} onValueChange={setSortBy}>
+                        <SelectTrigger id="sort-by-map" className="w-[180px]">
+                          <SelectValue placeholder="Default" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="default">Default</SelectItem>
+                          <SelectItem value="rating-high">Rating: High to Low</SelectItem>
+                          <SelectItem value="rating-low">Rating: Low to High</SelectItem>
+                          <SelectItem value="reviews-high">Reviews: Most to Least</SelectItem>
+                          <SelectItem value="reviews-low">Reviews: Least to Most</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="flex items-center gap-2">
                       <Switch id="filter-bounds" checked={filterByBounds} onCheckedChange={setFilterByBounds} />
                       <Label htmlFor="filter-bounds" className="text-sm">Filter by map view</Label>
