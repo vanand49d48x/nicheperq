@@ -276,42 +276,61 @@ const Index = () => {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8 px-6 max-w-7xl animate-fade-in">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-3">Find Leads</h1>
-          <p className="text-lg text-muted-foreground mb-4">
-            Discover verified referral partners in any niche — powered by real-time data
-          </p>
-          
-          {/* Trust Badges */}
-          <div className="flex flex-wrap gap-3 mt-4">
-            <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Verified Data
-            </Badge>
-            <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
-              <Phone className="h-3.5 w-3.5" />
-              Phone Included
-            </Badge>
-            <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
-              <Mail className="h-3.5 w-3.5" />
-              Contact Info
-            </Badge>
-            <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
-              <RefreshCw className="h-3.5 w-3.5" />
-              Updated Daily
-            </Badge>
+      <div className="relative">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 pattern-dots opacity-50 pointer-events-none" />
+        
+        {/* Gradient Glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-gradient-hero blur-3xl opacity-60 pointer-events-none" />
+        
+        <div className="relative container mx-auto py-8 px-6 max-w-7xl animate-fade-in">
+          {/* Hero Header */}
+          <div className="mb-8 text-center relative glow-effect">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6 animate-pulse-glow">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-xs font-medium text-primary">Live Data • Real-Time Updates</span>
+            </div>
+            
+            <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-4 bg-gradient-primary bg-clip-text text-transparent">
+              Find Your Next Leads
+            </h1>
+            <p className="text-xl text-muted-foreground mb-6 max-w-2xl mx-auto">
+              Discover verified referral partners in any niche — powered by real-time data
+            </p>
+            
+            {/* Trust Badges */}
+            <div className="flex flex-wrap justify-center gap-3 mt-6">
+              <Badge variant="secondary" className="gap-1.5 py-2 px-4 shadow-sm hover:shadow-md transition-shadow">
+                <CheckCircle2 className="h-4 w-4" />
+                Verified Data
+              </Badge>
+              <Badge variant="secondary" className="gap-1.5 py-2 px-4 shadow-sm hover:shadow-md transition-shadow">
+                <Phone className="h-4 w-4" />
+                Phone Included
+              </Badge>
+              <Badge variant="secondary" className="gap-1.5 py-2 px-4 shadow-sm hover:shadow-md transition-shadow">
+                <Mail className="h-4 w-4" />
+                Contact Info
+              </Badge>
+              <Badge variant="secondary" className="gap-1.5 py-2 px-4 shadow-sm hover:shadow-md transition-shadow">
+                <RefreshCw className="h-4 w-4" />
+                Updated Daily
+              </Badge>
+            </div>
           </div>
-        </div>
 
-        {/* Usage Indicator */}
-        <div className="mb-6">
-          <UsageIndicator />
-        </div>
+          {/* Usage Indicator */}
+          <div className="mb-8 max-w-3xl mx-auto">
+            <UsageIndicator />
+          </div>
 
-        {/* Search Form */}
-        <Card className="p-6 mb-8 shadow-lg border-border/50 rounded-lg">
+          {/* Search Form */}
+          <Card className="p-8 mb-8 shadow-2xl border-border/50 rounded-2xl bg-gradient-card backdrop-blur-sm relative overflow-hidden">
+            {/* Decorative Elements */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-40 h-40 bg-accent/5 rounded-full blur-3xl" />
+            
+            <div className="relative">
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-2">
@@ -376,53 +395,61 @@ const Index = () => {
             </div>
           </div>
           
-          <div className="flex gap-3">
-            <Button
-              onClick={handleFetchLeads}
-              disabled={isLoading}
-              className="flex-1 gap-2 shadow-glow hover:shadow-lg transition-all"
-              size="lg"
-            >
-              <Search className="h-5 w-5" />
-              {isLoading ? "Searching..." : "🔍 Find Leads Now"}
-            </Button>
-            {allLeads.length > 0 && (
+            <div className="flex gap-3">
               <Button
-                onClick={() => setShowSaveDialog(true)}
-                variant="outline"
+                onClick={handleFetchLeads}
+                disabled={isLoading}
+                className="flex-1 gap-2 shadow-glow hover:shadow-xl transition-all relative overflow-hidden group"
                 size="lg"
-                className="gap-2"
               >
-                <Save className="h-5 w-5" />
-                Save
+                <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Search className="h-5 w-5 relative z-10" />
+                <span className="relative z-10">{isLoading ? "Searching..." : "🔍 Find Leads Now"}</span>
               </Button>
-            )}
-          </div>
-        </Card>
+              {allLeads.length > 0 && (
+                <Button
+                  onClick={() => setShowSaveDialog(true)}
+                  variant="outline"
+                  size="lg"
+                  className="gap-2 hover:bg-primary hover:text-primary-foreground transition-all"
+                >
+                  <Save className="h-5 w-5" />
+                  Save
+                </Button>
+              )}
+            </div>
+            </div>
+          </Card>
 
-        {/* Results */}
-        {allLeads.length > 0 && (
-          <>
-            {/* Result Count Banner */}
-            <Card className="p-4 mb-6 bg-gradient-subtle border-border/50 rounded-lg shadow-md">
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-1">
-                    {displayedLeads.length} leads found in {city}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    ({leadsWithPhone} with phone numbers{leadsWithEmail > 0 && `, ${leadsWithEmail} with contact info`})
-                  </p>
+          {/* Results */}
+          {allLeads.length > 0 && (
+            <>
+              {/* Result Count Banner */}
+              <Card className="p-6 mb-6 bg-gradient-card border-border/50 rounded-2xl shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl" />
+                <div className="flex items-center justify-between flex-wrap gap-4 relative">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-xl bg-primary/10 animate-pulse-glow">
+                      <Search className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-foreground mb-1">
+                        {displayedLeads.length} leads found in {city}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        ({leadsWithPhone} with phone numbers{leadsWithEmail > 0 && `, ${leadsWithEmail} with contact info`})
+                      </p>
+                    </div>
+                  </div>
+                  <Badge variant="default" className="text-sm py-2 px-5 shadow-lg">
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Verified Results
+                  </Badge>
                 </div>
-                <Badge variant="default" className="text-sm py-1.5 px-4">
-                  <CheckCircle2 className="h-4 w-4 mr-1" />
-                  Verified Results
-                </Badge>
-              </div>
-            </Card>
+              </Card>
 
-            <Tabs defaultValue="table" className="w-full">
-              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+              <Tabs defaultValue="table" className="w-full">
+                <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 bg-muted/50 backdrop-blur-sm p-1">
               <TabsTrigger value="table" className="gap-2">
                 <List className="h-4 w-4" />
                 Table View
@@ -586,12 +613,23 @@ const Index = () => {
         </>
         )}
 
-        {/* Powered By Footer */}
-        <div className="mt-12 text-center">
-          <p className="text-xs text-muted-foreground">
-            Powered by <span className="font-semibold text-foreground">Alpharetta Referral Intelligence Exchange</span>
-          </p>
-          <p className="text-xs text-accent mt-1">Private Beta Access — You're In ✨</p>
+          {/* Powered By Footer */}
+          <div className="mt-16 text-center relative">
+            <div className="inline-block p-6 rounded-2xl bg-gradient-card border border-border/50 shadow-lg">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                <p className="text-sm text-muted-foreground">
+                  Powered by <span className="font-bold text-foreground bg-gradient-primary bg-clip-text text-transparent">Alpharetta Referral Intelligence Exchange</span>
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  Private Beta Access
+                </Badge>
+                <span className="text-xs text-accent">✨ You're In</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Save Search Dialog */}

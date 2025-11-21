@@ -44,6 +44,8 @@ All colors MUST be HSL.
     /* Modern gradients */
     --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%), hsl(269 61% 57%));
     --gradient-subtle: linear-gradient(180deg, hsl(220 26% 98%), hsl(214 32% 96%));
+    --gradient-hero: linear-gradient(135deg, hsl(221 83% 53% / 0.1), hsl(269 61% 57% / 0.1));
+    --gradient-card: linear-gradient(to bottom right, hsl(0 0% 100%), hsl(220 26% 99%));
     
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.05);
@@ -96,6 +98,8 @@ All colors MUST be HSL.
     /* Dark mode gradients */
     --gradient-primary: linear-gradient(135deg, hsl(221 83% 60%), hsl(269 61% 65%));
     --gradient-subtle: linear-gradient(180deg, hsl(222 47% 11%), hsl(217 32% 15%));
+    --gradient-hero: linear-gradient(135deg, hsl(221 83% 60% / 0.15), hsl(269 61% 65% / 0.15));
+    --gradient-card: linear-gradient(to bottom right, hsl(217 32% 17%), hsl(222 47% 13%));
     
     /* Dark shadows */
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
@@ -121,5 +125,35 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .pattern-dots {
+    background-image: radial-gradient(hsl(var(--muted-foreground) / 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  
+  .pattern-grid {
+    background-image: linear-gradient(hsl(var(--border)) 1px, transparent 1px),
+                      linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+
+  .glow-effect {
+    position: relative;
+  }
+  
+  .glow-effect::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, hsl(var(--primary) / 0.15), transparent 70%);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: -1;
   }
 }
