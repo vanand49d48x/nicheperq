@@ -70,10 +70,12 @@ export default function Settings() {
     }
   };
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = async (priceId: string) => {
     try {
       toast.loading("Redirecting to checkout...");
-      const { data, error } = await supabase.functions.invoke('create-checkout');
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { price_id: priceId }
+      });
       
       if (error) throw error;
       
@@ -204,7 +206,7 @@ export default function Settings() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                   {/* Free Plan */}
                   <div className={`relative p-6 rounded-lg border-2 ${currentRole === 'free' ? 'border-primary' : 'border-border'}`}>
                     {currentRole === 'free' && (
@@ -221,38 +223,79 @@ export default function Settings() {
                       <ul className="space-y-2">
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">50 leads per month</span>
+                          <span className="text-sm">50 leads/month</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
                           <span className="text-sm">Basic search</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Basic Plan */}
+                  <div className={`relative p-6 rounded-lg border-2 ${currentRole === 'basic' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    {currentRole === 'basic' && (
+                      <Badge className="absolute top-4 right-4">Current Plan</Badge>
+                    )}
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-xl font-bold">Basic</h3>
+                        <div className="mt-2">
+                          <span className="text-3xl font-bold">$19.99</span>
+                          <span className="text-muted-foreground">/month</span>
+                        </div>
+                      </div>
+                      <ul className="space-y-2">
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">100 leads/month</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Advanced filters</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
                           <span className="text-sm">Email support</span>
                         </li>
                       </ul>
+                      {currentRole === 'basic' ? (
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          onClick={handleManageSubscription}
+                        >
+                          Manage
+                        </Button>
+                      ) : (
+                        <Button 
+                          className="w-full" 
+                          onClick={() => handleUpgrade('price_1SVkwVFenvwi8BazV2u52duH')}
+                        >
+                          Upgrade
+                        </Button>
+                      )}
                     </div>
                   </div>
 
-                  {/* Pro Plan */}
-                  <div className={`relative p-6 rounded-lg border-2 ${currentRole === 'pro' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                    {currentRole === 'pro' && (
+                  {/* Standard Plan */}
+                  <div className={`relative p-6 rounded-lg border-2 ${currentRole === 'standard' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    {currentRole === 'standard' && (
                       <Badge className="absolute top-4 right-4">Current Plan</Badge>
                     )}
                     <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Crown className="h-5 w-5 text-primary" />
-                        <h3 className="text-xl font-bold">Pro</h3>
-                      </div>
-                      <div className="mt-2">
-                        <span className="text-3xl font-bold">$29</span>
-                        <span className="text-muted-foreground">/month</span>
+                      <div>
+                        <h3 className="text-xl font-bold">Standard</h3>
+                        <div className="mt-2">
+                          <span className="text-3xl font-bold">$29.99</span>
+                          <span className="text-muted-foreground">/month</span>
+                        </div>
                       </div>
                       <ul className="space-y-2">
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">1,000 leads per month</span>
+                          <span className="text-sm">250 leads/month</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
@@ -267,27 +310,82 @@ export default function Settings() {
                           <span className="text-sm">Export to CSV</span>
                         </li>
                       </ul>
-                      {currentRole === 'pro' ? (
+                      {currentRole === 'standard' ? (
                         <Button 
                           className="w-full" 
                           variant="outline"
                           onClick={handleManageSubscription}
                         >
-                          Manage Subscription
+                          Manage
                         </Button>
                       ) : (
                         <Button 
                           className="w-full" 
-                          onClick={handleUpgrade}
+                          onClick={() => handleUpgrade('price_1SVkwjFenvwi8BazlPraicQk')}
                         >
-                          Upgrade to Pro
+                          Upgrade
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Advanced Plan */}
+                  <div className={`relative p-6 rounded-lg border-2 ${currentRole === 'advanced' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    {currentRole === 'advanced' && (
+                      <Badge className="absolute top-4 right-4">Current Plan</Badge>
+                    )}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Crown className="h-5 w-5 text-primary" />
+                        <h3 className="text-xl font-bold">Advanced</h3>
+                      </div>
+                      <div className="mt-2">
+                        <span className="text-3xl font-bold">$59.99</span>
+                        <span className="text-muted-foreground">/month</span>
+                      </div>
+                      <ul className="space-y-2">
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">1,000 leads/month</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Advanced filters</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Priority support</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Export to CSV</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">API access</span>
+                        </li>
+                      </ul>
+                      {currentRole === 'advanced' ? (
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          onClick={handleManageSubscription}
+                        >
+                          Manage
+                        </Button>
+                      ) : (
+                        <Button 
+                          className="w-full" 
+                          onClick={() => handleUpgrade('price_1SVkwuFenvwi8BazQXGfubAp')}
+                        >
+                          Upgrade
                         </Button>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {subscriptionEnd && currentRole === 'pro' && (
+                {subscriptionEnd && (currentRole === 'basic' || currentRole === 'standard' || currentRole === 'advanced' || currentRole === 'pro') && (
                   <div className="p-4 bg-muted rounded-lg">
                     <p className="text-sm text-muted-foreground">
                       Your subscription renews on {new Date(subscriptionEnd).toLocaleDateString('en-US', {
