@@ -15,6 +15,38 @@ serve(async (req) => {
   try {
     const { niche, city, radius } = await req.json();
     
+    // Get the user from the authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      return new Response(
+        JSON.stringify({ error: 'Database not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     if (!niche || !city) {
       return new Response(
         JSON.stringify({ error: 'Niche and city are required' }),
@@ -75,6 +107,7 @@ serve(async (req) => {
       review_count: number | null;
       latitude: number | null;
       longitude: number | null;
+      user_id: string;
     }> = [];
 
     let results: any[] = [];
@@ -131,6 +164,7 @@ serve(async (req) => {
         review_count,
         latitude: latitude != null ? parseFloat(String(latitude)) : null,
         longitude: longitude != null ? parseFloat(String(longitude)) : null,
+        user_id: user.id,
       });
     }
 
@@ -144,20 +178,20 @@ serve(async (req) => {
     }
 
     // Save leads to database
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseServiceUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('Supabase credentials not found');
+    if (!supabaseServiceUrl || !supabaseServiceKey) {
+      console.error('Supabase service credentials not found');
       return new Response(
         JSON.stringify({ error: 'Database not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseService = createClient(supabaseServiceUrl, supabaseServiceKey);
 
-    const { data: savedLeads, error: dbError } = await supabase
+    const { data: savedLeads, error: dbError } = await supabaseService
       .from('leads')
       .insert(leads)
       .select();
