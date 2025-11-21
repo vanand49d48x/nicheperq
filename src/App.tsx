@@ -11,6 +11,11 @@ import History from "./pages/History";
 import Admin from "./pages/Admin";
 import Success from "./pages/Success";
 import Billing from "./pages/Billing";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import RefundPolicy from "./pages/RefundPolicy";
+import DataEthics from "./pages/DataEthics";
+import EmailSequence from "./pages/EmailSequence";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +76,11 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/data-ethics" element={<DataEthics />} />
+          <Route path="/email-sequence" element={<EmailSequence />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

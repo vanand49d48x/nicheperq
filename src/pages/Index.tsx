@@ -613,21 +613,36 @@ const Index = () => {
         </>
         )}
 
-          {/* Powered By Footer */}
-          <div className="mt-16 text-center relative">
-            <div className="inline-block p-6 rounded-2xl bg-gradient-card border border-border/50 shadow-lg">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                <p className="text-sm text-muted-foreground">
-                  Powered by <span className="font-bold text-foreground bg-gradient-primary bg-clip-text text-transparent">Alpharetta Referral Intelligence Exchange</span>
-                </p>
+          {/* Footer with Links */}
+          <div className="mt-16 space-y-6">
+            <div className="text-center">
+              <div className="inline-block p-6 rounded-2xl bg-gradient-card border border-border/50 shadow-lg">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <p className="text-sm text-muted-foreground">
+                    Powered by <span className="font-bold text-foreground bg-gradient-primary bg-clip-text text-transparent">LeadGen</span>
+                  </p>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <Badge variant="secondary" className="text-xs">
+                    Private Beta Access
+                  </Badge>
+                  <span className="text-xs text-accent">✨ You're In</span>
+                </div>
               </div>
-              <div className="flex items-center justify-center gap-2">
-                <Badge variant="secondary" className="text-xs">
-                  Private Beta Access
-                </Badge>
-                <span className="text-xs text-accent">✨ You're In</span>
-              </div>
+            </div>
+            
+            {/* Footer Links */}
+            <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+              <a href="/terms" className="hover:text-primary transition-colors">Terms of Service</a>
+              <span>•</span>
+              <a href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</a>
+              <span>•</span>
+              <a href="/refund-policy" className="hover:text-primary transition-colors">Refund Policy</a>
+              <span>•</span>
+              <a href="/data-ethics" className="hover:text-primary transition-colors">Data Ethics</a>
+              <span>•</span>
+              <a href="/email-sequence" className="hover:text-primary transition-colors">Email Templates</a>
             </div>
           </div>
         </div>
