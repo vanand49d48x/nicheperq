@@ -81,6 +81,18 @@ const Index = () => {
     setIsLoading(true);
     
     try {
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to fetch leads.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       console.log('Calling scrape-leads function with:', { niche, city, radius });
       
       // Call the edge function to scrape real leads
