@@ -70,13 +70,13 @@ serve(async (req) => {
       productId = subscription.items.data[0].price.product as string;
       
       // Determine role based on product ID
-      if (productId === 'prod_TSgJxCyzLdR4eT') {
+      if (productId === 'prod_TSgCmlQrmOhUOP') {
         role = 'basic';  // Basic Plan - 100 leads
-      } else if (productId === 'prod_TSgJCRhzQ9on3B') {
+      } else if (productId === 'prod_TSgCGfVEfTUshN') {
         role = 'standard';  // Standard Plan - 250 leads
-      } else if (productId === 'prod_TSgJEs83PT8pM2') {
+      } else if (productId === 'prod_TSgD6DT8JB4K8f') {
         role = 'advanced';  // Advanced Plan - 1000 leads
-      } else if (productId === 'prod_TSg4XHceHcjcvD') {
+      } else if (productId === 'prod_RQ5qcKuJ3aBRCL') {
         role = 'pro';  // Legacy Pro Plan
       }
       

@@ -271,7 +271,7 @@ export default function Settings() {
                       ) : (
                         <Button 
                           className="w-full" 
-                          onClick={() => handleUpgrade('price_1SVkwVFenvwi8BazV2u52duH')}
+                          onClick={() => handleUpgrade('price_1SVkqABmFqxDim26sjwsJWlC')}
                         >
                           Upgrade
                         </Button>
@@ -288,7 +288,7 @@ export default function Settings() {
                       <div>
                         <h3 className="text-xl font-bold">Standard</h3>
                         <div className="mt-2">
-                          <span className="text-3xl font-bold">$29.99</span>
+                          <span className="text-3xl font-bold">$29</span>
                           <span className="text-muted-foreground">/month</span>
                         </div>
                       </div>
@@ -321,7 +321,7 @@ export default function Settings() {
                       ) : (
                         <Button 
                           className="w-full" 
-                          onClick={() => handleUpgrade('price_1SVkwjFenvwi8BazlPraicQk')}
+                          onClick={() => handleUpgrade('price_1SVkpdBmFqxDim26DvvPA8M2')}
                         >
                           Upgrade
                         </Button>
@@ -376,7 +376,7 @@ export default function Settings() {
                       ) : (
                         <Button 
                           className="w-full" 
-                          onClick={() => handleUpgrade('price_1SVkwuFenvwi8BazQXGfubAp')}
+                          onClick={() => handleUpgrade('price_1SVkqlBmFqxDim26XNK3dgz3')}
                         >
                           Upgrade
                         </Button>
