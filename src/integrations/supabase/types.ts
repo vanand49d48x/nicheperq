@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_usage: {
+        Row: {
+          created_at: string
+          id: string
+          leads_count: number | null
+          search_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          leads_count?: number | null
+          search_type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          leads_count?: number | null
+          search_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_usage_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           address: string | null
@@ -193,6 +225,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_monthly_usage: { Args: { p_user_id: string }; Returns: number }
+      get_user_monthly_limit: { Args: { p_user_id: string }; Returns: number }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
