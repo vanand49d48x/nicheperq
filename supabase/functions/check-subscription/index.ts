@@ -63,6 +63,8 @@ serve(async (req) => {
     let productId = null;
     let subscriptionEnd = null;
     let role = 'free';
+    let hasCrmAccess = false;
+    let hasAiAccess = false;
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
@@ -79,29 +81,60 @@ serve(async (req) => {
       productId = subscription.items.data[0].price.product as string;
       logStep("Found product ID", { productId });
       
-      // Determine role based on product ID
-      if (productId === 'prod_TSgCmlQrmOhUOP') {
-        role = 'basic';  // Basic Plan - 100 leads
+      // NEW PRICING STRUCTURE - Update these product IDs after creating in Stripe
+      // TODO: Replace with your actual Stripe product IDs
+      // STANDARD ($29): 500 leads/month, no CRM, no AI
+      // ADVANCED ($79): 2,500 leads/month, CRM, no AI  
+      // PRO ($149): 5,000 leads/month, CRM, AI
+      
+      if (productId === 'prod_STANDARD_ID_HERE') {
+        role = 'standard';
+        hasCrmAccess = false;
+        hasAiAccess = false;
+      } else if (productId === 'prod_ADVANCED_ID_HERE') {
+        role = 'advanced';
+        hasCrmAccess = true;
+        hasAiAccess = false;
+      } else if (productId === 'prod_PRO_ID_HERE') {
+        role = 'pro';
+        hasCrmAccess = true;
+        hasAiAccess = true;
+      }
+      // Legacy product IDs (keep for existing subscribers)
+      else if (productId === 'prod_TSgCmlQrmOhUOP') {
+        role = 'basic';
+        hasCrmAccess = false;
+        hasAiAccess = false;
       } else if (productId === 'prod_TSgCGfVEfTUshN') {
-        role = 'standard';  // Standard Plan - 250 leads
+        role = 'standard';
+        hasCrmAccess = false;
+        hasAiAccess = false;
       } else if (productId === 'prod_TSgD6DT8JB4K8f') {
-        role = 'advanced';  // Advanced Plan - 1000 leads
+        role = 'advanced';
+        hasCrmAccess = true;
+        hasAiAccess = false;
       } else if (productId === 'prod_RQ5qcKuJ3aBRCL') {
-        role = 'pro';  // Legacy Pro Plan
+        role = 'pro';
+        hasCrmAccess = true;
+        hasAiAccess = true;
       }
       
-      logStep("Active subscription found", { subscriptionId: subscription.id, role, productId });
+      logStep("Active subscription found", { subscriptionId: subscription.id, role, productId, hasCrmAccess, hasAiAccess });
 
-      // Update user role in database
+      // Update user role and feature flags in database
       const { error: roleError } = await supabaseClient
         .from('user_roles')
-        .update({ role })
+        .update({ 
+          role,
+          has_crm_access: hasCrmAccess,
+          has_ai_access: hasAiAccess
+        })
         .eq('user_id', user.id);
 
       if (roleError) {
         logStep("Error updating user role", { error: roleError });
       } else {
-        logStep("User role updated successfully", { role });
+        logStep("User role updated successfully", { role, hasCrmAccess, hasAiAccess });
       }
     } else {
       logStep("No active subscription, setting role to free");
@@ -109,7 +142,11 @@ serve(async (req) => {
       // Update user role to free if no subscription
       const { error: roleError } = await supabaseClient
         .from('user_roles')
-        .update({ role: 'free' })
+        .update({ 
+          role: 'free',
+          has_crm_access: false,
+          has_ai_access: false
+        })
         .eq('user_id', user.id);
 
       if (roleError) {
@@ -121,7 +158,9 @@ serve(async (req) => {
       subscribed: hasActiveSub,
       product_id: productId,
       subscription_end: subscriptionEnd,
-      role
+      role,
+      has_crm_access: hasCrmAccess,
+      has_ai_access: hasAiAccess
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

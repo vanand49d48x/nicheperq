@@ -208,13 +208,14 @@ export default function Settings() {
               <div className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                   {/* Free Plan */}
-                  <div className={`relative p-6 rounded-lg border-2 ${currentRole === 'free' ? 'border-primary' : 'border-border'}`}>
+                  <div className={`relative p-6 rounded-lg border-2 ${currentRole === 'free' ? 'border-primary bg-primary/5' : 'border-border'}`}>
                     {currentRole === 'free' && (
                       <Badge className="absolute top-4 right-4">Current Plan</Badge>
                     )}
                     <div className="space-y-4">
                       <div>
-                        <h3 className="text-xl font-bold">Free</h3>
+                        <h3 className="text-xl font-bold">FREE</h3>
+                        <p className="text-xs text-muted-foreground">Starter Plan</p>
                         <div className="mt-2">
                           <span className="text-3xl font-bold">$0</span>
                           <span className="text-muted-foreground">/month</span>
@@ -223,70 +224,29 @@ export default function Settings() {
                       <ul className="space-y-2">
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">50 leads/month</span>
+                          <span className="text-sm">5 searches/month</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Basic search</span>
+                          <span className="text-sm">10 previews per search</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Basic info only</span>
                         </li>
                       </ul>
                     </div>
                   </div>
 
-                  {/* Basic Plan */}
-                  <div className={`relative p-6 rounded-lg border-2 ${currentRole === 'basic' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                    {currentRole === 'basic' && (
-                      <Badge className="absolute top-4 right-4">Current Plan</Badge>
-                    )}
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="text-xl font-bold">Basic</h3>
-                        <div className="mt-2">
-                          <span className="text-3xl font-bold">$19.99</span>
-                          <span className="text-muted-foreground">/month</span>
-                        </div>
-                      </div>
-                      <ul className="space-y-2">
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">100 leads/month</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Advanced filters</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Email support</span>
-                        </li>
-                      </ul>
-                      {currentRole === 'basic' ? (
-                        <Button 
-                          className="w-full" 
-                          variant="outline"
-                          onClick={handleManageSubscription}
-                        >
-                          Manage
-                        </Button>
-                      ) : (
-                        <Button 
-                          className="w-full" 
-                          onClick={() => handleUpgrade('price_1SVkqABmFqxDim26sjwsJWlC')}
-                        >
-                          Upgrade
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Standard Plan */}
+                  {/* Standard Plan - $29 */}
                   <div className={`relative p-6 rounded-lg border-2 ${currentRole === 'standard' ? 'border-primary bg-primary/5' : 'border-border'}`}>
                     {currentRole === 'standard' && (
                       <Badge className="absolute top-4 right-4">Current Plan</Badge>
                     )}
                     <div className="space-y-4">
                       <div>
-                        <h3 className="text-xl font-bold">Standard</h3>
+                        <h3 className="text-xl font-bold">STANDARD</h3>
+                        <p className="text-xs text-muted-foreground">Niche Finder</p>
                         <div className="mt-2">
                           <span className="text-3xl font-bold">$29</span>
                           <span className="text-muted-foreground">/month</span>
@@ -295,19 +255,19 @@ export default function Settings() {
                       <ul className="space-y-2">
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">250 leads/month</span>
+                          <span className="text-sm">500 leads/month</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Advanced filters</span>
+                          <span className="text-sm">Full contact details</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Priority support</span>
+                          <span className="text-sm">Unlimited searches</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Export to CSV</span>
+                          <span className="text-sm">CSV export</span>
                         </li>
                       </ul>
                       {currentRole === 'standard' ? (
@@ -321,7 +281,7 @@ export default function Settings() {
                       ) : (
                         <Button 
                           className="w-full" 
-                          onClick={() => handleUpgrade('price_1SVkpdBmFqxDim26DvvPA8M2')}
+                          onClick={() => handleUpgrade('price_STANDARD_ID_HERE')}
                         >
                           Upgrade
                         </Button>
@@ -329,7 +289,7 @@ export default function Settings() {
                     </div>
                   </div>
 
-                  {/* Advanced Plan */}
+                  {/* Advanced Plan - $79 */}
                   <div className={`relative p-6 rounded-lg border-2 ${currentRole === 'advanced' ? 'border-primary bg-primary/5' : 'border-border'}`}>
                     {currentRole === 'advanced' && (
                       <Badge className="absolute top-4 right-4">Current Plan</Badge>
@@ -337,32 +297,29 @@ export default function Settings() {
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         <Crown className="h-5 w-5 text-primary" />
-                        <h3 className="text-xl font-bold">Advanced</h3>
+                        <h3 className="text-xl font-bold">ADVANCED</h3>
                       </div>
+                      <p className="text-xs text-muted-foreground">Niche + CRM</p>
                       <div className="mt-2">
-                        <span className="text-3xl font-bold">$59.99</span>
+                        <span className="text-3xl font-bold">$79</span>
                         <span className="text-muted-foreground">/month</span>
                       </div>
                       <ul className="space-y-2">
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">1,000 leads/month</span>
+                          <span className="text-sm">2,500 leads/month</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Advanced filters</span>
+                          <span className="text-sm">Full CRM suite</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Priority support</span>
+                          <span className="text-sm">Kanban pipeline</span>
                         </li>
                         <li className="flex items-center gap-2">
                           <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">Export to CSV</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-primary" />
-                          <span className="text-sm">API access</span>
+                          <span className="text-sm">Follow-up reminders</span>
                         </li>
                       </ul>
                       {currentRole === 'advanced' ? (
@@ -376,7 +333,63 @@ export default function Settings() {
                       ) : (
                         <Button 
                           className="w-full" 
-                          onClick={() => handleUpgrade('price_1SVkqlBmFqxDim26XNK3dgz3')}
+                          onClick={() => handleUpgrade('price_ADVANCED_ID_HERE')}
+                        >
+                          Upgrade
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Pro Plan - $149 */}
+                  <div className={`relative p-6 rounded-lg border-2 ${currentRole === 'pro' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                    {currentRole === 'pro' && (
+                      <Badge className="absolute top-4 right-4">Current Plan</Badge>
+                    )}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Crown className="h-5 w-5 text-primary" />
+                        <h3 className="text-xl font-bold">PRO</h3>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Niche + CRM + AI</p>
+                      <div className="mt-2">
+                        <span className="text-3xl font-bold">$149</span>
+                        <span className="text-muted-foreground">/month</span>
+                      </div>
+                      <ul className="space-y-2">
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">5,000 leads/month</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Everything in Advanced</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">AI email generator</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">AI lead scoring</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" />
+                          <span className="text-sm">Smart AI alerts</span>
+                        </li>
+                      </ul>
+                      {currentRole === 'pro' ? (
+                        <Button 
+                          className="w-full" 
+                          variant="outline"
+                          onClick={handleManageSubscription}
+                        >
+                          Manage
+                        </Button>
+                      ) : (
+                        <Button 
+                          className="w-full" 
+                          onClick={() => handleUpgrade('price_PRO_ID_HERE')}
                         >
                           Upgrade
                         </Button>
