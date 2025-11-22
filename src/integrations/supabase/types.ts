@@ -491,6 +491,7 @@ export type Database = {
         Row: {
           created_at: string
           crm_tier: string | null
+          custom_lead_limit: number | null
           has_ai_access: boolean
           has_crm_access: boolean
           id: string
@@ -500,6 +501,7 @@ export type Database = {
         Insert: {
           created_at?: string
           crm_tier?: string | null
+          custom_lead_limit?: number | null
           has_ai_access?: boolean
           has_crm_access?: boolean
           id?: string
@@ -509,6 +511,7 @@ export type Database = {
         Update: {
           created_at?: string
           crm_tier?: string | null
+          custom_lead_limit?: number | null
           has_ai_access?: boolean
           has_crm_access?: boolean
           id?: string
