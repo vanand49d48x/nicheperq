@@ -111,7 +111,9 @@ export const LeadsMap = ({ leads, onBoundsChange, locationQuery, hoveredLeadId, 
   }, [token, tokenLoading]);
 
   useEffect(() => {
-    if (!map.current) return;
+    if (!map.current || tokenLoading) return;
+
+    console.log(`Map ready, attempting to render ${leads.length} leads`);
 
     // Clear existing markers
     markers.current.forEach(({ marker }) => marker.remove());
@@ -192,7 +194,7 @@ export const LeadsMap = ({ leads, onBoundsChange, locationQuery, hoveredLeadId, 
       });
       map.current.fitBounds(bounds, { padding: 50 });
     }
-  }, [leads]);
+  }, [leads, tokenLoading]);
 
   // Update marker appearance when hoveredLeadId changes
   useEffect(() => {
