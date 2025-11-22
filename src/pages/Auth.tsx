@@ -70,9 +70,21 @@ export default function Auth() {
 
     if (error) {
       toast.error(error.message);
-    } else {
-      toast.success("Account created! Please check your email to confirm.");
+      setLoading(false);
+      return;
     }
+
+    // Send branded signup confirmation email
+    try {
+      await supabase.functions.invoke('send-signup-confirmation', {
+        body: { email, name: fullName }
+      });
+    } catch (emailError) {
+      console.error('Failed to send branded confirmation email:', emailError);
+      // Don't fail signup if branded email fails - Supabase still sends default
+    }
+
+    toast.success("Account created! Please check your email to confirm.");
     setLoading(false);
   };
 
