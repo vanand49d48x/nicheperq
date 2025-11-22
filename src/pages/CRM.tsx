@@ -9,6 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import { LayoutGrid, List, Plus } from "lucide-react";
 import { ContactCard } from "@/components/crm/ContactCard";
 import { KanbanBoard } from "@/components/crm/KanbanBoard";
+import { AIAutomationPanel } from "@/components/crm/AIAutomationPanel";
+import { WorkflowBuilder } from "@/components/crm/WorkflowBuilder";
+import { AIInsights } from "@/components/crm/AIInsights";
 
 interface Lead {
   id: string;
@@ -30,7 +33,7 @@ interface Lead {
 const CRM = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [view, setView] = useState<"kanban" | "list">("kanban");
+  const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights">("kanban");
   const { toast } = useToast();
 
   const statusStats = {
@@ -130,6 +133,24 @@ const CRM = () => {
                 <List className="h-4 w-4" />
                 List
               </Button>
+              <Button
+                variant={view === "automation" ? "default" : "outline"}
+                onClick={() => setView("automation")}
+              >
+                🤖 AI Activity
+              </Button>
+              <Button
+                variant={view === "workflows" ? "default" : "outline"}
+                onClick={() => setView("workflows")}
+              >
+                ⚡ Workflows
+              </Button>
+              <Button
+                variant={view === "insights" ? "default" : "outline"}
+                onClick={() => setView("insights")}
+              >
+                💡 Insights
+              </Button>
             </div>
           </div>
 
@@ -181,6 +202,12 @@ const CRM = () => {
             onStatusChange={updateLeadStatus}
             onRefresh={fetchLeads}
           />
+        ) : view === "automation" ? (
+          <AIAutomationPanel />
+        ) : view === "workflows" ? (
+          <WorkflowBuilder />
+        ) : view === "insights" ? (
+          <AIInsights />
         ) : (
           <div className="grid gap-4">
             {leads.map(lead => (

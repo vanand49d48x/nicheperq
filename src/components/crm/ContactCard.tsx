@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Phone, 
   Globe, 
@@ -11,12 +12,14 @@ import {
   Calendar,
   MessageSquare,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Sparkles
 } from "lucide-react";
 import { format } from "date-fns";
 import { ContactStatusSelector } from "./ContactStatusSelector";
 import { FollowUpSelector } from "./FollowUpSelector";
 import { ContactNotes } from "./ContactNotes";
+import { AIEmailComposer } from "./AIEmailComposer";
 import { cn } from "@/lib/utils";
 
 interface ContactCardProps {
@@ -45,6 +48,7 @@ const statusLabels = {
 
 export const ContactCard = ({ lead, onStatusChange, onRefresh }: ContactCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showEmailComposer, setShowEmailComposer] = useState(false);
 
   return (
     <Card className="p-6 hover:shadow-lg transition-shadow">
@@ -144,8 +148,34 @@ export const ContactCard = ({ lead, onStatusChange, onRefresh }: ContactCardProp
           )}
 
           <ContactNotes leadId={lead.id} />
+          
+          <Button 
+            onClick={() => setShowEmailComposer(true)} 
+            className="w-full gap-2 mt-4"
+            variant="outline"
+          >
+            <Sparkles className="h-4 w-4" />
+            Draft AI Email
+          </Button>
         </div>
       )}
+
+      <Dialog open={showEmailComposer} onOpenChange={setShowEmailComposer}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>AI Email Composer</DialogTitle>
+          </DialogHeader>
+          <AIEmailComposer
+            leadId={lead.id}
+            leadName={lead.business_name}
+            onEmailSent={() => {
+              setShowEmailComposer(false);
+              onRefresh();
+            }}
+            onClose={() => setShowEmailComposer(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
