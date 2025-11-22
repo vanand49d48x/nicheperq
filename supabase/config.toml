@@ -1,5 +1,8 @@
 project_id = "nqfcdcfzxehpjhlmqudq"
 
+[functions.get-mapbox-token]
+verify_jwt = true
+
 [functions.scrape-leads]
 verify_jwt = true
 
