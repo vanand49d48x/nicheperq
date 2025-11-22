@@ -20,6 +20,7 @@ import DataEthics from "./pages/DataEthics";
 import AuditLogs from "./pages/AuditLogs";
 import EmailSequence from "./pages/EmailSequence";
 import CRM from "./pages/CRM";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -100,6 +101,11 @@ const App = () => (
             </ProtectedRoute>
           } />
           <Route path="/email-sequence" element={<EmailSequence />} />
+          <Route path="/analytics" element={
+            <ProtectedRoute>
+              <Analytics />
+            </ProtectedRoute>
+          } />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

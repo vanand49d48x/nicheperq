@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.send-subscription-notification]
 verify_jwt = false
+
+[functions.get-revenue-analytics]
+verify_jwt = true
+
+[functions.get-cost-analytics]
+verify_jwt = true
