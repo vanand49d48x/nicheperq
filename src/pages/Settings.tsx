@@ -281,7 +281,7 @@ export default function Settings() {
                       ) : (
                         <Button 
                           className="w-full" 
-                          onClick={() => handleUpgrade('price_STANDARD_ID_HERE')}
+                          onClick={() => handleUpgrade('price_1SWKeGCqpWv7ka0Ikv8N0Mlk')}
                         >
                           Upgrade
                         </Button>
@@ -333,7 +333,7 @@ export default function Settings() {
                       ) : (
                         <Button 
                           className="w-full" 
-                          onClick={() => handleUpgrade('price_ADVANCED_ID_HERE')}
+                          onClick={() => handleUpgrade('price_1SWKeqCqpWv7ka0I462tpm98')}
                         >
                           Upgrade
                         </Button>
@@ -389,7 +389,7 @@ export default function Settings() {
                       ) : (
                         <Button 
                           className="w-full" 
-                          onClick={() => handleUpgrade('price_PRO_ID_HERE')}
+                          onClick={() => handleUpgrade('price_1SWKfGCqpWv7ka0I6YFNjEkz')}
                         >
                           Upgrade
                         </Button>
