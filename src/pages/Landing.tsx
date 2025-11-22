@@ -170,6 +170,69 @@ const Landing = () => {
               </Card>
             ))}
           </div>
+
+          {/* Lead Table Example */}
+          <div className="mt-12">
+            <Card className="border-border shadow-lg overflow-hidden">
+              <CardHeader className="bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Your Lead Dashboard</CardTitle>
+                    <CardDescription>Export to CSV, add tags, and track every contact</CardDescription>
+                  </div>
+                  <Badge variant="outline">137 leads found</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="border-b bg-muted/20">
+                      <tr>
+                        <th className="text-left p-4 text-sm font-medium">Business Name</th>
+                        <th className="text-left p-4 text-sm font-medium">Location</th>
+                        <th className="text-left p-4 text-sm font-medium">Contact</th>
+                        <th className="text-left p-4 text-sm font-medium">Rating</th>
+                        <th className="text-left p-4 text-sm font-medium">Tags</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {exampleLeads.map((lead, idx) => (
+                        <tr key={idx} className="border-b hover:bg-muted/10 transition-colors">
+                          <td className="p-4">
+                            <div className="font-medium">{lead.name}</div>
+                            <div className="text-sm text-muted-foreground">{lead.category}</div>
+                          </td>
+                          <td className="p-4 text-sm">{lead.location}</td>
+                          <td className="p-4">
+                            <div className="text-sm space-y-1">
+                              <div className="flex items-center gap-1">
+                                <Phone className="h-3 w-3 text-muted-foreground" />
+                                {lead.phone}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Mail className="h-3 w-3 text-muted-foreground" />
+                                {lead.email}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-1">
+                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                              <span className="font-semibold">{lead.rating}</span>
+                              <span className="text-sm text-muted-foreground">({lead.reviews})</span>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <Badge variant="outline" className="text-xs">High Priority</Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
@@ -181,36 +244,143 @@ const Landing = () => {
             <p className="text-muted-foreground">Built-in CRM to track every conversation and follow-up</p>
           </div>
 
-          <Card className="border-border shadow-lg">
-            <CardHeader>
-              <CardTitle>Pipeline Stages</CardTitle>
-              <CardDescription>Drag & drop contacts through your sales process</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {["New Lead", "Contacted", "Meeting Scheduled", "Active Partner"].map((stage, idx) => (
-                  <div key={idx} className="bg-muted/50 rounded-lg p-4 text-center">
-                    <p className="font-semibold mb-2">{stage}</p>
-                    <Badge variant="outline">{Math.floor(Math.random() * 15) + 3} contacts</Badge>
+          {/* Kanban Board Example */}
+          <div className="mb-8">
+            <Card className="border-border shadow-lg">
+              <CardHeader>
+                <CardTitle>Visual Pipeline</CardTitle>
+                <CardDescription>See your entire sales process at a glance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {[
+                    { stage: "New", count: 8, color: "bg-slate-500" },
+                    { stage: "Contacted", count: 5, color: "bg-blue-500" },
+                    { stage: "In Conversation", count: 3, color: "bg-purple-500" },
+                    { stage: "Active Partner", count: 2, color: "bg-green-500" }
+                  ].map((column, idx) => (
+                    <div key={idx} className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-sm">{column.stage}</h3>
+                        <Badge variant="outline" className="text-xs">{column.count}</Badge>
+                      </div>
+                      <div className="space-y-2">
+                        <Card className="border-l-4 shadow-sm hover:shadow-md transition-shadow" style={{ borderLeftColor: `var(--${column.color})` }}>
+                          <CardContent className="p-3">
+                            <p className="font-medium text-sm">Martinez Law Group</p>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                              <MapPin className="h-3 w-3" />
+                              Alpharetta, GA
+                            </div>
+                            <div className="flex items-center gap-2 mt-2 text-xs">
+                              <Phone className="h-3 w-3 text-muted-foreground" />
+                              <span>(770) 555-0123</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Contact Card Example */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card className="border-border shadow-lg">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Martinez Law Group</CardTitle>
+                    <CardDescription>Probate Attorney</CardDescription>
                   </div>
-                ))}
-              </div>
-              <div className="mt-6 space-y-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="h-4 w-4 text-success" />
-                  <span>Add notes to every contact</span>
+                  <Badge className="bg-blue-500 text-white">Connected</Badge>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="h-4 w-4 text-success" />
-                  <span>Set follow-up reminders</span>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-primary" />
+                    <span>(770) 555-0123</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-primary" />
+                    <span>contact@martinezlaw.com</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <span>Alpharetta, GA</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="font-semibold">4.8</span>
+                    <span className="text-muted-foreground">(127 reviews)</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="h-4 w-4 text-success" />
-                  <span>Track contact status in real-time</span>
+                
+                <div className="pt-4 border-t space-y-3">
+                  <div>
+                    <p className="text-sm font-medium mb-1">Follow-up</p>
+                    <Badge variant="secondary">Tomorrow, 2:00 PM</Badge>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm font-medium mb-2">Notes</p>
+                    <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-2">
+                      <p className="text-muted-foreground">• Called on Tuesday, very interested</p>
+                      <p className="text-muted-foreground">• Sent partnership proposal</p>
+                      <p className="text-muted-foreground">• Follow up on proposal response</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border shadow-lg">
+              <CardHeader>
+                <CardTitle>CRM Features</CardTitle>
+                <CardDescription>Everything you need to close more deals</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-success mt-0.5" />
+                  <div>
+                    <p className="font-medium text-sm">Contact Status Tracking</p>
+                    <p className="text-xs text-muted-foreground">Move leads through your pipeline</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-success mt-0.5" />
+                  <div>
+                    <p className="font-medium text-sm">Follow-up Reminders</p>
+                    <p className="text-xs text-muted-foreground">Never miss a scheduled call</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-success mt-0.5" />
+                  <div>
+                    <p className="font-medium text-sm">Detailed Notes</p>
+                    <p className="text-xs text-muted-foreground">Track every conversation</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-success mt-0.5" />
+                  <div>
+                    <p className="font-medium text-sm">Visual Pipeline</p>
+                    <p className="text-xs text-muted-foreground">Kanban board for easy management</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-success mt-0.5" />
+                  <div>
+                    <p className="font-medium text-sm">Activity Timeline</p>
+                    <p className="text-xs text-muted-foreground">See all interactions at a glance</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
