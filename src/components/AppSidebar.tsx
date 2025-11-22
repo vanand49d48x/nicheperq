@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Home, Settings, LogOut, Search, User, History, Shield, Receipt, Users } from "lucide-react";
+import { Home, Settings, LogOut, Search, User, History, Shield, Receipt, Users, ScrollText } from "lucide-react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -180,6 +180,18 @@ export function AppSidebar() {
                     <Link to="/admin" className="flex items-center gap-3">
                       <Shield className="h-5 w-5" />
                       {!collapsed && <span>Dashboard</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/audit-logs")}
+                    className="transition-all duration-200"
+                  >
+                    <Link to="/audit-logs" className="flex items-center gap-3">
+                      <ScrollText className="h-5 w-5" />
+                      {!collapsed && <span>Audit Logs</span>}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

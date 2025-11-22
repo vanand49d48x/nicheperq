@@ -236,51 +236,123 @@ export default function Admin() {
   };
 
   const handleRoleChange = async (userId: string, newRole: AppRole) => {
-    const { error } = await supabase
-      .from("user_roles")
-      .update({ role: newRole })
-      .eq("user_id", userId);
+    try {
+      const oldRole = users.find(u => u.id === userId)?.role;
+      
+      const { error } = await supabase
+        .from("user_roles")
+        .update({ role: newRole })
+        .eq("user_id", userId);
 
-    if (error) {
-      toast.error("Failed to update user role");
-    } else {
+      if (error) throw error;
+
+      // Log the action
+      await logAuditAction(userId, "role_change", {
+        old_role: oldRole,
+        new_role: newRole,
+      });
+
+      // Send notification email
+      const user = users.find(u => u.id === userId);
+      if (user?.email) {
+        await supabase.functions.invoke("send-admin-notification", {
+          body: {
+            to_email: user.email,
+            user_name: user.full_name || user.email,
+            action_type: "role_change",
+            action_details: {
+              old_value: oldRole,
+              new_value: newRole,
+            },
+          },
+        });
+      }
+
       toast.success("User role updated successfully");
       setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
-      await logAuditAction(userId, "role_change", { old_role: users.find(u => u.id === userId)?.role, new_role: newRole });
+    } catch (error: any) {
+      console.error("Error updating user role:", error);
+      toast.error("Failed to update user role");
     }
   };
 
   const handleFeatureToggle = async (userId: string, feature: 'crm' | 'ai', value: boolean) => {
-    const field = feature === 'crm' ? 'has_crm_access' : 'has_ai_access';
-    const { error } = await supabase
-      .from("user_roles")
-      .update({ [field]: value })
-      .eq("user_id", userId);
+    try {
+      const field = feature === 'crm' ? 'has_crm_access' : 'has_ai_access';
+      const oldValue = users.find(u => u.id === userId)?.[field];
+      
+      const { error } = await supabase
+        .from("user_roles")
+        .update({ [field]: value })
+        .eq("user_id", userId);
 
-    if (error) {
-      toast.error(`Failed to update ${feature.toUpperCase()} access`);
-    } else {
+      if (error) throw error;
+
+      // Log the action
+      await logAuditAction(userId, `${feature}_access_change`, { feature, value });
+
+      // Send notification email
+      const user = users.find(u => u.id === userId);
+      if (user?.email) {
+        await supabase.functions.invoke("send-admin-notification", {
+          body: {
+            to_email: user.email,
+            user_name: user.full_name || user.email,
+            action_type: "feature_toggle",
+            action_details: {
+              old_value: `${feature.toUpperCase()} Access: ${oldValue}`,
+              new_value: `${feature.toUpperCase()} Access: ${value}`,
+            },
+          },
+        });
+      }
+
       toast.success(`${feature.toUpperCase()} access updated`);
       setUsers(users.map(u => u.id === userId ? { 
         ...u, 
-        [feature === 'crm' ? 'has_crm_access' : 'has_ai_access']: value 
+        [field]: value 
       } : u));
-      await logAuditAction(userId, `${feature}_access_change`, { feature, value });
+    } catch (error: any) {
+      console.error(`Error updating ${feature} access:`, error);
+      toast.error(`Failed to update ${feature.toUpperCase()} access`);
     }
   };
 
   const handleCustomLimitUpdate = async (userId: string, limit: number | null) => {
-    const { error } = await supabase
-      .from("user_roles")
-      .update({ custom_lead_limit: limit })
-      .eq("user_id", userId);
+    try {
+      const oldLimit = users.find(u => u.id === userId)?.custom_lead_limit;
+      
+      const { error } = await supabase
+        .from("user_roles")
+        .update({ custom_lead_limit: limit })
+        .eq("user_id", userId);
 
-    if (error) {
-      toast.error("Failed to update lead limit");
-    } else {
+      if (error) throw error;
+
+      // Log the action
+      await logAuditAction(userId, "custom_limit_change", { limit });
+
+      // Send notification email
+      const user = users.find(u => u.id === userId);
+      if (user?.email) {
+        await supabase.functions.invoke("send-admin-notification", {
+          body: {
+            to_email: user.email,
+            user_name: user.full_name || user.email,
+            action_type: "limit_change",
+            action_details: {
+              old_value: oldLimit?.toString() || "Default",
+              new_value: limit?.toString() || "Default",
+            },
+          },
+        });
+      }
+
       toast.success("Lead limit updated");
       setUsers(users.map(u => u.id === userId ? { ...u, custom_lead_limit: limit } : u));
-      await logAuditAction(userId, "custom_limit_change", { limit });
+    } catch (error: any) {
+      console.error("Error updating lead limit:", error);
+      toast.error("Failed to update lead limit");
     }
   };
 

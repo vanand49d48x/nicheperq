@@ -17,6 +17,7 @@ import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import RefundPolicy from "./pages/RefundPolicy";
 import DataEthics from "./pages/DataEthics";
+import AuditLogs from "./pages/AuditLogs";
 import EmailSequence from "./pages/EmailSequence";
 import CRM from "./pages/CRM";
 import NotFound from "./pages/NotFound";
@@ -93,6 +94,11 @@ const App = () => (
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/refund-policy" element={<RefundPolicy />} />
           <Route path="/data-ethics" element={<DataEthics />} />
+          <Route path="/audit-logs" element={
+            <ProtectedRoute>
+              <AuditLogs />
+            </ProtectedRoute>
+          } />
           <Route path="/email-sequence" element={<EmailSequence />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
