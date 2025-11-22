@@ -69,6 +69,7 @@ const Index = () => {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [searchName, setSearchName] = useState("");
   const [sortBy, setSortBy] = useState<string>("default");
+  const [searchFilter, setSearchFilter] = useState("");
   const { toast } = useToast();
   const location = useLocation();
 
@@ -111,7 +112,8 @@ const Index = () => {
     }
   };
 
-  const filteredLeads = filterByBounds && bounds
+  // First filter by bounds if enabled
+  let filteredLeads = filterByBounds && bounds
     ? allLeads.filter((l) => {
         const lat = Number(l.latitude);
         const lng = Number(l.longitude);
@@ -119,6 +121,23 @@ const Index = () => {
         return lat <= bounds.n && lat >= bounds.s && lng <= bounds.e && lng >= bounds.w;
       })
     : allLeads;
+
+  // Then apply lexicographic search filter
+  if (searchFilter.trim()) {
+    const searchTerm = searchFilter.toLowerCase();
+    filteredLeads = filteredLeads.filter((lead) => {
+      return (
+        lead.business_name?.toLowerCase().includes(searchTerm) ||
+        lead.address?.toLowerCase().includes(searchTerm) ||
+        lead.city?.toLowerCase().includes(searchTerm) ||
+        lead.niche?.toLowerCase().includes(searchTerm) ||
+        lead.phone?.toLowerCase().includes(searchTerm) ||
+        lead.website?.toLowerCase().includes(searchTerm) ||
+        lead.state?.toLowerCase().includes(searchTerm) ||
+        lead.zipcode?.toLowerCase().includes(searchTerm)
+      );
+    });
+  }
 
   const sortedLeads = [...filteredLeads].sort((a, b) => {
     switch (sortBy) {
@@ -242,6 +261,17 @@ const Index = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleClearResults = () => {
+    setAllLeads([]);
+    setSearchFilter("");
+    setCurrentPage(1);
+    setSortBy("default");
+    toast({
+      title: "Results Cleared",
+      description: "All search results have been cleared.",
+    });
   };
 
   const handleSaveSearch = async () => {
@@ -471,6 +501,31 @@ const Index = () => {
                     <CheckCircle2 className="h-4 w-4 mr-2" />
                     Verified Results
                   </Badge>
+                </div>
+              </Card>
+
+              {/* Search and Actions Bar */}
+              <Card className="p-4 mb-6 bg-card/50 backdrop-blur-sm border-border/50 rounded-xl">
+                <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
+                  <div className="flex-1 max-w-md">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search results by name, address, phone..."
+                        value={searchFilter}
+                        onChange={(e) => setSearchFilter(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleClearResults}
+                    variant="outline"
+                    className="gap-2 hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Clear Results
+                  </Button>
                 </div>
               </Card>
 
