@@ -60,7 +60,7 @@ const Landing = () => {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <Zap className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold text-foreground">LeadGen</span>
+            <span className="text-xl font-bold text-foreground">NichePerQ</span>
           </div>
           <div className="flex items-center gap-4">
             <Link to="/pricing">
@@ -394,7 +394,7 @@ const Landing = () => {
               ))}
             </div>
             <p className="text-lg italic text-muted-foreground mb-4">
-              "LeadGen transformed how I find referral partners. What used to take hours now takes minutes. The CRM features keep me organized and my pipeline is always full."
+              "NichePerQ transformed how I find referral partners. What used to take hours now takes minutes. The CRM features keep me organized and my pipeline is always full."
             </p>
             <p className="font-semibold">Sarah Mitchell</p>
             <p className="text-sm text-muted-foreground">Realtor, Atlanta Metro</p>
@@ -424,7 +424,7 @@ const Landing = () => {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Zap className="h-5 w-5 text-primary" />
-                <span className="font-bold">LeadGen</span>
+                <span className="font-bold">NichePerQ</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Find verified referral partners in seconds
@@ -449,12 +449,12 @@ const Landing = () => {
             <div>
               <h4 className="font-semibold mb-3">Support</h4>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <a href="mailto:support@leadgen.app" className="block hover:text-foreground">Contact Us</a>
+                <a href="mailto:support@nicheperq.com" className="block hover:text-foreground">Contact Us</a>
               </div>
             </div>
           </div>
           <div className="border-t border-border pt-6 text-center text-sm text-muted-foreground">
-            <p>© 2024 LeadGen. All rights reserved.</p>
+            <p>© 2024 NichePerQ. All rights reserved.</p>
           </div>
         </div>
       </footer>

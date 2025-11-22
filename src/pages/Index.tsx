@@ -682,7 +682,7 @@ const Index = () => {
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                   <p className="text-sm text-muted-foreground">
-                    Powered by <span className="font-bold text-foreground bg-gradient-primary bg-clip-text text-transparent">LeadGen</span>
+                    Powered by <span className="font-bold text-foreground bg-gradient-primary bg-clip-text text-transparent">NichePerQ</span>
                   </p>
                 </div>
                 <div className="flex items-center justify-center gap-2">

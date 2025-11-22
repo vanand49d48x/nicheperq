@@ -109,7 +109,7 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div>
-              <h2 className="text-lg font-semibold text-sidebar-foreground">LeadGen</h2>
+              <h2 className="text-lg font-semibold text-sidebar-foreground">NichePerQ</h2>
               <p className="text-xs text-muted-foreground">SaaS Platform</p>
             </div>
           )}

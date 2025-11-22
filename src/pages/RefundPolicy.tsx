@@ -12,7 +12,7 @@ const RefundPolicy = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Our Commitment</h2>
             <p className="text-muted-foreground">
-              At LeadGen, we stand behind the quality of our service. If you're not satisfied, we offer 
+              At NichePerQ, we stand behind the quality of our service. If you're not satisfied, we offer 
               a fair and transparent refund policy to ensure your peace of mind.
             </p>
           </section>
@@ -103,7 +103,7 @@ const RefundPolicy = () => {
             <div className="space-y-3 text-muted-foreground">
               <p className="font-medium">Unplanned Outages:</p>
               <p>
-                If LeadGen experiences unscheduled downtime exceeding 24 consecutive hours, affected users 
+                If NichePerQ experiences unscheduled downtime exceeding 24 consecutive hours, affected users 
                 receive a prorated credit for the downtime period.
               </p>
 
@@ -119,7 +119,7 @@ const RefundPolicy = () => {
             <h2 className="text-2xl font-semibold mb-4">7. How to Request a Refund</h2>
             <div className="space-y-2 text-muted-foreground">
               <p className="font-medium">Step 1: Contact Support</p>
-              <p className="ml-4">Email: support@leadgen.com with "Refund Request" in subject line</p>
+              <p className="ml-4">Email: support@nicheperq.com with "Refund Request" in subject line</p>
               
               <p className="font-medium mt-3">Step 2: Provide Information</p>
               <ul className="list-disc list-inside ml-4 space-y-1">
@@ -155,7 +155,7 @@ const RefundPolicy = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">10. Questions?</h2>
             <p className="text-muted-foreground">
-              For questions about refunds or billing, contact us at: billing@leadgen.com
+              For questions about refunds or billing, contact us at: billing@nicheperq.com
             </p>
           </section>
         </Card>

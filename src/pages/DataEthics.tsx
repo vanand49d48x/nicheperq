@@ -17,7 +17,7 @@ const DataEthics = () => {
             <div>
               <h2 className="text-2xl font-semibold mb-3">Our Ethical Foundation</h2>
               <p className="text-muted-foreground">
-                At LeadGen, we believe that powerful data tools come with great responsibility. We are committed 
+                At NichePerQ, we believe that powerful data tools come with great responsibility. We are committed 
                 to providing high-quality business intelligence while maintaining the highest ethical standards 
                 and legal compliance.
               </p>
@@ -90,7 +90,7 @@ const DataEthics = () => {
             <div>
               <h2 className="text-2xl font-semibold mb-3">B2B Focus & Use Case Restrictions</h2>
               <div className="space-y-3 text-muted-foreground">
-                <p className="font-medium">LeadGen is designed exclusively for legitimate B2B purposes:</p>
+                <p className="font-medium">NichePerQ is designed exclusively for legitimate B2B purposes:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Professional networking and referral partnerships</li>
                   <li>Market research and competitive intelligence</li>
@@ -149,7 +149,7 @@ const DataEthics = () => {
               <li><strong>Objection:</strong> Object to processing of your business information</li>
             </ul>
             <p className="text-muted-foreground mt-4">
-              To exercise these rights, email: <strong>privacy@leadgen.com</strong>
+              To exercise these rights, email: <strong>privacy@nicheperq.com</strong>
             </p>
           </section>
 
@@ -178,10 +178,10 @@ const DataEthics = () => {
           <section className="border-t pt-6">
             <h2 className="text-2xl font-semibold mb-3">Contact Our Compliance Team</h2>
             <div className="text-muted-foreground space-y-1">
-              <p><strong>General Inquiries:</strong> compliance@leadgen.com</p>
-              <p><strong>Data Subject Requests:</strong> privacy@leadgen.com</p>
-              <p><strong>Data Protection Officer:</strong> dpo@leadgen.com</p>
-              <p><strong>Security Issues:</strong> security@leadgen.com</p>
+              <p><strong>General Inquiries:</strong> compliance@nicheperq.com</p>
+              <p><strong>Data Subject Requests:</strong> privacy@nicheperq.com</p>
+              <p><strong>Data Protection Officer:</strong> dpo@nicheperq.com</p>
+              <p><strong>Security Issues:</strong> security@nicheperq.com</p>
             </div>
           </section>
         </Card>
