@@ -81,21 +81,20 @@ serve(async (req) => {
       productId = subscription.items.data[0].price.product as string;
       logStep("Found product ID", { productId });
       
-      // NEW PRICING STRUCTURE - Update these product IDs after creating in Stripe
-      // TODO: Replace with your actual Stripe product IDs
+      // NEW PRICING STRUCTURE
       // STANDARD ($29): 500 leads/month, no CRM, no AI
       // ADVANCED ($79): 2,500 leads/month, CRM, no AI  
       // PRO ($149): 5,000 leads/month, CRM, AI
       
-      if (productId === 'prod_STANDARD_ID_HERE') {
+      if (productId === 'prod_TTHC3h7eK0PPbF') {
         role = 'standard';
         hasCrmAccess = false;
         hasAiAccess = false;
-      } else if (productId === 'prod_ADVANCED_ID_HERE') {
+      } else if (productId === 'prod_TTHDn12y4fsfxN') {
         role = 'advanced';
         hasCrmAccess = true;
         hasAiAccess = false;
-      } else if (productId === 'prod_PRO_ID_HERE') {
+      } else if (productId === 'prod_TTHDpODFYYL6lU') {
         role = 'pro';
         hasCrmAccess = true;
         hasAiAccess = true;
