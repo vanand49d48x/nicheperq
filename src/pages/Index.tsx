@@ -15,8 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Search, Map, List, Save, CheckCircle2, Phone, Mail, RefreshCw, Briefcase, MapPin, Radius } from "lucide-react";
+import { Search, Map, List, Save, CheckCircle2, Phone, Mail, RefreshCw, Briefcase, MapPin, Radius, Lock, Zap } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { UsageIndicator } from "@/components/UsageIndicator";
+import { FreeSearchCounter } from "@/components/FreeSearchCounter";
 
 interface Lead {
   id: string;
@@ -45,6 +47,7 @@ interface Lead {
   latitude?: number | null;
   longitude?: number | null;
   contact_status?: string | null;
+  is_preview?: boolean;
 }
 
 const ITEMS_PER_PAGE = 25;
@@ -376,8 +379,9 @@ const Index = () => {
           </div>
 
           {/* Usage Indicator */}
-          <div className="mb-8 max-w-3xl mx-auto">
+          <div className="mb-8 max-w-3xl mx-auto space-y-4">
             <UsageIndicator />
+            <FreeSearchCounter />
           </div>
 
           {/* Search Form */}
@@ -480,6 +484,27 @@ const Index = () => {
           {/* Results */}
           {allLeads.length > 0 && (
             <>
+              {/* Free Tier Preview Alert */}
+              {allLeads.some(lead => lead.is_preview) && (
+                <Card className="p-4 mb-6 bg-warning/10 border-warning/20 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Lock className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-sm mb-1">Preview Mode - Free Tier</h4>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        You're viewing 10 preview leads with masked contact information. Phone numbers and websites are hidden.
+                      </p>
+                      <Link to="/settings">
+                        <Button size="sm" variant="outline" className="gap-2">
+                          <Zap className="h-3 w-3" />
+                          Upgrade for Full Access
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </Card>
+              )}
+              
               {/* Result Count Banner */}
               <Card className="p-6 mb-6 bg-gradient-card border-border/50 rounded-2xl shadow-xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl" />
