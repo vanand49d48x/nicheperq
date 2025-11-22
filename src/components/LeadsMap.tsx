@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Lead {
   id: string;
@@ -27,20 +28,38 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<Map<string, { marker: mapboxgl.Marker; element: HTMLDivElement; lead: Lead }>>(new Map());
   const locationMarker = useRef<mapboxgl.Marker | null>(null);
+  const [token, setToken] = useState<string>("");
+  const [tokenLoading, setTokenLoading] = useState(true);
+
+  // Fetch token from backend
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        
+        if (error) {
+          console.error('Error fetching Mapbox token:', error);
+          setTokenLoading(false);
+          return;
+        }
+
+        if (data?.token) {
+          setToken(data.token);
+        }
+      } catch (err) {
+        console.error('Failed to fetch Mapbox token:', err);
+      } finally {
+        setTokenLoading(false);
+      }
+    };
+
+    fetchToken();
+  }, []);
 
   useEffect(() => {
     if (!mapContainer.current) return;
     if (map.current) return; // Initialize map only once
-
-    // Resolve token: props -> env -> localStorage
-    const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('mapbox_public_token') : null;
-    const token = mapboxToken || import.meta.env.VITE_MAPBOX_TOKEN || tokenFromStorage || "";
-
-    console.log("Checking for Mapbox token...");
-    console.log("Token from props:", mapboxToken ? "exists" : "none");
-    console.log("Token from env (VITE_MAPBOX_TOKEN):", import.meta.env.VITE_MAPBOX_TOKEN ? "exists" : "none");
-    console.log("Token from localStorage:", tokenFromStorage ? "exists" : "none");
-    console.log("Final token used:", token ? "exists" : "MISSING");
+    if (tokenLoading) return; // Wait for token to load
 
     if (!token) {
       console.error("No Mapbox token available. Map cannot be initialized.");
@@ -48,9 +67,8 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
         mapContainer.current.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f5f5f5; color: #666; font-family: system-ui, sans-serif; padding: 20px; text-align: center;">
             <div>
-              <p style="margin-bottom: 8px; font-weight: 600;">Mapbox token required</p>
-              <p style="font-size: 14px;">Please enter your Mapbox public token above and click "Save".</p>
-              <p style="font-size: 12px; margin-top: 8px; color: #999;">Get your token at <a href="https://mapbox.com" target="_blank" style="color: #0066cc;">mapbox.com</a></p>
+              <p style="margin-bottom: 8px; font-weight: 600;">Mapbox token not configured</p>
+              <p style="font-size: 14px;">Please contact support to configure the Mapbox token.</p>
             </div>
           </div>
         `;
@@ -58,7 +76,7 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
       return;
     }
 
-    console.log("Initializing Mapbox map with valid token");
+    console.log("Initializing Mapbox map with backend token");
     mapboxgl.accessToken = token;
 
     // Ensure container is empty to avoid Mapbox warning
@@ -91,7 +109,7 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
       markers.current.clear();
       map.current?.remove();
     };
-  }, [mapboxToken]);
+  }, [token, tokenLoading]);
 
   useEffect(() => {
     if (!map.current) return;
@@ -206,11 +224,6 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
   useEffect(() => {
     if (!map.current) return;
     if (!locationQuery) return;
-
-    // Resolve token again (props -> env -> localStorage)
-    const tokenFromStorage = typeof window !== 'undefined' ? localStorage.getItem('mapbox_public_token') : null;
-    const token = mapboxToken || import.meta.env.VITE_MAPBOX_TOKEN || tokenFromStorage || "";
-
     if (!token) return;
 
     const controller = new AbortController();
@@ -331,7 +344,7 @@ export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, ho
 
     fetchGeocode();
     return () => controller.abort();
-  }, [locationQuery, mapboxToken, searchRadius]);
+  }, [locationQuery, token, searchRadius]);
 
   return (
     <div className="relative w-full h-full">
