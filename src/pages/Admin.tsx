@@ -5,11 +5,119 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Users, TrendingUp, Calendar } from "lucide-react";
+import { Loader2, Users, TrendingUp, Calendar, Settings2 } from "lucide-react";
 
 type AppRole = 'admin' | 'advanced' | 'standard' | 'basic' | 'pro' | 'free';
+
+interface UserManagementDialogProps {
+  user: UserData;
+  onFeatureToggle: (userId: string, feature: 'crm' | 'ai', value: boolean) => void;
+  onCustomLimitUpdate: (userId: string, limit: number | null) => void;
+}
+
+function UserManagementDialog({ user, onFeatureToggle, onCustomLimitUpdate }: UserManagementDialogProps) {
+  const [customLimit, setCustomLimit] = useState<string>(user.custom_lead_limit?.toString() || '');
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleSaveLimit = () => {
+    const limit = customLimit === '' ? null : parseInt(customLimit);
+    if (limit !== null && (isNaN(limit) || limit < 0)) {
+      toast.error("Please enter a valid number");
+      return;
+    }
+    onCustomLimitUpdate(user.id, limit);
+    setIsOpen(false);
+  };
+
+  const getRoleDefault = (role: AppRole) => {
+    switch(role) {
+      case 'admin': return 'Unlimited';
+      case 'pro': return '5,000';
+      case 'advanced': return '2,500';
+      case 'standard': return '500';
+      case 'free': return '50';
+      default: return '50';
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm">
+          <Settings2 className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Manage User Features</DialogTitle>
+          <DialogDescription>
+            Configure feature access and limits for {user.full_name || user.email}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-6 py-4">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="crm-access" className="text-base">CRM Access</Label>
+                <p className="text-sm text-muted-foreground">
+                  Allow access to CRM features
+                </p>
+              </div>
+              <Switch
+                id="crm-access"
+                checked={user.has_crm_access}
+                onCheckedChange={(checked) => onFeatureToggle(user.id, 'crm', checked)}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="ai-access" className="text-base">AI Access</Label>
+                <p className="text-sm text-muted-foreground">
+                  Allow access to AI features
+                </p>
+              </div>
+              <Switch
+                id="ai-access"
+                checked={user.has_ai_access}
+                onCheckedChange={(checked) => onFeatureToggle(user.id, 'ai', checked)}
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="lead-limit">Custom Monthly Lead Limit</Label>
+            <div className="text-sm text-muted-foreground mb-2">
+              Default for {user.role.toUpperCase()}: {getRoleDefault(user.role)} leads/month
+            </div>
+            <div className="flex gap-2">
+              <Input
+                id="lead-limit"
+                type="number"
+                placeholder="Leave empty for role default"
+                value={customLimit}
+                onChange={(e) => setCustomLimit(e.target.value)}
+                min="0"
+              />
+              <Button onClick={handleSaveLimit}>Save</Button>
+            </div>
+            {user.custom_lead_limit && (
+              <p className="text-sm text-muted-foreground">
+                Current custom limit: <span className="font-medium">{user.custom_lead_limit}</span> leads/month
+              </p>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 interface UserData {
   id: string;
@@ -17,6 +125,9 @@ interface UserData {
   full_name: string;
   company: string;
   role: AppRole;
+  has_crm_access: boolean;
+  has_ai_access: boolean;
+  custom_lead_limit: number | null;
   total_leads: number;
   monthly_leads: number;
   last_search_date: string | null;
@@ -69,7 +180,7 @@ export default function Admin() {
     // Fetch roles for all users
     const { data: roles, error: rolesError } = await supabase
       .from("user_roles")
-      .select("user_id, role");
+      .select("user_id, role, has_crm_access, has_ai_access, custom_lead_limit");
 
     if (rolesError) {
       toast.error("Failed to load user roles");
@@ -92,6 +203,9 @@ export default function Admin() {
           full_name: profile.full_name || '',
           company: profile.company || '',
           role: userRole?.role || 'free',
+          has_crm_access: userRole?.has_crm_access || false,
+          has_ai_access: userRole?.has_ai_access || false,
+          custom_lead_limit: userRole?.custom_lead_limit || null,
           total_leads: stats?.[0]?.total_leads || 0,
           monthly_leads: stats?.[0]?.monthly_leads || 0,
           last_search_date: stats?.[0]?.last_search_date || null,
@@ -114,6 +228,38 @@ export default function Admin() {
     } else {
       toast.success("User role updated successfully");
       setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    }
+  };
+
+  const handleFeatureToggle = async (userId: string, feature: 'crm' | 'ai', value: boolean) => {
+    const field = feature === 'crm' ? 'has_crm_access' : 'has_ai_access';
+    const { error } = await supabase
+      .from("user_roles")
+      .update({ [field]: value })
+      .eq("user_id", userId);
+
+    if (error) {
+      toast.error(`Failed to update ${feature.toUpperCase()} access`);
+    } else {
+      toast.success(`${feature.toUpperCase()} access updated`);
+      setUsers(users.map(u => u.id === userId ? { 
+        ...u, 
+        [feature === 'crm' ? 'has_crm_access' : 'has_ai_access']: value 
+      } : u));
+    }
+  };
+
+  const handleCustomLimitUpdate = async (userId: string, limit: number | null) => {
+    const { error } = await supabase
+      .from("user_roles")
+      .update({ custom_lead_limit: limit })
+      .eq("user_id", userId);
+
+    if (error) {
+      toast.error("Failed to update lead limit");
+    } else {
+      toast.success("Lead limit updated");
+      setUsers(users.map(u => u.id === userId ? { ...u, custom_lead_limit: limit } : u));
     }
   };
 
@@ -206,6 +352,7 @@ export default function Admin() {
                       <TableHead className="text-right">Monthly</TableHead>
                       <TableHead className="text-right">Total</TableHead>
                       <TableHead>Last Activity</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -226,20 +373,29 @@ export default function Admin() {
                             <SelectTrigger className="w-32">
                               <SelectValue>
                                 <Badge variant={getRoleBadgeVariant(user.role)}>
-                                  {user.role}
+                                  {user.role.toUpperCase()}
                                 </Badge>
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="free">Free</SelectItem>
-                              <SelectItem value="pro">Pro</SelectItem>
-                              <SelectItem value="admin">Admin</SelectItem>
+                              <SelectItem value="free">FREE</SelectItem>
+                              <SelectItem value="standard">STANDARD</SelectItem>
+                              <SelectItem value="advanced">ADVANCED</SelectItem>
+                              <SelectItem value="pro">PRO</SelectItem>
+                              <SelectItem value="admin">ADMIN</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
                         <TableCell className="text-right">{user.monthly_leads}</TableCell>
                         <TableCell className="text-right">{user.total_leads}</TableCell>
                         <TableCell>{formatDate(user.last_search_date)}</TableCell>
+                        <TableCell className="text-center">
+                          <UserManagementDialog
+                            user={user}
+                            onFeatureToggle={handleFeatureToggle}
+                            onCustomLimitUpdate={handleCustomLimitUpdate}
+                          />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
