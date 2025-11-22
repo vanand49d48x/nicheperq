@@ -243,6 +243,30 @@ export type Database = {
           },
         ]
       }
+      free_tier_searches: {
+        Row: {
+          created_at: string
+          id: string
+          month_start: string
+          search_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month_start?: string
+          search_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month_start?: string
+          search_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           address: string | null
@@ -251,6 +275,7 @@ export type Database = {
           contact_status: string | null
           created_at: string
           id: string
+          is_preview: boolean
           last_contacted_at: string | null
           latitude: number | null
           longitude: number | null
@@ -275,6 +300,7 @@ export type Database = {
           contact_status?: string | null
           created_at?: string
           id?: string
+          is_preview?: boolean
           last_contacted_at?: string | null
           latitude?: number | null
           longitude?: number | null
@@ -299,6 +325,7 @@ export type Database = {
           contact_status?: string | null
           created_at?: string
           id?: string
+          is_preview?: boolean
           last_contacted_at?: string | null
           latitude?: number | null
           longitude?: number | null
@@ -464,6 +491,8 @@ export type Database = {
         Row: {
           created_at: string
           crm_tier: string | null
+          has_ai_access: boolean
+          has_crm_access: boolean
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
@@ -471,6 +500,8 @@ export type Database = {
         Insert: {
           created_at?: string
           crm_tier?: string | null
+          has_ai_access?: boolean
+          has_crm_access?: boolean
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id: string
@@ -478,6 +509,8 @@ export type Database = {
         Update: {
           created_at?: string
           crm_tier?: string | null
+          has_ai_access?: boolean
+          has_crm_access?: boolean
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
