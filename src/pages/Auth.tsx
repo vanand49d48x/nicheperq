@@ -25,7 +25,7 @@ export default function Auth() {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/");
+        navigate("/dashboard");
       }
     });
   }, [navigate]);
@@ -50,7 +50,7 @@ export default function Auth() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: `${window.location.origin}/dashboard`,
         data: {
           full_name: fullName,
         },
@@ -89,7 +89,7 @@ export default function Auth() {
       toast.error(error.message);
     } else {
       toast.success("Signed in successfully!");
-      navigate("/");
+      navigate("/dashboard");
     }
     setLoading(false);
   };
@@ -98,7 +98,7 @@ export default function Auth() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: `${window.location.origin}/dashboard`,
       },
     });
 
