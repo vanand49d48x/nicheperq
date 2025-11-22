@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Download, ExternalLink, Tag, StickyNote, ChevronLeft, ChevronRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Download, ExternalLink, Tag, StickyNote, ChevronLeft, ChevronRight, UserPlus, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Lead {
@@ -24,6 +25,7 @@ interface Lead {
   created_at: string;
   latitude?: number | null;
   longitude?: number | null;
+  contact_status?: string | null;
 }
 
 interface LeadsTableProps {
@@ -33,6 +35,24 @@ interface LeadsTableProps {
   totalPages?: number;
   onPageChange?: (page: number) => void;
 }
+
+const statusColors = {
+  new: "bg-gray-500/10 text-gray-600 border-gray-500/20",
+  attempted: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
+  connected: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+  in_conversation: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+  active_partner: "bg-green-500/10 text-green-600 border-green-500/20",
+  do_not_contact: "bg-red-500/10 text-red-600 border-red-500/20",
+};
+
+const statusLabels = {
+  new: "New",
+  attempted: "Attempted",
+  connected: "Connected",
+  in_conversation: "In Conversation",
+  active_partner: "Active Partner",
+  do_not_contact: "Do Not Contact",
+};
 
 export const LeadsTable = ({ 
   leads, 
@@ -44,6 +64,8 @@ export const LeadsTable = ({
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [notesValue, setNotesValue] = useState("");
   const [tagInput, setTagInput] = useState("");
+  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [showBulkActions, setShowBulkActions] = useState(false);
 
   const handleExport = () => {
     const csv = [
@@ -88,8 +110,61 @@ export const LeadsTable = ({
     setEditingNotes(null);
   };
 
+  const handleAddToPipeline = (leadId: string) => {
+    onUpdateLead(leadId, { contact_status: "new" });
+  };
+
+  const handleBulkAddToPipeline = () => {
+    selectedLeads.forEach((leadId) => {
+      onUpdateLead(leadId, { contact_status: "new" });
+    });
+    setSelectedLeads(new Set());
+    setShowBulkActions(false);
+  };
+
+  const toggleLeadSelection = (leadId: string) => {
+    const newSelection = new Set(selectedLeads);
+    if (newSelection.has(leadId)) {
+      newSelection.delete(leadId);
+    } else {
+      newSelection.add(leadId);
+    }
+    setSelectedLeads(newSelection);
+    setShowBulkActions(newSelection.size > 0);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedLeads.size === leads.length) {
+      setSelectedLeads(new Set());
+      setShowBulkActions(false);
+    } else {
+      setSelectedLeads(new Set(leads.map((l) => l.id)));
+      setShowBulkActions(true);
+    }
+  };
+
   return (
     <div className="space-y-4">
+      {showBulkActions && (
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary">{selectedLeads.size} selected</Badge>
+            <span className="text-sm text-muted-foreground">
+              Add selected leads to your CRM pipeline
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => { setSelectedLeads(new Set()); setShowBulkActions(false); }}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleBulkAddToPipeline} className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Add to Pipeline
+            </Button>
+          </div>
+        </div>
+      )}
+      
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Leads ({leads.length})</h2>
         <div className="flex gap-2 items-center">
@@ -127,11 +202,18 @@ export const LeadsTable = ({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={selectedLeads.size === leads.length && leads.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                />
+              </TableHead>
               <TableHead>Business</TableHead>
               <TableHead>Niche</TableHead>
               <TableHead>Location</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Rating</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Tags</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -139,13 +221,19 @@ export const LeadsTable = ({
           <TableBody>
             {leads.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground h-32">
+                <TableCell colSpan={9} className="text-center text-muted-foreground h-32">
                   No leads yet. Use the search form to fetch leads.
                 </TableCell>
               </TableRow>
             ) : (
               leads.map((lead) => (
                 <TableRow key={lead.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedLeads.has(lead.id)}
+                      onCheckedChange={() => toggleLeadSelection(lead.id)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{lead.business_name}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{lead.niche}</Badge>
@@ -181,6 +269,23 @@ export const LeadsTable = ({
                           </div>
                         )}
                       </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {lead.contact_status ? (
+                      <Badge variant="outline" className={statusColors[lead.contact_status as keyof typeof statusColors]}>
+                        {statusLabels[lead.contact_status as keyof typeof statusLabels]}
+                      </Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAddToPipeline(lead.id)}
+                        className="gap-2"
+                      >
+                        <UserPlus className="h-3 w-3" />
+                        Add to Pipeline
+                      </Button>
                     )}
                   </TableCell>
                   <TableCell>

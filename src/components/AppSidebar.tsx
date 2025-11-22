@@ -39,6 +39,7 @@ export function AppSidebar() {
   const [userInitials, setUserInitials] = useState<string>("U");
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<string>("free");
+  const [newLeadsCount, setNewLeadsCount] = useState<number>(0);
   const collapsed = state === "collapsed";
 
   useEffect(() => {
@@ -52,9 +53,39 @@ export function AppSidebar() {
         const { data: roleData } = await supabase.rpc('get_user_role', { user_id: user.id });
         setIsAdmin(roleData === 'admin');
         setUserRole(roleData || 'free');
+
+        // Fetch count of new leads
+        const { count } = await supabase
+          .from('leads')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('contact_status', 'new');
+        
+        setNewLeadsCount(count || 0);
       }
     };
     loadUserData();
+
+    // Set up realtime subscription for new leads
+    const channel = supabase
+      .channel('new-leads-count')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads',
+          filter: `contact_status=eq.new`,
+        },
+        () => {
+          loadUserData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -97,9 +128,14 @@ export function AppSidebar() {
                     isActive={isActive(item.url)}
                     className="transition-all duration-200"
                   >
-                    <Link to={item.url} className="flex items-center gap-3">
+                    <Link to={item.url} className="flex items-center gap-3 relative">
                       <item.icon className="h-5 w-5" />
                       {!collapsed && <span>{item.title}</span>}
+                      {item.title === "CRM Pipeline" && newLeadsCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                          {newLeadsCount}
+                        </span>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

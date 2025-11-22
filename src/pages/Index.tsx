@@ -44,6 +44,7 @@ interface Lead {
   created_at: string;
   latitude?: number | null;
   longitude?: number | null;
+  contact_status?: string | null;
 }
 
 const ITEMS_PER_PAGE = 25;
