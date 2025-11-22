@@ -27,14 +27,29 @@ interface SavedSearch {
   next_run_at: string | null;
 }
 
+interface Lead {
+  id: string;
+  business_name: string;
+  niche: string;
+  city: string;
+  state: string | null;
+  phone: string | null;
+  website: string | null;
+  rating: number | null;
+  created_at: string;
+}
+
 const History = () => {
   const [searches, setSearches] = useState<SavedSearch[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingLeads, setIsLoadingLeads] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchSavedSearches();
+    fetchLeads();
   }, []);
 
   const fetchSavedSearches = async () => {
@@ -67,6 +82,28 @@ const History = () => {
         radius: search.radius 
       } 
     });
+  };
+
+  const fetchLeads = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      setLeads(data || []);
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load leads history",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingLeads(false);
+    }
   };
 
   const handleDeleteSearch = async (id: string) => {
@@ -106,11 +143,68 @@ const History = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="searches" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+        <Tabs defaultValue="leads" className="space-y-6">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3">
+            <TabsTrigger value="leads">All Leads</TabsTrigger>
             <TabsTrigger value="searches">Saved Searches</TabsTrigger>
             <TabsTrigger value="results">Automated Results</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="leads" className="space-y-6">
+            {isLoadingLeads ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="p-6 animate-pulse">
+                    <div className="h-6 bg-muted rounded mb-4" />
+                    <div className="h-4 bg-muted rounded w-2/3 mb-2" />
+                    <div className="h-4 bg-muted rounded w-1/2" />
+                  </Card>
+                ))}
+              </div>
+            ) : leads.length === 0 ? (
+              <Card className="p-12 text-center">
+                <HistoryIcon className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No leads found yet</h3>
+                <p className="text-muted-foreground mb-6">
+                  Start searching for leads and they'll appear here
+                </p>
+                <Button onClick={() => navigate('/')}>
+                  Find Leads
+                </Button>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {leads.map((lead) => (
+                  <Card key={lead.id} className="p-6 hover:shadow-lg transition-shadow">
+                    <h3 className="font-semibold mb-2 truncate">{lead.business_name}</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Building2 className="h-4 w-4" />
+                        <span className="truncate">{lead.niche}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="h-4 w-4" />
+                        <span>{lead.city}{lead.state ? `, ${lead.state}` : ''}</span>
+                      </div>
+                      {lead.rating && (
+                        <div className="flex items-center gap-1">
+                          <span>⭐ {lead.rating}</span>
+                        </div>
+                      )}
+                      {lead.phone && (
+                        <div className="text-xs text-muted-foreground truncate">
+                          📞 {lead.phone}
+                        </div>
+                      )}
+                      <div className="text-xs text-muted-foreground pt-2">
+                        Found {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
 
           <TabsContent value="searches" className="space-y-6">
 

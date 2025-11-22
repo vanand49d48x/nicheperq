@@ -84,7 +84,36 @@ const Index = () => {
       if (stateCity) setCity(stateCity);
       if (stateRadius) setRadius(stateRadius);
     }
+
+    // Load previously fetched leads from database
+    loadRecentLeads();
   }, [location]);
+
+  const loadRecentLeads = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setAllLeads(data);
+        toast({
+          title: "Leads Loaded",
+          description: `Loaded ${data.length} recent leads from your history`,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading recent leads:", error);
+    }
+  };
 
   const filteredLeads = filterByBounds && bounds
     ? allLeads.filter((l) => {
