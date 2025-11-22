@@ -13,8 +13,8 @@ serve(async (req) => {
   }
 
   try {
-    const { niche, city, radius } = await req.json();
-    console.log('Request body:', { niche, city, radius });
+    const { niche, city, radius, search_id } = await req.json();
+    console.log('Request body:', { niche, city, radius, search_id });
     
     // Extract JWT token from Authorization header
     const authHeader = req.headers.get('Authorization');
@@ -154,6 +154,7 @@ serve(async (req) => {
       latitude: number | null;
       longitude: number | null;
       user_id: string;
+      search_id: string | null;
     }> = [];
 
     let results: any[] = [];
@@ -211,6 +212,7 @@ serve(async (req) => {
         latitude: latitude != null ? parseFloat(String(latitude)) : null,
         longitude: longitude != null ? parseFloat(String(longitude)) : null,
         user_id: userId,
+        search_id: search_id || null,
       });
     }
 
