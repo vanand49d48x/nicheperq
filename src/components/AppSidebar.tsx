@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Home, Settings, LogOut, Search, User, History, Shield, Receipt, Users } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -97,10 +97,10 @@ export function AppSidebar() {
                     isActive={isActive(item.url)}
                     className="transition-all duration-200"
                   >
-                    <a href={item.url} className="flex items-center gap-3">
+                    <Link to={item.url} className="flex items-center gap-3">
                       <item.icon className="h-5 w-5" />
                       {!collapsed && <span>{item.title}</span>}
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -119,10 +119,10 @@ export function AppSidebar() {
                     isActive={isActive(item.url)}
                     className="transition-all duration-200"
                   >
-                    <a href={item.url} className="flex items-center gap-3">
+                    <Link to={item.url} className="flex items-center gap-3">
                       <item.icon className="h-5 w-5" />
                       {!collapsed && <span>{item.title}</span>}
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -141,10 +141,10 @@ export function AppSidebar() {
                     isActive={isActive("/admin")}
                     className="transition-all duration-200"
                   >
-                    <a href="/admin" className="flex items-center gap-3">
+                    <Link to="/admin" className="flex items-center gap-3">
                       <Shield className="h-5 w-5" />
                       {!collapsed && <span>Dashboard</span>}
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
