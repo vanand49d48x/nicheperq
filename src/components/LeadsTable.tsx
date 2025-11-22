@@ -5,8 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Download, ExternalLink, Tag, StickyNote, ChevronLeft, ChevronRight, UserPlus, Trash2 } from "lucide-react";
+import { Download, ExternalLink, Tag, StickyNote, ChevronLeft, ChevronRight, UserPlus, Trash2, Lock, Zap } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { isMaskedPhone, isMaskedWebsite } from "@/lib/dataMasking";
+import { Link } from "react-router-dom";
 
 interface Lead {
   id: string;
@@ -26,6 +29,7 @@ interface Lead {
   latitude?: number | null;
   longitude?: number | null;
   contact_status?: string | null;
+  is_preview?: boolean;
 }
 
 interface LeadsTableProps {
@@ -166,7 +170,15 @@ export const LeadsTable = ({
       )}
       
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-semibold">Leads ({leads.length})</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-semibold">Leads ({leads.length})</h2>
+          {leads.some(l => l.is_preview) && (
+            <Badge variant="outline" className="gap-1">
+              <Lock className="h-3 w-3" />
+              Preview Mode
+            </Badge>
+          )}
+        </div>
         <div className="flex gap-2 items-center">
           {onPageChange && totalPages > 1 && (
             <div className="flex items-center gap-2">
@@ -246,16 +258,50 @@ export const LeadsTable = ({
                   </TableCell>
                   <TableCell>
                     <div className="text-sm space-y-1">
-                      {lead.phone && <div>{lead.phone}</div>}
+                      {lead.phone && (
+                        <div className="flex items-center gap-2">
+                          <span>{lead.phone}</span>
+                          {isMaskedPhone(lead.phone) && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Lock className="h-3 w-3 text-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">Upgrade to see full phone number</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                      )}
                       {lead.website && (
-                        <a
-                          href={lead.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline flex items-center gap-1"
-                        >
-                          Website <ExternalLink className="h-3 w-3" />
-                        </a>
+                        <div className="flex items-center gap-2">
+                          {isMaskedWebsite(lead.website) ? (
+                            <div className="flex items-center gap-1">
+                              <span className="text-muted-foreground">Website hidden</span>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Lock className="h-3 w-3 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="text-xs">Upgrade to see website</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          ) : (
+                            <a
+                              href={lead.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline flex items-center gap-1"
+                            >
+                              Website <ExternalLink className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
                       )}
                     </div>
                   </TableCell>

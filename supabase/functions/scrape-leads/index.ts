@@ -60,6 +60,60 @@ serve(async (req) => {
 
     const supabaseService = createClient(supabaseServiceUrl, supabaseServiceKey);
 
+    // Get user role to check for free tier
+    const { data: userRoleData } = await supabaseService
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+    
+    const userRole = userRoleData?.role || 'free';
+    const isFreeUser = userRole === 'free';
+    
+    console.log('User role:', userRole);
+
+    // FREE TIER: Check search count (5 searches/month limit)
+    if (isFreeUser) {
+      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+      const monthStart = new Date(currentMonth + '-01').toISOString();
+      
+      // Get or create search counter for current month
+      const { data: searchData } = await supabaseService
+        .from('free_tier_searches')
+        .select('search_count')
+        .eq('user_id', userId)
+        .eq('month_start', monthStart)
+        .single();
+      
+      const currentSearchCount = searchData?.search_count || 0;
+      
+      console.log('Free tier search count:', currentSearchCount);
+      
+      // Check if user exceeded 5 searches
+      if (currentSearchCount >= 5) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Free tier search limit reached',
+            details: 'You\'ve used all 5 searches this month. Upgrade to STANDARD for unlimited searches!',
+            searchCount: currentSearchCount,
+            searchLimit: 5
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Increment search count (upsert)
+      await supabaseService
+        .from('free_tier_searches')
+        .upsert({
+          user_id: userId,
+          month_start: monthStart,
+          search_count: currentSearchCount + 1
+        }, {
+          onConflict: 'user_id,month_start'
+        });
+    }
+
     // Check user's monthly limit and current usage
     const { data: limitData, error: limitError } = await supabaseService
       .rpc('get_user_monthly_limit', { p_user_id: userId });
@@ -225,8 +279,21 @@ serve(async (req) => {
       );
     }
 
-    // Check if adding these leads would exceed the limit
-    if (monthlyLimit !== -1 && (currentUsage + leads.length) > monthlyLimit) {
+    // FREE TIER: Limit to 10 leads and mark as preview
+    let leadsToSave = leads;
+    let isPreviewData = false;
+    
+    if (isFreeUser) {
+      leadsToSave = leads.slice(0, 10).map(lead => ({
+        ...lead,
+        is_preview: true
+      }));
+      isPreviewData = true;
+      console.log('Free tier: Limited to 10 preview leads');
+    }
+
+    // Check if adding these leads would exceed the limit (skip for free tier preview)
+    if (!isFreeUser && monthlyLimit !== -1 && (currentUsage + leadsToSave.length) > monthlyLimit) {
       const remainingLeads = monthlyLimit - currentUsage;
       return new Response(
         JSON.stringify({ 
@@ -243,7 +310,7 @@ serve(async (req) => {
     // Save leads to database
     const { data: savedLeads, error: dbError } = await supabaseService
       .from('leads')
-      .insert(leads)
+      .insert(leadsToSave)
       .select();
 
     if (dbError) {
@@ -255,6 +322,17 @@ serve(async (req) => {
     }
 
     console.log(`Successfully saved ${savedLeads?.length || 0} leads to database`);
+    
+    // FREE TIER: Mask sensitive data in response
+    let responseLeads = savedLeads;
+    if (isFreeUser && savedLeads) {
+      responseLeads = savedLeads.map(lead => ({
+        ...lead,
+        phone: lead.phone ? '(***) ***-****' : null,
+        website: lead.website ? 'https://***.***/***' : null,
+        is_preview: true
+      }));
+    }
 
     // Track API usage
     const { error: trackingError } = await supabaseService
@@ -273,8 +351,10 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        leads: savedLeads, 
+        leads: responseLeads,
         count: savedLeads?.length || 0,
+        is_preview: isPreviewData,
+        preview_message: isPreviewData ? 'Free tier: Showing 10 preview leads with masked contact info. Upgrade for full access!' : undefined,
         usage: {
           current: currentUsage + (savedLeads?.length || 0),
           limit: monthlyLimit,

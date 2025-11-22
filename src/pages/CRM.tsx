@@ -12,6 +12,7 @@ import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { AIAutomationPanel } from "@/components/crm/AIAutomationPanel";
 import { WorkflowBuilder } from "@/components/crm/WorkflowBuilder";
 import { AIInsights } from "@/components/crm/AIInsights";
+import { FeatureGate } from "@/components/FeatureGate";
 
 interface Lead {
   id: string;
@@ -108,7 +109,8 @@ const CRM = () => {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-8 px-6 max-w-7xl">
+      <FeatureGate feature="crm">
+        <div className="container mx-auto py-8 px-6 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -143,13 +145,13 @@ const CRM = () => {
                 variant={view === "workflows" ? "default" : "outline"}
                 onClick={() => setView("workflows")}
               >
-                ⚡ Workflows
+                ⚡ AI Workflows
               </Button>
               <Button
                 variant={view === "insights" ? "default" : "outline"}
                 onClick={() => setView("insights")}
               >
-                💡 Insights
+                💡 AI Insights
               </Button>
             </div>
           </div>
@@ -203,11 +205,17 @@ const CRM = () => {
             onRefresh={fetchLeads}
           />
         ) : view === "automation" ? (
-          <AIAutomationPanel />
+          <FeatureGate feature="ai">
+            <AIAutomationPanel />
+          </FeatureGate>
         ) : view === "workflows" ? (
-          <WorkflowBuilder />
+          <FeatureGate feature="ai">
+            <WorkflowBuilder />
+          </FeatureGate>
         ) : view === "insights" ? (
-          <AIInsights />
+          <FeatureGate feature="ai">
+            <AIInsights />
+          </FeatureGate>
         ) : (
           <div className="grid gap-4">
             {leads.map(lead => (
@@ -221,6 +229,7 @@ const CRM = () => {
           </div>
         )}
       </div>
+      </FeatureGate>
     </DashboardLayout>
   );
 };
