@@ -14,6 +14,136 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_automation_logs: {
+        Row: {
+          action_type: string
+          ai_decision: Json | null
+          created_at: string
+          id: string
+          lead_id: string | null
+          success: boolean
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          ai_decision?: Json | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          success?: boolean
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          ai_decision?: Json | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          success?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_automation_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_email_drafts: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          lead_id: string
+          opened_at: string | null
+          replied_at: string | null
+          send_at: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          tone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          opened_at?: string | null
+          replied_at?: string | null
+          send_at?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          tone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          opened_at?: string | null
+          replied_at?: string | null
+          send_at?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          tone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_email_drafts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_workflows: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          steps: Json
+          trigger: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          steps: Json
+          trigger: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          steps?: Json
+          trigger?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       api_usage: {
         Row: {
           created_at: string
@@ -77,6 +207,38 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_tracking: {
+        Row: {
+          email_draft_id: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          timestamp: string
+        }
+        Insert: {
+          email_draft_id: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          timestamp?: string
+        }
+        Update: {
+          email_draft_id?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_tracking_email_draft_id_fkey"
+            columns: ["email_draft_id"]
+            isOneToOne: false
+            referencedRelation: "ai_email_drafts"
             referencedColumns: ["id"]
           },
         ]
@@ -238,18 +400,21 @@ export type Database = {
       user_roles: {
         Row: {
           created_at: string
+          crm_tier: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
+          crm_tier?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
+          crm_tier?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
