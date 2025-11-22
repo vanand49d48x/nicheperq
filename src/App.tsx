@@ -22,6 +22,7 @@ import EmailSequence from "./pages/EmailSequence";
 import CRM from "./pages/CRM";
 import Analytics from "./pages/Analytics";
 import ChurnAnalytics from "./pages/ChurnAnalytics";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }
           />
