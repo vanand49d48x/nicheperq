@@ -16,14 +16,13 @@ interface Lead {
 interface LeadsMapProps {
   leads: Lead[];
   onBoundsChange?: (bounds: mapboxgl.LngLatBounds) => void;
-  mapboxToken?: string;
   locationQuery?: string;
   hoveredLeadId?: string | null;
   onLeadHover?: (id: string | null) => void;
   searchRadius?: number;
 }
 
-export const LeadsMap = ({ leads, onBoundsChange, mapboxToken, locationQuery, hoveredLeadId, onLeadHover, searchRadius = 10 }: LeadsMapProps) => {
+export const LeadsMap = ({ leads, onBoundsChange, locationQuery, hoveredLeadId, onLeadHover, searchRadius = 10 }: LeadsMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<Map<string, { marker: mapboxgl.Marker; element: HTMLDivElement; lead: Lead }>>(new Map());

@@ -63,7 +63,6 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [allLeads, setAllLeads] = useState<Lead[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [mapboxToken, setMapboxToken] = useState<string>("");
   const [filterByBounds, setFilterByBounds] = useState(false);
   const [bounds, setBounds] = useState<{ n: number; s: number; e: number; w: number } | null>(null);
   const [hoveredLeadId, setHoveredLeadId] = useState<string | null>(null);
@@ -74,9 +73,6 @@ const Index = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const stored = localStorage.getItem('mapbox_public_token');
-    if (stored) setMapboxToken(stored);
-
     // Check if we're coming from History page with search params
     if (location.state) {
       const { niche: stateNiche, city: stateCity, radius: stateRadius } = location.state as any;
@@ -542,24 +538,6 @@ const Index = () => {
                       <Switch id="filter-bounds" checked={filterByBounds} onCheckedChange={setFilterByBounds} />
                       <Label htmlFor="filter-bounds" className="text-sm">Filter by map view</Label>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        placeholder="Mapbox token"
-                        value={mapboxToken}
-                        onChange={(e) => setMapboxToken(e.target.value)}
-                        className="w-48"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          localStorage.setItem('mapbox_public_token', mapboxToken);
-                          toast({ title: 'Token saved' });
-                        }}
-                      >
-                        Save
-                      </Button>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -629,7 +607,6 @@ const Index = () => {
                 <div className="flex-1 rounded-lg overflow-hidden border">
                   <LeadsMap 
                     leads={allLeads} 
-                    mapboxToken={mapboxToken}
                     locationQuery={city}
                     hoveredLeadId={hoveredLeadId}
                     onLeadHover={setHoveredLeadId}
