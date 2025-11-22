@@ -1,0 +1,295 @@
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ArrowRight, Search, Users, Zap, CheckCircle2, MapPin, Star, Phone, Mail } from "lucide-react";
+import { Link } from "react-router-dom";
+
+const Landing = () => {
+  const features = [
+    {
+      icon: Search,
+      title: "Smart Lead Discovery",
+      description: "Find verified business leads in any niche with real-time data from public directories"
+    },
+    {
+      icon: Users,
+      title: "Built-in CRM",
+      description: "Track contacts, manage follow-ups, and move leads through your sales pipeline"
+    },
+    {
+      icon: Zap,
+      title: "Instant Results",
+      description: "Get phone numbers, emails, and business details in seconds—no manual research"
+    }
+  ];
+
+  const exampleLeads = [
+    {
+      name: "Martinez Law Group",
+      category: "Probate Attorney",
+      location: "Alpharetta, GA",
+      rating: 4.8,
+      reviews: 127,
+      phone: "(770) 555-0123",
+      email: "contact@martinezlaw.com"
+    },
+    {
+      name: "Premier Property Management",
+      category: "Property Manager",
+      location: "Johns Creek, GA",
+      rating: 4.6,
+      reviews: 89,
+      phone: "(678) 555-0456",
+      email: "info@premierpm.com"
+    },
+    {
+      name: "ProInspect Home Services",
+      category: "Home Inspector",
+      location: "Roswell, GA",
+      rating: 4.9,
+      reviews: 203,
+      phone: "(404) 555-0789",
+      email: "hello@proinspect.com"
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-subtle">
+      {/* Header */}
+      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Zap className="h-6 w-6 text-primary" />
+            <span className="text-xl font-bold text-foreground">LeadGen</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link to="/pricing">
+              <Button variant="ghost">Pricing</Button>
+            </Link>
+            <Link to="/auth">
+              <Button>Get Started <ArrowRight className="ml-2 h-4 w-4" /></Button>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="py-20 px-4 glow-effect">
+        <div className="container mx-auto max-w-6xl text-center">
+          <Badge className="mb-4" variant="secondary">
+            Private Beta Access
+          </Badge>
+          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
+            Find Verified Referral Partners in Seconds
+          </h1>
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Discover high-quality business leads in any niche—powered by real-time data. Built for realtors and professionals who value their time.
+          </p>
+          <div className="flex gap-4 justify-center flex-wrap">
+            <Link to="/auth">
+              <Button size="lg" className="shadow-glow">
+                Start Free Trial <ArrowRight className="ml-2" />
+              </Button>
+            </Link>
+            <Link to="/pricing">
+              <Button size="lg" variant="outline">
+                View Pricing
+              </Button>
+            </Link>
+          </div>
+          <p className="text-sm text-muted-foreground mt-4">
+            ✓ No credit card required ✓ 7-day money-back guarantee
+          </p>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="py-16 px-4 bg-background">
+        <div className="container mx-auto max-w-6xl">
+          <h2 className="text-3xl font-bold text-center mb-12">Everything You Need to Build Your Network</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {features.map((feature, idx) => (
+              <Card key={idx} className="border-border bg-gradient-card shadow-sm">
+                <CardHeader>
+                  <feature.icon className="h-10 w-10 text-primary mb-4" />
+                  <CardTitle>{feature.title}</CardTitle>
+                  <CardDescription>{feature.description}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Example Results */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">See What You'll Get</h2>
+            <p className="text-muted-foreground">Real example results from a typical search</p>
+            <div className="mt-6 inline-block bg-muted/50 rounded-lg px-6 py-3">
+              <p className="text-sm text-muted-foreground">
+                Example search: <span className="font-semibold text-foreground">"probate attorney alpharetta ga"</span>
+              </p>
+              <p className="text-sm text-success font-semibold mt-1">
+                Returns: 126 verified professionals with phone + email
+              </p>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {exampleLeads.map((lead, idx) => (
+              <Card key={idx} className="border-border shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <div className="flex items-start justify-between mb-2">
+                    <CardTitle className="text-lg">{lead.name}</CardTitle>
+                    <Badge variant="secondary" className="text-xs">{lead.category}</Badge>
+                  </div>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <MapPin className="h-3 w-3" />
+                    <span>{lead.location}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-1">
+                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                      <span className="font-semibold">{lead.rating}</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">({lead.reviews} reviews)</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-primary" />
+                    <span>{lead.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-primary" />
+                    <span className="truncate">{lead.email}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CRM Showcase */}
+      <section className="py-16 px-4 bg-background">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Manage Leads Like a Pro</h2>
+            <p className="text-muted-foreground">Built-in CRM to track every conversation and follow-up</p>
+          </div>
+
+          <Card className="border-border shadow-lg">
+            <CardHeader>
+              <CardTitle>Pipeline Stages</CardTitle>
+              <CardDescription>Drag & drop contacts through your sales process</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {["New Lead", "Contacted", "Meeting Scheduled", "Active Partner"].map((stage, idx) => (
+                  <div key={idx} className="bg-muted/50 rounded-lg p-4 text-center">
+                    <p className="font-semibold mb-2">{stage}</p>
+                    <Badge variant="outline">{Math.floor(Math.random() * 15) + 3} contacts</Badge>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                  <span>Add notes to every contact</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                  <span>Set follow-up reminders</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                  <span>Track contact status in real-time</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* Social Proof */}
+      <section className="py-16 px-4">
+        <div className="container mx-auto max-w-4xl">
+          <div className="bg-gradient-card rounded-lg shadow-lg p-8 md:p-12 text-center border border-border">
+            <div className="flex justify-center gap-1 mb-4">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+              ))}
+            </div>
+            <p className="text-lg italic text-muted-foreground mb-4">
+              "LeadGen transformed how I find referral partners. What used to take hours now takes minutes. The CRM features keep me organized and my pipeline is always full."
+            </p>
+            <p className="font-semibold">Sarah Mitchell</p>
+            <p className="text-sm text-muted-foreground">Realtor, Atlanta Metro</p>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-16 px-4 bg-background">
+        <div className="container mx-auto max-w-4xl text-center">
+          <h2 className="text-3xl font-bold mb-4">Ready to Build Your Referral Network?</h2>
+          <p className="text-muted-foreground mb-8">
+            Join hundreds of professionals finding quality leads every day
+          </p>
+          <Link to="/auth">
+            <Button size="lg" className="shadow-glow">
+              Start Free Trial <ArrowRight className="ml-2" />
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border py-8 px-4 bg-background">
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Zap className="h-5 w-5 text-primary" />
+                <span className="font-bold">LeadGen</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Find verified referral partners in seconds
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-3">Product</h4>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <Link to="/pricing" className="block hover:text-foreground">Pricing</Link>
+                <Link to="/email-sequence" className="block hover:text-foreground">Email Templates</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-3">Legal</h4>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <Link to="/terms" className="block hover:text-foreground">Terms of Service</Link>
+                <Link to="/privacy" className="block hover:text-foreground">Privacy Policy</Link>
+                <Link to="/refund-policy" className="block hover:text-foreground">Refund Policy</Link>
+                <Link to="/data-ethics" className="block hover:text-foreground">Data Ethics</Link>
+              </div>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-3">Support</h4>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <a href="mailto:support@leadgen.app" className="block hover:text-foreground">Contact Us</a>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-border pt-6 text-center text-sm text-muted-foreground">
+            <p>© 2024 LeadGen. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default Landing;
