@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.track-email-event]
 verify_jwt = false
+
+[functions.scheduled-search-executor]
+verify_jwt = false

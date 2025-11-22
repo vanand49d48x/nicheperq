@@ -260,6 +260,7 @@ export type Database = {
           phone: string | null
           rating: number | null
           review_count: number | null
+          search_id: string | null
           state: string | null
           tags: string[] | null
           updated_at: string
@@ -283,6 +284,7 @@ export type Database = {
           phone?: string | null
           rating?: number | null
           review_count?: number | null
+          search_id?: string | null
           state?: string | null
           tags?: string[] | null
           updated_at?: string
@@ -306,6 +308,7 @@ export type Database = {
           phone?: string | null
           rating?: number | null
           review_count?: number | null
+          search_id?: string | null
           state?: string | null
           tags?: string[] | null
           updated_at?: string
@@ -314,6 +317,13 @@ export type Database = {
           zipcode?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "leads_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "saved_searches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "leads_user_id_fkey"
             columns: ["user_id"]
@@ -358,33 +368,45 @@ export type Database = {
           city: string
           created_at: string
           id: string
+          is_active: boolean | null
+          is_scheduled: boolean | null
           last_run_at: string | null
           lead_count: number | null
           name: string
+          next_run_at: string | null
           niche: string
           radius: string
+          schedule_frequency: string | null
           user_id: string
         }
         Insert: {
           city: string
           created_at?: string
           id?: string
+          is_active?: boolean | null
+          is_scheduled?: boolean | null
           last_run_at?: string | null
           lead_count?: number | null
           name: string
+          next_run_at?: string | null
           niche: string
           radius: string
+          schedule_frequency?: string | null
           user_id: string
         }
         Update: {
           city?: string
           created_at?: string
           id?: string
+          is_active?: boolean | null
+          is_scheduled?: boolean | null
           last_run_at?: string | null
           lead_count?: number | null
           name?: string
+          next_run_at?: string | null
           niche?: string
           radius?: string
+          schedule_frequency?: string | null
           user_id?: string
         }
         Relationships: [
@@ -393,6 +415,47 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduled_search_runs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          executed_at: string | null
+          id: string
+          leads_found: number | null
+          search_id: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          leads_found?: number | null
+          search_id: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          leads_found?: number | null
+          search_id?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_search_runs_search_id_fkey"
+            columns: ["search_id"]
+            isOneToOne: false
+            referencedRelation: "saved_searches"
             referencedColumns: ["id"]
           },
         ]

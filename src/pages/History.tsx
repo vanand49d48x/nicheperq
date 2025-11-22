@@ -3,11 +3,14 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { History as HistoryIcon, Play, Trash2, MapPin, Building2 } from "lucide-react";
+import { History as HistoryIcon, Play, Trash2, MapPin, Building2, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { ScheduledSearchManager } from "@/components/ScheduledSearchManager";
+import { ScheduledSearchResults } from "@/components/ScheduledSearchResults";
 
 interface SavedSearch {
   id: string;
@@ -18,6 +21,10 @@ interface SavedSearch {
   lead_count: number;
   created_at: string;
   last_run_at: string | null;
+  is_scheduled: boolean;
+  schedule_frequency: string;
+  is_active: boolean;
+  next_run_at: string | null;
 }
 
 const History = () => {
@@ -95,9 +102,17 @@ const History = () => {
             <h1 className="text-3xl font-bold text-foreground">Search History</h1>
           </div>
           <p className="text-muted-foreground">
-            View and re-run your saved lead searches
+            Manage saved searches and view automated results
           </p>
         </div>
+
+        <Tabs defaultValue="searches" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="searches">Saved Searches</TabsTrigger>
+            <TabsTrigger value="results">Automated Results</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="searches" className="space-y-6">
 
         {isLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -121,53 +136,78 @@ const History = () => {
             </Button>
           </Card>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-6">
             {searches.map((search) => (
-              <Card key={search.id} className="p-6 hover:shadow-lg transition-shadow">
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold mb-2">{search.name}</h3>
-                  <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      <span>{search.niche}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>{search.city} ({search.radius} miles)</span>
+              <div key={search.id} className="space-y-4">
+                <Card className="p-6 hover:shadow-lg transition-shadow">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold mb-2">{search.name}</h3>
+                    <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        <span>{search.niche}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        <span>{search.city} ({search.radius} miles)</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2 mb-4">
-                  <Badge variant="secondary">
-                    {search.lead_count} leads
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(search.created_at), { addSuffix: true })}
-                  </span>
-                </div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <Badge variant="secondary">
+                      {search.lead_count} leads
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(search.created_at), { addSuffix: true })}
+                    </span>
+                    {search.is_scheduled && (
+                      <Badge variant="outline" className="gap-1">
+                        <Calendar className="h-3 w-3" />
+                        Scheduled
+                      </Badge>
+                    )}
+                  </div>
 
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    className="flex-1 gap-2"
-                    onClick={() => handleRunSearch(search)}
-                  >
-                    <Play className="h-4 w-4" />
-                    Run Again
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDeleteSearch(search.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </Card>
+                  <div className="flex gap-2 mb-4">
+                    <Button
+                      size="sm"
+                      className="flex-1 gap-2"
+                      onClick={() => handleRunSearch(search)}
+                    >
+                      <Play className="h-4 w-4" />
+                      Run Again
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeleteSearch(search.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </Card>
+                
+                <ScheduledSearchManager
+                  searchId={search.id}
+                  searchName={search.name}
+                  isScheduled={search.is_scheduled}
+                  scheduleFrequency={search.schedule_frequency}
+                  isActive={search.is_active}
+                  nextRunAt={search.next_run_at}
+                  lastRunAt={search.last_run_at}
+                  onUpdate={fetchSavedSearches}
+                />
+              </div>
             ))}
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="results">
+            <ScheduledSearchResults />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
