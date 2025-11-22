@@ -21,6 +21,7 @@ import AuditLogs from "./pages/AuditLogs";
 import EmailSequence from "./pages/EmailSequence";
 import CRM from "./pages/CRM";
 import Analytics from "./pages/Analytics";
+import ChurnAnalytics from "./pages/ChurnAnalytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -104,6 +105,11 @@ const App = () => (
           <Route path="/analytics" element={
             <ProtectedRoute>
               <Analytics />
+            </ProtectedRoute>
+          } />
+          <Route path="/churn-analytics" element={
+            <ProtectedRoute>
+              <ChurnAnalytics />
             </ProtectedRoute>
           } />
           <Route path="*" element={<NotFound />} />

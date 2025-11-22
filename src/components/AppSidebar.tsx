@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Home, Settings, LogOut, Search, User, History, Shield, Receipt, Users, ScrollText, BarChart3 } from "lucide-react";
+import { Home, Settings, LogOut, Search, User, History, Shield, Receipt, Users, ScrollText, BarChart3, UserMinus } from "lucide-react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -192,6 +192,18 @@ export function AppSidebar() {
                     <Link to="/analytics" className="flex items-center gap-3">
                       <BarChart3 className="h-5 w-5" />
                       {!collapsed && <span>Analytics</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive("/churn-analytics")}
+                    className="transition-all duration-200"
+                  >
+                    <Link to="/churn-analytics" className="flex items-center gap-3">
+                      <UserMinus className="h-5 w-5" />
+                      {!collapsed && <span>Churn Analysis</span>}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

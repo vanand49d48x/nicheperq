@@ -38,3 +38,6 @@ verify_jwt = true
 
 [functions.get-cost-analytics]
 verify_jwt = true
+
+[functions.get-churn-analytics]
+verify_jwt = true
