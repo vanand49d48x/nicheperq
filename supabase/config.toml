@@ -23,3 +23,12 @@ verify_jwt = false
 
 [functions.scheduled-search-executor]
 verify_jwt = false
+
+[functions.send-admin-notification]
+verify_jwt = true
+
+[functions.send-signup-confirmation]
+verify_jwt = false
+
+[functions.send-subscription-notification]
+verify_jwt = false
