@@ -20,8 +20,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
 const mainItems = [
-  { title: "Dashboard", url: "/", icon: Home },
-  { title: "Find Leads", url: "/", icon: Search },
+  { title: "Dashboard", url: "/dashboard", icon: Home },
+  { title: "Find Leads", url: "/dashboard", icon: Search },
   { title: "CRM Pipeline", url: "/crm", icon: Users },
   { title: "History", url: "/history", icon: History },
 ];
