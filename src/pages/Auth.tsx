@@ -22,12 +22,23 @@ export default function Auth() {
   const [fullName, setFullName] = useState("");
 
   useEffect(() => {
+    // Set up auth state listener to detect OAuth callbacks
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session) {
+          navigate("/dashboard");
+        }
+      }
+    );
+
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate("/dashboard");
       }
     });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
