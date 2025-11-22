@@ -27,6 +27,7 @@ const mainItems = [
 ];
 
 const settingsItems = [
+  { title: "Profile", url: "/profile", icon: User },
   { title: "Settings", url: "/settings", icon: Settings },
   { title: "Billing", url: "/billing", icon: Receipt },
 ];
