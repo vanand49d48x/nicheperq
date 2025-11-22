@@ -114,7 +114,7 @@ export default function Auth() {
           <div className="inline-flex h-16 w-16 rounded-2xl bg-gradient-to-br from-primary to-accent items-center justify-center text-white font-bold text-2xl mb-4 shadow-lg">
             L
           </div>
-          <h1 className="text-3xl font-bold text-foreground">LeadGen SaaS</h1>
+          <h1 className="text-3xl font-bold text-foreground">NichePerQ</h1>
           <p className="text-muted-foreground mt-2">Find quality leads for your business</p>
         </div>
 

@@ -101,7 +101,7 @@ const Pricing = () => {
           <Link to="/">
             <div className="flex items-center gap-2 cursor-pointer">
               <Zap className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold text-foreground">LeadGen</span>
+              <span className="text-xl font-bold text-foreground">NichePerQ</span>
             </div>
           </Link>
           <div className="flex items-center gap-4">
@@ -240,7 +240,7 @@ const Pricing = () => {
       <section className="py-16 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">What Can You Do With LeadGen?</h2>
+            <h2 className="text-3xl font-bold mb-4">What Can You Do With NichePerQ?</h2>
             <p className="text-muted-foreground">Real examples from our users</p>
           </div>
 
@@ -391,7 +391,7 @@ const Pricing = () => {
             <CardContent className="pt-8 pb-8 text-center">
               <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
               <p className="text-muted-foreground mb-6">
-                Join hundreds of professionals building their networks with LeadGen
+                Join hundreds of professionals building their networks with NichePerQ
               </p>
               <Link to="/auth">
                 <Button size="lg" className="shadow-md">
@@ -411,7 +411,7 @@ const Pricing = () => {
         <div className="container mx-auto max-w-6xl text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <Zap className="h-5 w-5 text-primary" />
-            <span className="font-bold">LeadGen</span>
+            <span className="font-bold">NichePerQ</span>
           </div>
           <div className="flex justify-center gap-6 text-sm text-muted-foreground mb-4">
             <Link to="/terms" className="hover:text-foreground">Terms</Link>
@@ -419,7 +419,7 @@ const Pricing = () => {
             <Link to="/refund-policy" className="hover:text-foreground">Refund Policy</Link>
             <Link to="/data-ethics" className="hover:text-foreground">Data Ethics</Link>
           </div>
-          <p className="text-sm text-muted-foreground">© 2024 LeadGen. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">© 2024 NichePerQ. All rights reserved.</p>
         </div>
       </footer>
     </div>

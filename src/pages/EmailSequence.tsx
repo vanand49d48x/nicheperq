@@ -208,7 +208,7 @@ P.S. If you know anyone else who might be interested in a referral partnership, 
 
         <div className="mt-8 text-center text-sm text-muted-foreground">
           <p>
-            Need help with your outreach? Contact us at <strong>support@leadgen.com</strong>
+            Need help with your outreach? Contact us at <strong>support@nicheperq.com</strong>
           </p>
         </div>
       </div>

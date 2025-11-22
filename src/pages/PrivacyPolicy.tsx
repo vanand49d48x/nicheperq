@@ -12,7 +12,7 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Introduction</h2>
             <p className="text-muted-foreground">
-              LeadGen ("we," "our," or "us") respects your privacy. This Privacy Policy explains how we collect, 
+              NichePerQ ("we," "our," or "us") respects your privacy. This Privacy Policy explains how we collect, 
               use, and protect your personal information when you use our B2B lead generation platform.
             </p>
           </section>
@@ -104,7 +104,7 @@ const PrivacyPolicy = () => {
                 <li><strong>Objection:</strong> Object to processing based on legitimate interests</li>
                 <li><strong>Opt-Out:</strong> Unsubscribe from marketing emails</li>
               </ul>
-              <p className="mt-3">To exercise these rights, contact us at: privacy@leadgen.com</p>
+              <p className="mt-3">To exercise these rights, contact us at: privacy@nicheperq.com</p>
             </div>
           </section>
 
@@ -132,7 +132,7 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">10. Children's Privacy</h2>
             <p className="text-muted-foreground">
-              LeadGen is a B2B service not intended for individuals under 18. We do not knowingly 
+              NichePerQ is a B2B service not intended for individuals under 18. We do not knowingly 
               collect data from children.
             </p>
           </section>
@@ -157,8 +157,8 @@ const PrivacyPolicy = () => {
             <h2 className="text-2xl font-semibold mb-4">13. Contact Us</h2>
             <div className="text-muted-foreground space-y-1">
               <p>For privacy-related questions or requests:</p>
-              <p className="font-medium">Email: privacy@leadgen.com</p>
-              <p className="font-medium">Data Protection Officer: dpo@leadgen.com</p>
+              <p className="font-medium">Email: privacy@nicheperq.com</p>
+              <p className="font-medium">Data Protection Officer: dpo@nicheperq.com</p>
             </div>
           </section>
         </Card>

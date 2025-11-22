@@ -12,7 +12,7 @@ const TermsOfService = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">1. Acceptance of Terms</h2>
             <p className="text-muted-foreground">
-              By accessing and using LeadGen ("the Service"), you accept and agree to be bound by these Terms of Service. 
+              By accessing and using NichePerQ ("the Service"), you accept and agree to be bound by these Terms of Service. 
               If you do not agree to these terms, please do not use our service.
             </p>
           </section>
@@ -20,7 +20,7 @@ const TermsOfService = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">2. Service Description</h2>
             <p className="text-muted-foreground mb-3">
-              LeadGen is a B2B lead generation platform that aggregates publicly available business information from 
+              NichePerQ is a B2B lead generation platform that aggregates publicly available business information from 
               legitimate sources such as Google Maps, public business directories, and other lawful data sources.
             </p>
             <p className="text-muted-foreground">
@@ -32,7 +32,7 @@ const TermsOfService = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">3. Acceptable Use Policy</h2>
             <div className="space-y-3 text-muted-foreground">
-              <p className="font-medium">You agree to use LeadGen data exclusively for:</p>
+              <p className="font-medium">You agree to use NichePerQ data exclusively for:</p>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li>Business-to-business (B2B) outreach and networking</li>
                 <li>Legitimate marketing and sales activities</li>
@@ -97,7 +97,7 @@ const TermsOfService = () => {
             <h2 className="text-2xl font-semibold mb-4">7. Data Accuracy & Disclaimers</h2>
             <p className="text-muted-foreground">
               While we strive for accuracy, we cannot guarantee 100% accuracy of publicly sourced data. 
-              LeadGen is provided "as is" without warranties of any kind. We are not liable for business 
+              NichePerQ is provided "as is" without warranties of any kind. We are not liable for business 
               decisions made based on our data.
             </p>
           </section>
@@ -113,7 +113,7 @@ const TermsOfService = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">9. Limitation of Liability</h2>
             <p className="text-muted-foreground">
-              LeadGen's total liability shall not exceed the amount paid by you in the past 12 months. 
+              NichePerQ's total liability shall not exceed the amount paid by you in the past 12 months. 
               We are not liable for indirect, incidental, or consequential damages.
             </p>
           </section>
@@ -129,7 +129,7 @@ const TermsOfService = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">11. Contact Information</h2>
             <p className="text-muted-foreground">
-              For questions about these Terms of Service, contact us at: legal@leadgen.com
+              For questions about these Terms of Service, contact us at: legal@nicheperq.com
             </p>
           </section>
         </Card>
