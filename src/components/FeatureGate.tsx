@@ -38,10 +38,16 @@ export const FeatureGate = ({ feature, children, fallback }: FeatureGateProps) =
       if (roleData) {
         setUserRole(roleData.role);
         
-        if (feature === "crm") {
-          setHasAccess(roleData.has_crm_access || false);
-        } else if (feature === "ai") {
-          setHasAccess(roleData.has_ai_access || false);
+        // Admins get access to everything
+        if (roleData.role === 'admin') {
+          setHasAccess(true);
+        } else {
+          // Regular users check feature flags
+          if (feature === "crm") {
+            setHasAccess(roleData.has_crm_access || false);
+          } else if (feature === "ai") {
+            setHasAccess(roleData.has_ai_access || false);
+          }
         }
       }
     } catch (error) {
