@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Home, Settings, LogOut, Search, User, History, Shield, Receipt, Users, ScrollText, BarChart3, UserMinus } from "lucide-react";
+import { Home, Settings, LogOut, Search, User, History, Shield, Receipt, Users, ScrollText, BarChart3, UserMinus, HelpCircle } from "lucide-react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -30,6 +30,7 @@ const settingsItems = [
   { title: "Profile", url: "/profile", icon: User },
   { title: "Settings", url: "/settings", icon: Settings },
   { title: "Billing", url: "/billing", icon: Receipt },
+  { title: "Support", url: "/support", icon: HelpCircle },
 ];
 
 export function AppSidebar() {
