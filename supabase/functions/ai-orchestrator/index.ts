@@ -52,10 +52,12 @@ async function autoEnrollNewLeads(supabase: any) {
   console.log('📥 Checking for ALL new leads to auto-enroll (no time restriction)...');
   
   // Get ALL leads with status 'new' that aren't enrolled in ANY workflow
+  // IMPORTANT: Only get leads with a valid user_id
   const { data: newLeads, error: leadsError } = await supabase
     .from('leads')
     .select('id, user_id, contact_status, niche, created_at')
-    .eq('contact_status', 'new');
+    .eq('contact_status', 'new')
+    .not('user_id', 'is', null);
 
   if (leadsError) {
     console.error('Error fetching new leads:', leadsError);
