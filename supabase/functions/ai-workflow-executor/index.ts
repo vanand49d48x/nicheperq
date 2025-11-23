@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,7 +19,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    console.log('Starting workflow execution check...');
+    console.log('🚀 Starting workflow execution check...');
 
     // Get all active enrollments where next_action_at is due
     const now = new Date().toISOString();
@@ -31,7 +32,7 @@ serve(async (req) => {
       `)
       .eq('status', 'active')
       .lte('next_action_at', now)
-      .limit(50);
+      .limit(20);  // Process 20 at a time to avoid overload
 
     if (enrollmentsError) {
       console.error('Error fetching enrollments:', enrollmentsError);
@@ -39,6 +40,8 @@ serve(async (req) => {
     }
 
     let actionsExecuted = 0;
+    let emailsSent = 0;
+    const MAX_EMAILS_PER_RUN = 10;  // Rate limit: max 10 emails per execution
 
     for (const enrollment of enrollments || []) {
       try {
@@ -84,14 +87,16 @@ serve(async (req) => {
 
         // Execute step action
         if (shouldExecute) {
-          await executeStepAction(
+          const emailSent = await executeStepAction(
             supabaseClient,
             enrollment,
             currentStep,
             enrollment.lead,
-            enrollment.workflow
+            enrollment.workflow,
+            emailsSent < MAX_EMAILS_PER_RUN
           );
           actionsExecuted++;
+          if (emailSent) emailsSent++;
         }
 
         // Move to next step
@@ -145,11 +150,12 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Execution complete. Executed ${actionsExecuted} actions.`);
+    console.log(`✅ Execution complete. Executed ${actionsExecuted} actions, sent ${emailsSent} emails.`);
 
     return new Response(JSON.stringify({ 
       success: true, 
       actions_executed: actionsExecuted,
+      emails_sent: emailsSent,
       enrollments_processed: enrollments?.length || 0
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -242,60 +248,160 @@ async function executeStepAction(
   enrollment: any,
   step: any,
   lead: any,
-  workflow: any
-) {
+  workflow: any,
+  canSendEmail: boolean = true
+): Promise<boolean> {
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+  let emailSent = false;
 
   switch (step.action_type) {
-    case 'send_email': {
-      if (!LOVABLE_API_KEY) break;
+    case 'send_email':
+    case 'email': {
+      if (!LOVABLE_API_KEY || !RESEND_API_KEY || !canSendEmail) {
+        console.log(`⏭️ Skipping email send (API keys: ${!!LOVABLE_API_KEY}/${!!RESEND_API_KEY}, can send: ${canSendEmail})`);
+        break;
+      }
 
-      // Generate email using AI
-      const context = `
+      try {
+        // Generate email using AI
+        const context = `
 Lead: ${lead.business_name}
 Niche: ${lead.niche}
+Location: ${lead.city}${lead.state ? ', ' + lead.state : ''}
 Status: ${lead.contact_status}
+Rating: ${lead.rating || 'N/A'} (${lead.review_count || 0} reviews)
 Workflow: ${workflow.name}
 Email Type: ${step.email_type || 'follow-up'}
 Tone: ${step.tone || 'professional'}
 Hint: ${step.ai_prompt_hint || 'Write a compelling email'}
-      `;
+        `;
 
-      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [
-            { role: 'system', content: `Generate a ${step.tone || 'professional'} email for this B2B lead.` },
-            { role: 'user', content: context }
-          ],
-        }),
-      });
-
-      const aiData = await aiResponse.json();
-      const emailBody = aiData.choices[0].message.content;
-
-      // Create email draft
-      await supabase
-        .from('ai_email_drafts')
-        .insert({
-          user_id: enrollment.user_id,
-          lead_id: lead.id,
-          subject: `${step.email_type || 'Follow-up'} - ${lead.business_name}`,
-          body: emailBody,
-          tone: step.tone || 'professional',
-          status: 'draft'
+        const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: [
+              { 
+                role: 'system', 
+                content: `Generate a ${step.tone || 'professional'} B2B outreach email. Keep it under 150 words, personalized, and include a clear call-to-action.` 
+              },
+              { role: 'user', content: context }
+            ],
+            tools: [{
+              type: 'function',
+              function: {
+                name: 'create_email',
+                description: 'Create a structured email with subject and body',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    subject: { type: 'string', description: 'Email subject line (max 60 chars)' },
+                    body: { type: 'string', description: 'Email body content' }
+                  },
+                  required: ['subject', 'body']
+                }
+              }
+            }],
+            tool_choice: { type: 'function', function: { name: 'create_email' } }
+          }),
         });
 
-      console.log(`Created email draft for lead ${lead.id}`);
+        if (!aiResponse.ok) {
+          throw new Error(`AI API error: ${aiResponse.status}`);
+        }
+
+        const aiData = await aiResponse.json();
+        const toolCall = aiData.choices[0].message.tool_calls?.[0];
+        const emailData = JSON.parse(toolCall.function.arguments);
+
+        // Create email draft first
+        const { data: draft, error: draftError } = await supabase
+          .from('ai_email_drafts')
+          .insert({
+            user_id: enrollment.user_id,
+            lead_id: lead.id,
+            subject: emailData.subject,
+            body: emailData.body,
+            tone: step.tone || 'professional',
+            status: 'draft'
+          })
+          .select()
+          .single();
+
+        if (draftError) throw draftError;
+
+        // Generate recipient email (placeholder until we have real emails)
+        // TODO: Replace with actual email extraction from lead data
+        const recipientEmail = lead.phone?.includes('@') 
+          ? lead.phone 
+          : `contact@${lead.business_name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`;
+
+        // Send email via Resend
+        const resend = new Resend(RESEND_API_KEY);
+        
+        const emailBody = `${emailData.body}
+
+---
+This email was sent as part of a professional referral network outreach.
+${lead.city}${lead.state ? ', ' + lead.state : ''}
+
+To unsubscribe, reply with "unsubscribe".
+`;
+
+        const { data: emailResult, error: emailError } = await resend.emails.send({
+          from: 'NichePerQ Outreach <auth@nicheperq.com>',
+          to: [recipientEmail],
+          subject: emailData.subject,
+          text: emailBody,
+        });
+
+        if (emailError) throw new Error(`Failed to send email: ${emailError.message}`);
+
+        // Update draft status to sent
+        await supabase
+          .from('ai_email_drafts')
+          .update({
+            status: 'sent',
+            sent_at: new Date().toISOString()
+          })
+          .eq('id', draft.id);
+
+        // Update lead's last_contacted_at
+        await supabase
+          .from('leads')
+          .update({ last_contacted_at: new Date().toISOString() })
+          .eq('id', lead.id);
+
+        // Log email tracking
+        await supabase
+          .from('email_tracking')
+          .insert({
+            email_draft_id: draft.id,
+            event_type: 'sent',
+            event_data: { 
+              message_id: emailResult?.id,
+              workflow_id: workflow.id,
+              recipient: recipientEmail 
+            }
+          });
+
+        console.log(`📧 Sent email to ${lead.business_name} (${recipientEmail})`);
+        emailSent = true;
+
+      } catch (error) {
+        console.error(`❌ Failed to send email for lead ${lead.id}:`, error);
+        // Don't throw - continue with other actions
+      }
       break;
     }
 
-    case 'update_status': {
+    case 'update_status':
+    case 'status': {
       if (step.next_status) {
         await supabase
           .from('leads')
@@ -368,8 +474,11 @@ Hint: ${step.ai_prompt_hint || 'Write a compelling email'}
       metadata: {
         workflow_id: workflow.id,
         step_order: step.step_order,
-        action_type: step.action_type
+        action_type: step.action_type,
+        email_sent: emailSent
       },
       occurred_at: new Date().toISOString()
     });
+
+  return emailSent;
 }
