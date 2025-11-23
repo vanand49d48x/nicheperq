@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Phone, Globe, Star, ChevronRight, Sparkles, TrendingUp, TrendingDown, Flame } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Phone, Globe, Star, ChevronRight, Sparkles, TrendingUp, TrendingDown, Flame, Mail, PhoneCall, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -17,8 +18,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ContactCard } from "./ContactCard";
+import { BatchActionsBar } from "./BatchActionsBar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { applyAutoTags } from "@/lib/autoTagging";
 
 interface KanbanBoardProps {
   leads: any[];
@@ -37,6 +40,8 @@ const columns = [
 export const KanbanBoard = ({ leads, onStatusChange, onRefresh }: KanbanBoardProps) => {
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
   const [analyzingLeads, setAnalyzingLeads] = useState<Set<string>>(new Set());
+  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [batchMode, setBatchMode] = useState(false);
 
   const getLeadsForColumn = (columnId: string) => {
     return leads.filter(lead => lead.contact_status === columnId);
@@ -77,6 +82,12 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh }: KanbanBoardPro
 
       if (error) throw error;
 
+      // Auto-tag after analysis
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await applyAutoTags(supabase, leadId, user.id);
+      }
+
       toast.success('AI analysis complete!');
       onRefresh();
     } catch (error) {
@@ -91,8 +102,68 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh }: KanbanBoardPro
     }
   };
 
+  const toggleLeadSelection = (leadId: string) => {
+    setSelectedLeads(prev => {
+      const next = new Set(prev);
+      if (next.has(leadId)) {
+        next.delete(leadId);
+      } else {
+        next.add(leadId);
+      }
+      return next;
+    });
+  };
+
+  const handleQuickEmail = (lead: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (lead.email) {
+      window.location.href = `mailto:${lead.email}`;
+    } else {
+      toast.error('No email available for this lead');
+    }
+  };
+
+  const handleQuickCall = (lead: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (lead.phone) {
+      window.location.href = `tel:${lead.phone}`;
+    } else {
+      toast.error('No phone available for this lead');
+    }
+  };
+
+  const handleAutoTag = async (leadId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await applyAutoTags(supabase, leadId, user.id);
+        toast.success('Auto-tags applied!');
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Error auto-tagging:', error);
+      toast.error('Failed to apply auto-tags');
+    }
+  };
+
   return (
     <>
+      <div className="mb-4 flex items-center justify-between">
+        <Button
+          variant={batchMode ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setBatchMode(!batchMode);
+            setSelectedLeads(new Set());
+          }}
+          className="gap-2"
+        >
+          <Checkbox checked={batchMode} />
+          Batch Mode {selectedLeads.size > 0 && `(${selectedLeads.size})`}
+        </Button>
+      </div>
+
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-4 min-w-max">
           {columns.map((column) => {
@@ -113,15 +184,28 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh }: KanbanBoardPro
                           <TooltipTrigger asChild>
                             <Card
                               className={cn(
-                                "p-4 cursor-pointer hover:shadow-md transition-shadow",
-                                getSentimentColor(lead.sentiment)
+                                "p-3 cursor-pointer hover:shadow-md transition-shadow relative",
+                                getSentimentColor(lead.sentiment),
+                                selectedLeads.has(lead.id) && "ring-2 ring-primary"
                               )}
-                              onClick={() => setSelectedLead(lead)}
+                              onClick={() => !batchMode && setSelectedLead(lead)}
                             >
-                              <div className="flex items-start justify-between gap-2 mb-2">
-                                <h4 className="font-medium line-clamp-1 flex-1">
-                                  {lead.business_name}
-                                </h4>
+                              {batchMode && (
+                                <div className="absolute top-2 left-2 z-10">
+                                  <Checkbox
+                                    checked={selectedLeads.has(lead.id)}
+                                    onCheckedChange={() => toggleLeadSelection(lead.id)}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </div>
+                              )}
+
+                              <div className={cn("flex items-start gap-2 mb-2", batchMode && "ml-6")}>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium line-clamp-1 text-sm">
+                                    {lead.business_name}
+                                  </h4>
+                                </div>
                                 <div className="flex items-center gap-1 flex-shrink-0">
                                   {getSentimentIcon(lead.sentiment)}
                                   {lead.ai_quality_score !== null && (
@@ -135,7 +219,7 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh }: KanbanBoardPro
                                 </div>
                               </div>
                               
-                              <div className="space-y-1 text-sm text-muted-foreground mb-3">
+                              <div className="space-y-1 text-xs text-muted-foreground mb-2">
                                 {lead.phone && (
                                   <div className="flex items-center gap-1">
                                     <Phone className="h-3 w-3" />
@@ -150,25 +234,77 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh }: KanbanBoardPro
                                 )}
                               </div>
 
-                              <div className="flex gap-2 items-center mb-3">
+                              <div className="flex gap-1 items-center mb-2 flex-wrap">
                                 <Badge variant="outline" className="text-xs">
                                   {lead.niche}
                                 </Badge>
                                 {lead.closing_probability !== null && (
-                                  <Badge 
-                                    variant="secondary" 
-                                    className="text-xs"
-                                  >
-                                    {lead.closing_probability}% close
+                                  <Badge variant="secondary" className="text-xs">
+                                    {lead.closing_probability}%
                                   </Badge>
                                 )}
                               </div>
 
-                              {!lead.ai_quality_score && (
+                              {/* Auto Tags */}
+                              {lead.tags && lead.tags.length > 0 && (
+                                <div className="flex gap-1 flex-wrap mb-2">
+                                  {lead.tags.slice(0, 3).map((tag: string) => (
+                                    <Badge key={tag} variant="secondary" className="text-xs">
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                  {lead.tags.length > 3 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      +{lead.tags.length - 3}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Quick Actions */}
+                              {!batchMode && (
+                                <div className="flex gap-1 mb-2">
+                                  {lead.email && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2"
+                                      onClick={(e) => handleQuickEmail(lead, e)}
+                                      title="Send email"
+                                    >
+                                      <Mail className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                  {lead.phone && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2"
+                                      onClick={(e) => handleQuickCall(lead, e)}
+                                      title="Call"
+                                    >
+                                      <PhoneCall className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                  {(!lead.tags || lead.tags.length === 0) && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2"
+                                      onClick={(e) => handleAutoTag(lead.id, e)}
+                                      title="Auto-tag"
+                                    >
+                                      <Tag className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+
+                              {!lead.ai_quality_score && !batchMode && (
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="w-full mb-2 gap-1"
+                                  className="w-full mb-2 gap-1 h-7 text-xs"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     analyzeLeadWithAI(lead.id);
@@ -180,11 +316,11 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh }: KanbanBoardPro
                                 </Button>
                               )}
 
-                              {column.id !== "active_partner" && (
+                              {column.id !== "active_partner" && !batchMode && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="w-full gap-1"
+                                  className="w-full gap-1 h-7 text-xs"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     const nextColumn = columns[columns.findIndex(c => c.id === column.id) + 1];
@@ -199,7 +335,7 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh }: KanbanBoardPro
                               )}
                             </Card>
                           </TooltipTrigger>
-                          {lead.recommended_action && (
+                          {lead.recommended_action && !batchMode && (
                             <TooltipContent side="right" className="max-w-xs">
                               <div className="space-y-1">
                                 <p className="font-semibold text-xs">Recommended Action:</p>
@@ -228,6 +364,12 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh }: KanbanBoardPro
           })}
         </div>
       </div>
+
+      <BatchActionsBar 
+        selectedLeads={selectedLeads}
+        onClearSelection={() => setSelectedLeads(new Set())}
+        onRefresh={onRefresh}
+      />
 
       <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
