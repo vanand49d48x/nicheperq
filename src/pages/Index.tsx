@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Search, Map, List, Save, CheckCircle2, Phone, Mail, RefreshCw, Briefcase, MapPin, Radius, Lock, Zap } from "lucide-react";
+import { Search, Map, List, Save, CheckCircle2, Phone, Mail, RefreshCw, Briefcase, MapPin, Radius, Lock, Zap, History, Calendar, Clock } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Link } from "react-router-dom";
 import {
@@ -73,20 +73,24 @@ const Index = () => {
   const [searchName, setSearchName] = useState("");
   const [sortBy, setSortBy] = useState<string>("default");
   const [searchFilter, setSearchFilter] = useState("");
+  const [enableScheduling, setEnableScheduling] = useState(false);
+  const [scheduleFrequency, setScheduleFrequency] = useState("weekly");
   const { toast } = useToast();
   const location = useLocation();
 
   useEffect(() => {
     // Check if we're coming from History page with search params
     if (location.state) {
-      const { niche: stateNiche, city: stateCity, radius: stateRadius } = location.state as any;
+      const { niche: stateNiche, city: stateCity, radius: stateRadius, loadLeads } = location.state as any;
       if (stateNiche) setNiche(stateNiche);
       if (stateCity) setCity(stateCity);
       if (stateRadius) setRadius(stateRadius);
+      
+      // Only auto-load leads if explicitly requested from History page
+      if (loadLeads) {
+        loadRecentLeads();
+      }
     }
-
-    // Load previously fetched leads from database
-    loadRecentLeads();
   }, [location]);
 
   const loadRecentLeads = async () => {
@@ -113,6 +117,10 @@ const Index = () => {
     } catch (error) {
       console.error("Error loading recent leads:", error);
     }
+  };
+
+  const handleLoadHistory = () => {
+    loadRecentLeads();
   };
 
   // First filter by bounds if enabled
@@ -300,6 +308,8 @@ const Index = () => {
         return;
       }
 
+      const nextRun = enableScheduling ? calculateNextRun(scheduleFrequency) : null;
+
       const { error } = await supabase
         .from('saved_searches')
         .insert({
@@ -310,16 +320,24 @@ const Index = () => {
           radius,
           lead_count: allLeads.length,
           last_run_at: new Date().toISOString(),
+          is_scheduled: enableScheduling,
+          schedule_frequency: enableScheduling ? scheduleFrequency : null,
+          next_run_at: nextRun,
+          is_active: enableScheduling,
         });
 
       if (error) throw error;
 
       toast({
         title: "Search Saved",
-        description: "You can find this search in your history",
+        description: enableScheduling 
+          ? `Search scheduled to run ${scheduleFrequency}` 
+          : "You can find this search in your history",
       });
       setShowSaveDialog(false);
       setSearchName("");
+      setEnableScheduling(false);
+      setScheduleFrequency("weekly");
     } catch (error) {
       console.error('Error saving search:', error);
       toast({
@@ -328,6 +346,22 @@ const Index = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const calculateNextRun = (freq: string): string => {
+    const now = new Date();
+    switch (freq) {
+      case 'daily':
+        now.setDate(now.getDate() + 1);
+        break;
+      case 'weekly':
+        now.setDate(now.getDate() + 7);
+        break;
+      case 'monthly':
+        now.setMonth(now.getMonth() + 1);
+        break;
+    }
+    return now.toISOString();
   };
 
   const leadsWithEmail = allLeads.filter(lead => lead.website || lead.phone).length;
@@ -466,17 +500,30 @@ const Index = () => {
                 <Search className="h-5 w-5 relative z-10" />
                 <span className="relative z-10">{isLoading ? "Searching..." : "🔍 Find Leads Now"}</span>
               </Button>
-              {allLeads.length > 0 && (
-                <Button
-                  onClick={() => setShowSaveDialog(true)}
-                  variant="outline"
-                  size="lg"
-                  className="gap-2 hover:bg-primary hover:text-primary-foreground transition-all"
-                >
-                  <Save className="h-5 w-5" />
-                  Save
-                </Button>
-              )}
+              <div className="flex gap-2">
+                {allLeads.length === 0 && (
+                  <Button
+                    onClick={handleLoadHistory}
+                    variant="outline"
+                    size="lg"
+                    className="gap-2 hover:bg-primary hover:text-primary-foreground transition-all"
+                  >
+                    <History className="h-5 w-5" />
+                    Load Recent Leads
+                  </Button>
+                )}
+                {allLeads.length > 0 && (
+                  <Button
+                    onClick={() => setShowSaveDialog(true)}
+                    variant="outline"
+                    size="lg"
+                    className="gap-2 hover:bg-primary hover:text-primary-foreground transition-all"
+                  >
+                    <Save className="h-5 w-5" />
+                    Save
+                  </Button>
+                )}
+              </div>
             </div>
             </div>
           </Card>
@@ -736,26 +783,70 @@ const Index = () => {
 
         {/* Save Search Dialog */}
         <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Save Search</DialogTitle>
               <DialogDescription>
-                Give this search a name so you can easily find it later
+                Name your search and optionally schedule it to run automatically
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
-              <Input
-                placeholder="e.g., NYC Dentists"
-                value={searchName}
-                onChange={(e) => setSearchName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSaveSearch()}
-              />
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="search-name" className="mb-2">Search Name</Label>
+                <Input
+                  id="search-name"
+                  placeholder="e.g., NYC Dentists"
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !enableScheduling && handleSaveSearch()}
+                />
+              </div>
+
+              <div className="border rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    <div>
+                      <Label className="text-sm font-medium">Automated Schedule</Label>
+                      <p className="text-xs text-muted-foreground">Run this search automatically</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={enableScheduling}
+                    onCheckedChange={setEnableScheduling}
+                  />
+                </div>
+
+                {enableScheduling && (
+                  <div>
+                    <Label htmlFor="frequency" className="text-sm mb-2 block">
+                      Frequency
+                    </Label>
+                    <Select value={scheduleFrequency} onValueChange={setScheduleFrequency}>
+                      <SelectTrigger id="frequency">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      New leads will be automatically fetched {scheduleFrequency}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleSaveSearch}>Save</Button>
+              <Button onClick={handleSaveSearch}>
+                {enableScheduling ? "Save & Schedule" : "Save Search"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
