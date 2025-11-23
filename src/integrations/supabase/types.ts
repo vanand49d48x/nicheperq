@@ -236,6 +236,8 @@ export type Database = {
           id: string
           lead_id: string
           note_text: string
+          note_type: string | null
+          sentiment: string | null
           updated_at: string
           user_id: string
         }
@@ -244,6 +246,8 @@ export type Database = {
           id?: string
           lead_id: string
           note_text: string
+          note_type?: string | null
+          sentiment?: string | null
           updated_at?: string
           user_id: string
         }
@@ -252,6 +256,8 @@ export type Database = {
           id?: string
           lead_id?: string
           note_text?: string
+          note_type?: string | null
+          sentiment?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -444,6 +450,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "lead_ai_scores_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_interactions: {
+        Row: {
+          created_at: string
+          id: string
+          interaction_type: string
+          lead_id: string
+          metadata: Json | null
+          occurred_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interaction_type: string
+          lead_id: string
+          metadata?: Json | null
+          occurred_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interaction_type?: string
+          lead_id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_interactions_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
