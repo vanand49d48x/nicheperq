@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import WorkflowTemplates from "./WorkflowTemplates";
 
 interface Workflow {
   id: string;
@@ -148,14 +149,17 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>Saved Workflows</CardTitle>
-          <Button onClick={onCreateNew} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Create New
-          </Button>
-        </CardHeader>
+      <div className="space-y-6">
+        <WorkflowTemplates onTemplateDeployed={loadWorkflows} />
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle>Your Workflows</CardTitle>
+            <Button onClick={onCreateNew} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Custom
+            </Button>
+          </CardHeader>
         <CardContent>
           {workflows.length === 0 ? (
             <div className="text-center py-8">
@@ -223,7 +227,8 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
