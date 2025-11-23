@@ -172,14 +172,6 @@ const CRM = () => {
                 Workflows
               </Button>
               <Button
-                variant={view === "visual-workflows" ? "default" : "outline"}
-                onClick={() => setView("visual-workflows")}
-                className="gap-2"
-              >
-                🎨
-                Visual
-              </Button>
-              <Button
                 variant={view === "insights" ? "default" : "outline"}
                 onClick={() => setView("insights")}
                 className="gap-2"
@@ -265,7 +257,16 @@ const CRM = () => {
           </FeatureGate>
         ) : view === "workflows" ? (
           <FeatureGate feature="ai">
-            <WorkflowBuilder />
+            <WorkflowManager
+              onCreateNew={() => {
+                setEditingWorkflowId(undefined);
+                setView('workflow-editor');
+              }}
+              onEditWorkflow={(id) => {
+                setEditingWorkflowId(id);
+                setView('workflow-editor');
+              }}
+            />
           </FeatureGate>
         ) : view === "insights" ? (
           <FeatureGate feature="ai">
