@@ -22,7 +22,7 @@ serve(async (req) => {
     const { email, name }: SignupRequest = await req.json();
 
     const emailResponse = await resend.emails.send({
-      from: "NichePerQ <onboarding@resend.dev>",
+      from: "NichePerQ <auth@nicheperq.com>",
       to: [email],
       subject: "Welcome to NichePerQ!",
       html: `

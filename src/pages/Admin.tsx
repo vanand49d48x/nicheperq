@@ -11,9 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Users, TrendingUp, Calendar, Settings2, Search, Filter } from "lucide-react";
+import { SupportTicketsTab } from "@/components/admin/SupportTicketsTab";
 
 type AppRole = 'admin' | 'advanced' | 'standard' | 'basic' | 'pro' | 'free';
 
@@ -514,202 +516,215 @@ export default function Admin() {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>User Management</CardTitle>
-            <CardDescription>View and manage all user accounts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {/* Search and Filter Section */}
-            <div className="mb-6 space-y-4">
-              <div className="flex gap-4 flex-wrap">
-                <div className="flex-1 min-w-[250px]">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by name, email, or company..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="All Roles" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="pro">Pro</SelectItem>
-                    <SelectItem value="advanced">Advanced</SelectItem>
-                    <SelectItem value="standard">Standard</SelectItem>
-                    <SelectItem value="free">Free</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={crmFilter} onValueChange={setCrmFilter}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="CRM Access" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All CRM</SelectItem>
-                    <SelectItem value="enabled">CRM Enabled</SelectItem>
-                    <SelectItem value="disabled">CRM Disabled</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={aiFilter} onValueChange={setAiFilter}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="AI Access" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All AI</SelectItem>
-                    <SelectItem value="enabled">AI Enabled</SelectItem>
-                    <SelectItem value="disabled">AI Disabled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        <Tabs defaultValue="users" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="users">User Management</TabsTrigger>
+            <TabsTrigger value="support">Support Tickets</TabsTrigger>
+          </TabsList>
 
-              {/* Bulk Actions */}
-              {selectedUsers.size > 0 && (
-                <div className="flex gap-2 items-center p-4 bg-muted rounded-lg">
-                  <span className="text-sm font-medium">
-                    {selectedUsers.size} user{selectedUsers.size > 1 ? 's' : ''} selected
-                  </span>
-                  <div className="flex gap-2 ml-auto">
-                    <Select onValueChange={handleBulkRoleChange}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Change Role" />
+          <TabsContent value="users" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>User Management</CardTitle>
+                <CardDescription>View and manage all user accounts</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Search and Filter Section */}
+                <div className="mb-6 space-y-4">
+                  <div className="flex gap-4 flex-wrap">
+                    <div className="flex-1 min-w-[250px]">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by name, email, or company..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <Select value={roleFilter} onValueChange={setRoleFilter}>
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="All Roles" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="free">Set to FREE</SelectItem>
-                        <SelectItem value="standard">Set to STANDARD</SelectItem>
-                        <SelectItem value="advanced">Set to ADVANCED</SelectItem>
-                        <SelectItem value="pro">Set to PRO</SelectItem>
-                        <SelectItem value="admin">Set to ADMIN</SelectItem>
+                        <SelectItem value="all">All Roles</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="pro">Pro</SelectItem>
+                        <SelectItem value="advanced">Advanced</SelectItem>
+                        <SelectItem value="standard">Standard</SelectItem>
+                        <SelectItem value="free">Free</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleBulkFeatureToggle('crm', true)}
-                    >
-                      Enable CRM
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleBulkFeatureToggle('crm', false)}
-                    >
-                      Disable CRM
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleBulkFeatureToggle('ai', true)}
-                    >
-                      Enable AI
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleBulkFeatureToggle('ai', false)}
-                    >
-                      Disable AI
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedUsers(new Set())}
-                    >
-                      Clear
-                    </Button>
+                    <Select value={crmFilter} onValueChange={setCrmFilter}>
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="CRM Access" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All CRM</SelectItem>
+                        <SelectItem value="enabled">CRM Enabled</SelectItem>
+                        <SelectItem value="disabled">CRM Disabled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={aiFilter} onValueChange={setAiFilter}>
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="AI Access" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All AI</SelectItem>
+                        <SelectItem value="enabled">AI Enabled</SelectItem>
+                        <SelectItem value="disabled">AI Disabled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Bulk Actions */}
+                  {selectedUsers.size > 0 && (
+                    <div className="flex gap-2 items-center p-4 bg-muted rounded-lg">
+                      <span className="text-sm font-medium">
+                        {selectedUsers.size} user{selectedUsers.size > 1 ? 's' : ''} selected
+                      </span>
+                      <div className="flex gap-2 ml-auto">
+                        <Select onValueChange={handleBulkRoleChange}>
+                          <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Change Role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="free">Set to FREE</SelectItem>
+                            <SelectItem value="standard">Set to STANDARD</SelectItem>
+                            <SelectItem value="advanced">Set to ADVANCED</SelectItem>
+                            <SelectItem value="pro">Set to PRO</SelectItem>
+                            <SelectItem value="admin">Set to ADMIN</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleBulkFeatureToggle('crm', true)}
+                        >
+                          Enable CRM
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleBulkFeatureToggle('crm', false)}
+                        >
+                          Disable CRM
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleBulkFeatureToggle('ai', true)}
+                        >
+                          Enable AI
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleBulkFeatureToggle('ai', false)}
+                        >
+                          Disable AI
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedUsers(new Set())}
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="text-sm text-muted-foreground">
+                    Showing {filteredUsers.length} of {users.length} users
                   </div>
                 </div>
-              )}
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12">
+                            <Checkbox
+                              checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0}
+                              onCheckedChange={toggleSelectAll}
+                            />
+                          </TableHead>
+                          <TableHead>User</TableHead>
+                          <TableHead>Company</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead className="text-right">Monthly</TableHead>
+                          <TableHead className="text-right">Total</TableHead>
+                          <TableHead>Last Activity</TableHead>
+                          <TableHead className="text-center">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredUsers.map((user) => (
+                          <TableRow key={user.id}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedUsers.has(user.id)}
+                                onCheckedChange={() => toggleUserSelection(user.id)}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{user.full_name || 'No name'}</div>
+                                <div className="text-sm text-muted-foreground">{user.email}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell>{user.company || '-'}</TableCell>
+                            <TableCell>
+                              <Select
+                                value={user.role}
+                                onValueChange={(value) => handleRoleChange(user.id, value as AppRole)}
+                              >
+                                <SelectTrigger className="w-32">
+                                  <SelectValue>
+                                    <Badge variant={getRoleBadgeVariant(user.role)}>
+                                      {user.role.toUpperCase()}
+                                    </Badge>
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="free">FREE</SelectItem>
+                                  <SelectItem value="standard">STANDARD</SelectItem>
+                                  <SelectItem value="advanced">ADVANCED</SelectItem>
+                                  <SelectItem value="pro">PRO</SelectItem>
+                                  <SelectItem value="admin">ADMIN</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell className="text-right">{user.monthly_leads}</TableCell>
+                            <TableCell className="text-right">{user.total_leads}</TableCell>
+                            <TableCell>{formatDate(user.last_search_date)}</TableCell>
+                            <TableCell className="text-center">
+                              <UserManagementDialog
+                                user={user}
+                                onFeatureToggle={handleFeatureToggle}
+                                onCustomLimitUpdate={handleCustomLimitUpdate}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              <div className="text-sm text-muted-foreground">
-                Showing {filteredUsers.length} of {users.length} users
-              </div>
-            </div>
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">
-                        <Checkbox
-                          checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0}
-                          onCheckedChange={toggleSelectAll}
-                        />
-                      </TableHead>
-                      <TableHead>User</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead className="text-right">Monthly</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead>Last Activity</TableHead>
-                      <TableHead className="text-center">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedUsers.has(user.id)}
-                            onCheckedChange={() => toggleUserSelection(user.id)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{user.full_name || 'No name'}</div>
-                            <div className="text-sm text-muted-foreground">{user.email}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{user.company || '-'}</TableCell>
-                        <TableCell>
-                          <Select
-                            value={user.role}
-                            onValueChange={(value) => handleRoleChange(user.id, value as AppRole)}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue>
-                                <Badge variant={getRoleBadgeVariant(user.role)}>
-                                  {user.role.toUpperCase()}
-                                </Badge>
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="free">FREE</SelectItem>
-                              <SelectItem value="standard">STANDARD</SelectItem>
-                              <SelectItem value="advanced">ADVANCED</SelectItem>
-                              <SelectItem value="pro">PRO</SelectItem>
-                              <SelectItem value="admin">ADMIN</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="text-right">{user.monthly_leads}</TableCell>
-                        <TableCell className="text-right">{user.total_leads}</TableCell>
-                        <TableCell>{formatDate(user.last_search_date)}</TableCell>
-                        <TableCell className="text-center">
-                          <UserManagementDialog
-                            user={user}
-                            onFeatureToggle={handleFeatureToggle}
-                            onCustomLimitUpdate={handleCustomLimitUpdate}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          <TabsContent value="support">
+            <SupportTicketsTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
