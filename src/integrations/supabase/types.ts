@@ -668,6 +668,7 @@ export type Database = {
           niche: string
           radius: string
           schedule_frequency: string | null
+          schedule_time: string | null
           user_id: string
         }
         Insert: {
@@ -683,6 +684,7 @@ export type Database = {
           niche: string
           radius: string
           schedule_frequency?: string | null
+          schedule_time?: string | null
           user_id: string
         }
         Update: {
@@ -698,6 +700,7 @@ export type Database = {
           niche?: string
           radius?: string
           schedule_frequency?: string | null
+          schedule_time?: string | null
           user_id?: string
         }
         Relationships: [

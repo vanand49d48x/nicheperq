@@ -23,6 +23,7 @@ interface SavedSearch {
   last_run_at: string | null;
   is_scheduled: boolean;
   schedule_frequency: string;
+  schedule_time: string;
   is_active: boolean;
   next_run_at: string | null;
 }
@@ -287,6 +288,7 @@ const History = () => {
                   searchName={search.name}
                   isScheduled={search.is_scheduled}
                   scheduleFrequency={search.schedule_frequency}
+                  scheduleTime={search.schedule_time}
                   isActive={search.is_active}
                   nextRunAt={search.next_run_at}
                   lastRunAt={search.last_run_at}

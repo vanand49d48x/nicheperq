@@ -82,6 +82,9 @@ serve(async (req) => {
 
         // Calculate next run time
         let nextRunAt = new Date();
+        const scheduleTime = search.schedule_time || '09:00';
+        const [hours, minutes] = scheduleTime.split(':').map(Number);
+        
         switch (search.schedule_frequency) {
           case 'daily':
             nextRunAt.setDate(nextRunAt.getDate() + 1);
@@ -93,6 +96,9 @@ serve(async (req) => {
             nextRunAt.setMonth(nextRunAt.getMonth() + 1);
             break;
         }
+        
+        // Set the scheduled time
+        nextRunAt.setHours(hours, minutes, 0, 0);
 
         // Update the search with next run time and last run time
         await supabase

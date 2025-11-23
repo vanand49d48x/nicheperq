@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +16,7 @@ interface ScheduledSearchManagerProps {
   searchName: string;
   isScheduled: boolean;
   scheduleFrequency: string;
+  scheduleTime: string;
   isActive: boolean;
   nextRunAt: string | null;
   lastRunAt: string | null;
@@ -26,12 +28,14 @@ export const ScheduledSearchManager = ({
   searchName,
   isScheduled,
   scheduleFrequency,
+  scheduleTime,
   isActive,
   nextRunAt,
   lastRunAt,
   onUpdate,
 }: ScheduledSearchManagerProps) => {
   const [frequency, setFrequency] = useState(scheduleFrequency || 'weekly');
+  const [time, setTime] = useState(scheduleTime || '09:00');
   const [enabled, setEnabled] = useState(isScheduled);
   const [active, setActive] = useState(isActive);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -40,13 +44,14 @@ export const ScheduledSearchManager = ({
   const handleToggleSchedule = async (checked: boolean) => {
     setIsUpdating(true);
     try {
-      const nextRun = checked ? calculateNextRun(frequency) : null;
+      const nextRun = checked ? calculateNextRun(frequency, time) : null;
       
       const { error } = await supabase
         .from('saved_searches')
         .update({
           is_scheduled: checked,
           schedule_frequency: frequency,
+          schedule_time: time,
           next_run_at: nextRun,
           is_active: checked,
         })
@@ -59,7 +64,7 @@ export const ScheduledSearchManager = ({
       toast({
         title: "Success",
         description: checked 
-          ? `Scheduled search every ${frequency}` 
+          ? `Scheduled search every ${frequency} at ${time}` 
           : "Scheduled search disabled",
       });
       onUpdate();
@@ -106,7 +111,7 @@ export const ScheduledSearchManager = ({
   const handleFrequencyChange = async (newFrequency: string) => {
     setIsUpdating(true);
     try {
-      const nextRun = calculateNextRun(newFrequency);
+      const nextRun = calculateNextRun(newFrequency, time);
       
       const { error } = await supabase
         .from('saved_searches')
@@ -136,20 +141,51 @@ export const ScheduledSearchManager = ({
     }
   };
 
-  const calculateNextRun = (freq: string): string => {
-    const now = new Date();
-    switch (freq) {
-      case 'daily':
-        now.setDate(now.getDate() + 1);
-        break;
-      case 'weekly':
-        now.setDate(now.getDate() + 7);
-        break;
-      case 'monthly':
-        now.setMonth(now.getMonth() + 1);
-        break;
+  const handleTimeChange = async (newTime: string) => {
+    setIsUpdating(true);
+    try {
+      const nextRun = calculateNextRun(frequency, newTime);
+      
+      const { error } = await supabase
+        .from('saved_searches')
+        .update({
+          schedule_time: newTime,
+          next_run_at: nextRun,
+        })
+        .eq('id', searchId);
+
+      if (error) throw error;
+
+      setTime(newTime);
+      toast({
+        title: "Success",
+        description: `Schedule time updated to ${newTime}`,
+      });
+      onUpdate();
+    } catch (error) {
+      console.error('Error updating time:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update time",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
     }
-    return now.toISOString();
+  };
+
+  const calculateNextRun = (freq: string, scheduleTime: string): string => {
+    const [hours, minutes] = scheduleTime.split(':').map(Number);
+    const now = new Date();
+    const nextRun = new Date(now);
+    nextRun.setHours(hours, minutes, 0, 0);
+    
+    // If today's scheduled time has passed, move to next occurrence
+    if (nextRun <= now) {
+      nextRun.setDate(nextRun.getDate() + 1);
+    }
+    
+    return nextRun.toISOString();
   };
 
   return (
@@ -172,7 +208,7 @@ export const ScheduledSearchManager = ({
 
         {enabled && (
           <>
-            <div className="flex items-center gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="flex-1">
                 <Label htmlFor="frequency" className="text-sm mb-2 block">
                   Frequency
@@ -188,27 +224,58 @@ export const ScheduledSearchManager = ({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center gap-2 pt-6">
-                <Switch
-                  checked={active}
-                  onCheckedChange={handleToggleActive}
+              
+              <div className="flex-1">
+                <Label htmlFor="time" className="text-sm mb-2 block">
+                  Time
+                </Label>
+                <Input
+                  id="time"
+                  type="time"
+                  value={time}
+                  onChange={(e) => handleTimeChange(e.target.value)}
                   disabled={isUpdating}
                 />
-                <Label className="text-sm">
-                  {active ? (
-                    <span className="flex items-center gap-1 text-green-600">
-                      <Play className="h-3 w-3" /> Active
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-orange-600">
-                      <Pause className="h-3 w-3" /> Paused
-                    </span>
-                  )}
-                </Label>
               </div>
             </div>
 
-            <div className="flex gap-3 text-sm">
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium">
+                  Status:
+                </Label>
+                {active ? (
+                  <Badge variant="default" className="gap-1">
+                    <Play className="h-3 w-3" /> Active
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="gap-1">
+                    <Pause className="h-3 w-3" /> Paused
+                  </Badge>
+                )}
+              </div>
+              <Button
+                size="sm"
+                variant={active ? "outline" : "default"}
+                onClick={() => handleToggleActive(!active)}
+                disabled={isUpdating}
+                className="gap-2"
+              >
+                {active ? (
+                  <>
+                    <Pause className="h-3 w-3" />
+                    Pause
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-3 w-3" />
+                    Resume
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <div className="flex gap-3 text-sm flex-wrap">
               {nextRunAt && (
                 <Badge variant="outline" className="gap-1">
                   <Clock className="h-3 w-3" />
