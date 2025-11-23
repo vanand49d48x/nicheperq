@@ -410,15 +410,60 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_ai_scores: {
+        Row: {
+          closing_probability: number
+          created_at: string
+          id: string
+          intent_score: number
+          lead_id: string
+          quality_score: number
+          reasoning: Json | null
+          risk_score: number
+        }
+        Insert: {
+          closing_probability: number
+          created_at?: string
+          id?: string
+          intent_score: number
+          lead_id: string
+          quality_score: number
+          reasoning?: Json | null
+          risk_score: number
+        }
+        Update: {
+          closing_probability?: number
+          created_at?: string
+          id?: string
+          intent_score?: number
+          lead_id?: string
+          quality_score?: number
+          reasoning?: Json | null
+          risk_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_ai_scores_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           address: string | null
+          ai_intent_score: number | null
+          ai_quality_score: number | null
           business_name: string
           city: string
+          closing_probability: number | null
           contact_status: string | null
           created_at: string
           id: string
           is_preview: boolean
+          last_ai_analysis_at: string | null
           last_contacted_at: string | null
           latitude: number | null
           longitude: number | null
@@ -427,8 +472,12 @@ export type Database = {
           notes: string | null
           phone: string | null
           rating: number | null
+          recommended_action: string | null
+          recommended_tone: string | null
           review_count: number | null
+          risk_score: number | null
           search_id: string | null
+          sentiment: string | null
           state: string | null
           tags: string[] | null
           updated_at: string
@@ -438,12 +487,16 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          ai_intent_score?: number | null
+          ai_quality_score?: number | null
           business_name: string
           city: string
+          closing_probability?: number | null
           contact_status?: string | null
           created_at?: string
           id?: string
           is_preview?: boolean
+          last_ai_analysis_at?: string | null
           last_contacted_at?: string | null
           latitude?: number | null
           longitude?: number | null
@@ -452,8 +505,12 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           rating?: number | null
+          recommended_action?: string | null
+          recommended_tone?: string | null
           review_count?: number | null
+          risk_score?: number | null
           search_id?: string | null
+          sentiment?: string | null
           state?: string | null
           tags?: string[] | null
           updated_at?: string
@@ -463,12 +520,16 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          ai_intent_score?: number | null
+          ai_quality_score?: number | null
           business_name?: string
           city?: string
+          closing_probability?: number | null
           contact_status?: string | null
           created_at?: string
           id?: string
           is_preview?: boolean
+          last_ai_analysis_at?: string | null
           last_contacted_at?: string | null
           latitude?: number | null
           longitude?: number | null
@@ -477,8 +538,12 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           rating?: number | null
+          recommended_action?: string | null
+          recommended_tone?: string | null
           review_count?: number | null
+          risk_score?: number | null
           search_id?: string | null
+          sentiment?: string | null
           state?: string | null
           tags?: string[] | null
           updated_at?: string
