@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Play, Pause, Edit, Trash2, Plus } from "lucide-react";
+import { Play, Pause, Edit, Trash2, Plus, Sparkles } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -150,6 +150,23 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
   return (
     <>
       <div className="space-y-6">
+        <Card className="bg-accent/30 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <Sparkles className="h-5 w-5 text-primary mt-1" />
+              <div>
+                <h3 className="font-semibold mb-1">💡 How Workflows Work</h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  <strong>1. Deploy a Template</strong> or create custom → <strong>2. Review/Edit</strong> in "Your Workflows" below → <strong>3. Activate</strong> to start automation
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Once active, matching leads are automatically enrolled and emails sent on schedule.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
         <WorkflowTemplates onTemplateDeployed={loadWorkflows} />
         
         <Card>
