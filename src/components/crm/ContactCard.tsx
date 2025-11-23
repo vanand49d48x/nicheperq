@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Phone, 
   Globe, 
@@ -13,13 +14,15 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronUp,
-  Sparkles
+  Sparkles,
+  Bot
 } from "lucide-react";
 import { format } from "date-fns";
 import { ContactStatusSelector } from "./ContactStatusSelector";
 import { FollowUpSelector } from "./FollowUpSelector";
 import { ContactNotes } from "./ContactNotes";
 import { AIEmailComposer } from "./AIEmailComposer";
+import { LeadAIPanel } from "./LeadAIPanel";
 import { cn } from "@/lib/utils";
 
 interface ContactCardProps {
@@ -119,50 +122,66 @@ export const ContactCard = ({ lead, onStatusChange, onRefresh, isHighlighted = f
       </div>
 
       {isExpanded && (
-        <div className="space-y-4 pt-4 border-t">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Contact Status</label>
-              <ContactStatusSelector
-                currentStatus={lead.contact_status}
-                onChange={onStatusChange}
-              />
-            </div>
+        <div className="pt-4 border-t">
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="details">Details & Notes</TabsTrigger>
+              <TabsTrigger value="ai-assistant" className="gap-2">
+                <Bot className="h-4 w-4" />
+                AI Assistant
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="details" className="space-y-4 mt-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Contact Status</label>
+                  <ContactStatusSelector
+                    currentStatus={lead.contact_status}
+                    onChange={onStatusChange}
+                  />
+                </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Follow-up Reminder</label>
-              <FollowUpSelector
-                leadId={lead.id}
-                currentDate={lead.next_follow_up_at}
-                onUpdate={onRefresh}
-              />
-            </div>
-          </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Follow-up Reminder</label>
+                  <FollowUpSelector
+                    leadId={lead.id}
+                    currentDate={lead.next_follow_up_at}
+                    onUpdate={onRefresh}
+                  />
+                </div>
+              </div>
 
-          {lead.last_contacted_at && (
-            <p className="text-sm text-muted-foreground flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Last contacted: {format(new Date(lead.last_contacted_at), 'PPp')}
-            </p>
-          )}
+              {lead.last_contacted_at && (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Last contacted: {format(new Date(lead.last_contacted_at), 'PPp')}
+                </p>
+              )}
 
-          {lead.next_follow_up_at && (
-            <p className="text-sm text-primary flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Follow-up: {format(new Date(lead.next_follow_up_at), 'PPp')}
-            </p>
-          )}
+              {lead.next_follow_up_at && (
+                <p className="text-sm text-primary flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Follow-up: {format(new Date(lead.next_follow_up_at), 'PPp')}
+                </p>
+              )}
 
-          <ContactNotes leadId={lead.id} />
-          
-          <Button 
-            onClick={() => setShowEmailComposer(true)} 
-            className="w-full gap-2 mt-4"
-            variant="outline"
-          >
-            <Sparkles className="h-4 w-4" />
-            Draft AI Email
-          </Button>
+              <ContactNotes leadId={lead.id} />
+              
+              <Button 
+                onClick={() => setShowEmailComposer(true)} 
+                className="w-full gap-2 mt-4"
+                variant="outline"
+              >
+                <Sparkles className="h-4 w-4" />
+                Draft AI Email
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="ai-assistant" className="mt-4">
+              <LeadAIPanel lead={lead} onRefresh={onRefresh} />
+            </TabsContent>
+          </Tabs>
         </div>
       )}
 
