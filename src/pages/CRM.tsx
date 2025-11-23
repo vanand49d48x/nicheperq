@@ -13,6 +13,7 @@ import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { AIAutomationPanel } from "@/components/crm/AIAutomationPanel";
 import { WorkflowBuilder } from "@/components/crm/WorkflowBuilder";
 import VisualWorkflowBuilder from "@/components/crm/VisualWorkflowBuilder";
+import WorkflowManager from "@/components/crm/WorkflowManager";
 import { AIInsights } from "@/components/crm/AIInsights";
 import { FeatureGate } from "@/components/FeatureGate";
 import { AIChatbot } from "@/components/crm/AIChatbot";
@@ -39,7 +40,8 @@ interface Lead {
 const CRM = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights" | "analytics" | "orchestration" | "visual-workflows">("kanban");
+  const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights" | "analytics" | "orchestration" | "visual-workflows" | "workflow-editor">("kanban");
+  const [editingWorkflowId, setEditingWorkflowId] = useState<string | undefined>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -279,7 +281,26 @@ const CRM = () => {
           </FeatureGate>
         ) : view === "visual-workflows" ? (
           <FeatureGate feature="ai">
-            <VisualWorkflowBuilder />
+            <WorkflowManager
+              onCreateNew={() => {
+                setEditingWorkflowId(undefined);
+                setView('workflow-editor');
+              }}
+              onEditWorkflow={(id) => {
+                setEditingWorkflowId(id);
+                setView('workflow-editor');
+              }}
+            />
+          </FeatureGate>
+        ) : view === "workflow-editor" ? (
+          <FeatureGate feature="ai">
+            <VisualWorkflowBuilder
+              workflowId={editingWorkflowId}
+              onBack={() => {
+                setEditingWorkflowId(undefined);
+                setView('visual-workflows');
+              }}
+            />
           </FeatureGate>
         ) : (
           <div className="grid gap-4">

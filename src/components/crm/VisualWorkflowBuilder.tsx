@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   ReactFlow,
   Node,
@@ -106,7 +106,12 @@ const nodeTypes: NodeTypes = {
   start: StartNode,
 };
 
-export default function VisualWorkflowBuilder() {
+interface VisualWorkflowBuilderProps {
+  workflowId?: string;
+  onBack: () => void;
+}
+
+export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWorkflowBuilderProps) {
   const { toast } = useToast();
   const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowNode>([
     {
@@ -122,6 +127,77 @@ export default function VisualWorkflowBuilder() {
   const [emailPreview, setEmailPreview] = useState<any>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState<string>('');
+  const [currentWorkflowId, setCurrentWorkflowId] = useState<string | undefined>(workflowId);
+
+  useEffect(() => {
+    if (workflowId) {
+      loadWorkflow(workflowId);
+    }
+  }, [workflowId]);
+
+  const loadWorkflow = async (id: string) => {
+    try {
+      const { data: workflow, error: workflowError } = await supabase
+        .from('ai_workflows')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (workflowError) throw workflowError;
+
+      const { data: steps, error: stepsError } = await supabase
+        .from('workflow_steps')
+        .select('*')
+        .eq('workflow_id', id)
+        .order('step_order');
+
+      if (stepsError) throw stepsError;
+
+      setWorkflowName(workflow.name);
+      setCurrentWorkflowId(id);
+
+      // Convert steps to nodes
+      const newNodes: WorkflowNode[] = [
+        {
+          id: 'start',
+          type: 'start',
+          position: { x: 250, y: 50 },
+          data: {},
+        },
+      ];
+
+      steps.forEach((step, index) => {
+        newNodes.push({
+          id: step.id,
+          type: step.action_type,
+          position: { x: 250, y: (index + 1) * 120 + 50 },
+          data: {
+            emailType: step.email_type,
+            tone: step.tone,
+            aiHint: step.ai_prompt_hint,
+            delayDays: step.delay_days,
+            conditionType: step.condition_type,
+            conditionValue: step.condition_value,
+            nextStatus: step.next_status,
+          },
+        });
+      });
+
+      setNodes(newNodes);
+
+      toast({
+        title: "Workflow Loaded",
+        description: `"${workflow.name}" loaded successfully`,
+      });
+    } catch (error) {
+      console.error('Load error:', error);
+      toast({
+        title: "Load Failed",
+        description: "Could not load workflow",
+        variant: "destructive",
+      });
+    }
+  };
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -242,37 +318,76 @@ export default function VisualWorkflowBuilder() {
       }));
 
     try {
-      // Save workflow
-      const { data: workflow, error: workflowError } = await supabase
-        .from('ai_workflows')
-        .insert({
-          user_id: user.id,
-          name: workflowName,
-          description: `Visual workflow with ${steps.length} steps`,
-          trigger: { type: 'manual', value: '' },
-          is_active: false,
-        })
-        .select()
-        .single();
+      if (currentWorkflowId) {
+        // Update existing workflow
+        const { error: workflowError } = await supabase
+          .from('ai_workflows')
+          .update({
+            name: workflowName,
+            description: `Visual workflow with ${steps.length} steps`,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', currentWorkflowId);
 
-      if (workflowError) throw workflowError;
+        if (workflowError) throw workflowError;
 
-      // Save steps
-      const stepsToInsert = steps.map(step => ({
-        ...step,
-        workflow_id: workflow.id,
-      }));
+        // Delete old steps
+        await supabase
+          .from('workflow_steps')
+          .delete()
+          .eq('workflow_id', currentWorkflowId);
 
-      const { error: stepsError } = await supabase
-        .from('workflow_steps')
-        .insert(stepsToInsert);
+        // Insert new steps
+        const stepsToInsert = steps.map(step => ({
+          ...step,
+          workflow_id: currentWorkflowId,
+        }));
 
-      if (stepsError) throw stepsError;
+        const { error: stepsError } = await supabase
+          .from('workflow_steps')
+          .insert(stepsToInsert);
 
-      toast({
-        title: "Workflow Saved",
-        description: `"${workflowName}" has been saved successfully`,
-      });
+        if (stepsError) throw stepsError;
+
+        toast({
+          title: "Workflow Updated",
+          description: `"${workflowName}" has been updated successfully`,
+        });
+      } else {
+        // Create new workflow
+        const { data: workflow, error: workflowError } = await supabase
+          .from('ai_workflows')
+          .insert({
+            user_id: user.id,
+            name: workflowName,
+            description: `Visual workflow with ${steps.length} steps`,
+            trigger: { type: 'manual', value: '' },
+            is_active: false,
+          })
+          .select()
+          .single();
+
+        if (workflowError) throw workflowError;
+
+        // Save steps
+        const stepsToInsert = steps.map(step => ({
+          ...step,
+          workflow_id: workflow.id,
+        }));
+
+        const { error: stepsError } = await supabase
+          .from('workflow_steps')
+          .insert(stepsToInsert);
+
+        if (stepsError) throw stepsError;
+
+        setCurrentWorkflowId(workflow.id);
+
+        toast({
+          title: "Workflow Saved",
+          description: `"${workflowName}" has been saved successfully`,
+        });
+      }
     } catch (error) {
       console.error('Save error:', error);
       toast({
@@ -288,7 +403,12 @@ export default function VisualWorkflowBuilder() {
       {/* Toolbar */}
       <Card className="w-64 flex-shrink-0 overflow-y-auto">
         <CardHeader>
-          <CardTitle className="text-lg">Workflow Builder</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Workflow Builder</CardTitle>
+            <Button variant="ghost" size="sm" onClick={onBack}>
+              Back
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
