@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { LayoutGrid, List, Plus } from "lucide-react";
+import { LayoutGrid, List, Plus, Sparkles, Zap, Bot } from "lucide-react";
 import { ContactCard } from "@/components/crm/ContactCard";
 import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { AIAutomationPanel } from "@/components/crm/AIAutomationPanel";
@@ -36,6 +37,7 @@ const CRM = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights">("kanban");
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
   const statusStats = {
@@ -50,6 +52,17 @@ const CRM = () => {
   useEffect(() => {
     fetchLeads();
   }, []);
+
+  useEffect(() => {
+    const leadId = searchParams.get('lead');
+    if (leadId && leads.length > 0) {
+      setView("list");
+      setTimeout(() => {
+        const element = document.getElementById(`lead-${leadId}`);
+        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  }, [searchParams, leads]);
 
   const fetchLeads = async () => {
     try {
@@ -139,20 +152,26 @@ const CRM = () => {
               <Button
                 variant={view === "automation" ? "default" : "outline"}
                 onClick={() => setView("automation")}
+                className="gap-2"
               >
-                🤖 AI Activity
+                <Bot className="h-4 w-4" />
+                AI Activity
               </Button>
               <Button
                 variant={view === "workflows" ? "default" : "outline"}
                 onClick={() => setView("workflows")}
+                className="gap-2"
               >
-                ⚡ AI Workflows
+                <Zap className="h-4 w-4" />
+                AI Workflows
               </Button>
               <Button
                 variant={view === "insights" ? "default" : "outline"}
                 onClick={() => setView("insights")}
+                className="gap-2"
               >
-                💡 AI Insights
+                <Sparkles className="h-4 w-4" />
+                AI Insights
               </Button>
             </div>
           </div>
@@ -220,12 +239,13 @@ const CRM = () => {
         ) : (
           <div className="grid gap-4">
             {leads.map(lead => (
-              <ContactCard
-                key={lead.id}
-                lead={lead}
-                onStatusChange={(status) => updateLeadStatus(lead.id, status)}
-                onRefresh={fetchLeads}
-              />
+              <div key={lead.id} id={`lead-${lead.id}`}>
+                <ContactCard
+                  lead={lead}
+                  onStatusChange={(status) => updateLeadStatus(lead.id, status)}
+                  onRefresh={fetchLeads}
+                />
+              </div>
             ))}
           </div>
         )}

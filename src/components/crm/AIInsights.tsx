@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,7 @@ interface Insight {
 export const AIInsights = () => {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     generateInsights();
@@ -171,7 +173,7 @@ export const AIInsights = () => {
                 <p className="text-xs text-muted-foreground">{insight.description}</p>
               </div>
               {insight.leadId && (
-                <Button size="sm" variant="ghost" onClick={() => window.location.href = `/crm?lead=${insight.leadId}`}>
+                <Button size="sm" variant="ghost" onClick={() => navigate(`/crm?lead=${insight.leadId}`)}>
                   View
                 </Button>
               )}
