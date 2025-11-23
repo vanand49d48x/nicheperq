@@ -9,7 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Save, Play, Zap } from "lucide-react";
+import { Plus, Trash2, Save, Play, Zap, Sparkles } from "lucide-react";
+import { AIWorkflowGenerator } from "./AIWorkflowGenerator";
 
 interface WorkflowStep {
   action: string;
@@ -29,6 +30,8 @@ export const WorkflowBuilder = () => {
   ]);
   const [isActive, setIsActive] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
   const { toast } = useToast();
 
   const addStep = () => {
@@ -82,16 +85,55 @@ export const WorkflowBuilder = () => {
       setName('');
       setDescription('');
       setSteps([{ action: 'send_email', delay_days: 0, email_type: 'initial', tone: 'professional' }]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving workflow:', error);
       toast({
         title: "Error",
-        description: "Failed to save workflow",
+        description: error.message || "Failed to save workflow",
         variant: "destructive",
       });
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const testWorkflow = async () => {
+    if (!name.trim()) {
+      toast({
+        title: "Save first",
+        description: "Please save the workflow before testing",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTesting(true);
+    try {
+      toast({
+        title: "Test mode",
+        description: "In production, this would execute the workflow on matching leads in test mode (without sending actual emails)",
+      });
+    } catch (error: any) {
+      console.error('Error testing workflow:', error);
+      toast({
+        title: "Error",
+        description: "Failed to test workflow",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const handleAIGenerated = (workflow: any) => {
+    setName(workflow.name);
+    setDescription(workflow.description);
+    setSteps(workflow.steps);
+    
+    toast({
+      title: "Workflow loaded!",
+      description: "Review and customize the AI-generated workflow, then save",
+    });
   };
 
   const loadTemplate = (template: string) => {
@@ -120,6 +162,13 @@ export const WorkflowBuilder = () => {
   };
 
   return (
+    <>
+      <AIWorkflowGenerator
+        open={showAIGenerator}
+        onOpenChange={setShowAIGenerator}
+        onWorkflowGenerated={handleAIGenerated}
+      />
+
     <Card className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -131,6 +180,16 @@ export const WorkflowBuilder = () => {
           <Switch id="active-toggle" checked={isActive} onCheckedChange={setIsActive} />
         </div>
       </div>
+
+      {/* AI Generator Button */}
+      <Button 
+        onClick={() => setShowAIGenerator(true)}
+        variant="outline"
+        className="w-full gap-2 border-dashed"
+      >
+        <Sparkles className="h-4 w-4" />
+        ✨ Generate Workflow With AI
+      </Button>
 
       {/* Templates */}
       <div className="flex gap-2">
@@ -297,17 +356,18 @@ export const WorkflowBuilder = () => {
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-2 pt-4 border-t">
-        <Button onClick={saveWorkflow} disabled={isSaving} className="flex-1 gap-2">
-          <Save className="h-4 w-4" />
-          {isSaving ? 'Saving...' : 'Save Workflow'}
-        </Button>
-        <Button variant="outline" className="gap-2">
-          <Play className="h-4 w-4" />
-          Test
-        </Button>
-      </div>
-    </Card>
+        {/* Actions */}
+        <div className="flex gap-2 pt-4 border-t">
+          <Button onClick={saveWorkflow} disabled={isSaving} className="flex-1 gap-2">
+            <Save className="h-4 w-4" />
+            {isSaving ? 'Saving...' : 'Save Workflow'}
+          </Button>
+          <Button variant="outline" onClick={testWorkflow} disabled={isTesting} className="gap-2">
+            <Play className="h-4 w-4" />
+            {isTesting ? 'Testing...' : 'Test'}
+          </Button>
+        </div>
+      </Card>
+    </>
   );
 };

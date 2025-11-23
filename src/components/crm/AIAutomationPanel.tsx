@@ -3,8 +3,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Mail, TrendingUp, Activity, Calendar } from "lucide-react";
+import { Sparkles, Mail, TrendingUp, Activity, Calendar, Settings } from "lucide-react";
 import { format } from "date-fns";
+import { AIAutomationSettings } from "./AIAutomationSettings";
 
 interface AutomationLog {
   id: string;
@@ -19,6 +20,7 @@ interface AutomationLog {
 
 export const AIAutomationPanel = () => {
   const [logs, setLogs] = useState<AutomationLog[]>([]);
+  const [showSettings, setShowSettings] = useState(false);
   const [stats, setStats] = useState({
     emails_drafted: 0,
     emails_sent: 0,
@@ -111,8 +113,21 @@ export const AIAutomationPanel = () => {
 
   return (
     <div className="space-y-4">
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {showSettings ? (
+        <div className="space-y-4">
+          <Button
+            variant="ghost"
+            onClick={() => setShowSettings(false)}
+            className="gap-2"
+          >
+            ← Back to Activity Log
+          </Button>
+          <AIAutomationSettings />
+        </div>
+      ) : (
+        <>
+          {/* Stats Overview */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-2">
             <Mail className="h-4 w-4" />
@@ -157,9 +172,20 @@ export const AIAutomationPanel = () => {
             <Sparkles className="h-5 w-5 text-primary" />
             <h3 className="text-lg font-semibold">AI Activity Log</h3>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchAutomationData}>
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSettings(true)}
+              className="gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+            </Button>
+            <Button variant="outline" size="sm" onClick={fetchAutomationData}>
+              Refresh
+            </Button>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -199,6 +225,8 @@ export const AIAutomationPanel = () => {
           )}
         </div>
       </Card>
+        </>
+      )}
     </div>
   );
 };
