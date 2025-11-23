@@ -50,3 +50,6 @@ verify_jwt = true
 
 [functions.ai-crm-assistant]
 verify_jwt = true
+
+[functions.ai-analyze-lead]
+verify_jwt = true
