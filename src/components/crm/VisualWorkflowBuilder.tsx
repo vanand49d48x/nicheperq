@@ -40,61 +40,73 @@ import { useToast } from "@/hooks/use-toast";
 
 // Custom Node Components
 const EmailNode = ({ data }: any) => (
-  <div className="px-4 py-3 border-2 border-primary rounded-lg bg-card shadow-lg min-w-[200px]">
+  <div className="px-4 py-3 border-2 border-primary rounded-lg bg-card shadow-lg min-w-[220px] relative">
+    <div className="absolute -top-3 -left-3 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+      {data.stepNumber || '?'}
+    </div>
     <div className="flex items-center gap-2 mb-2">
       <Mail className="h-4 w-4 text-primary" />
-      <span className="font-semibold text-sm">Send Email</span>
+      <span className="font-semibold text-sm">📧 Send Email</span>
     </div>
-    <div className="text-xs text-muted-foreground">
-      {data.emailType || 'Draft Email'}
+    <div className="text-xs font-medium text-foreground mb-1">
+      {data.emailType ? data.emailType.replace(/_/g, ' ').toUpperCase() : 'DRAFT EMAIL'}
     </div>
     {data.tone && (
       <Badge variant="outline" className="mt-1 text-xs">
-        {data.tone}
+        Tone: {data.tone}
       </Badge>
     )}
   </div>
 );
 
 const DelayNode = ({ data }: any) => (
-  <div className="px-4 py-3 border-2 border-accent rounded-lg bg-card shadow-lg min-w-[200px]">
+  <div className="px-4 py-3 border-2 border-accent rounded-lg bg-card shadow-lg min-w-[220px] relative">
+    <div className="absolute -top-3 -left-3 bg-accent text-accent-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+      {data.stepNumber || '?'}
+    </div>
     <div className="flex items-center gap-2 mb-2">
       <Clock className="h-4 w-4 text-accent" />
-      <span className="font-semibold text-sm">Wait</span>
+      <span className="font-semibold text-sm">⏰ Wait</span>
     </div>
-    <div className="text-xs text-muted-foreground">
-      {data.delayDays || 1} day{data.delayDays !== 1 ? 's' : ''}
+    <div className="text-xs font-medium text-foreground">
+      Wait {data.delayDays || 1} day{data.delayDays !== 1 ? 's' : ''} then continue
     </div>
   </div>
 );
 
 const ConditionNode = ({ data }: any) => (
-  <div className="px-4 py-3 border-2 border-yellow-500 rounded-lg bg-card shadow-lg min-w-[200px]">
+  <div className="px-4 py-3 border-2 border-yellow-500 rounded-lg bg-card shadow-lg min-w-[220px] relative">
+    <div className="absolute -top-3 -left-3 bg-yellow-500 text-yellow-950 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+      {data.stepNumber || '?'}
+    </div>
     <div className="flex items-center gap-2 mb-2">
       <GitBranch className="h-4 w-4 text-yellow-500" />
-      <span className="font-semibold text-sm">Condition</span>
+      <span className="font-semibold text-sm">🔀 If/Then Branch</span>
     </div>
-    <div className="text-xs text-muted-foreground">
-      {data.conditionType || 'Check condition'}
+    <div className="text-xs font-medium text-foreground">
+      {data.conditionType ? data.conditionType.replace(/_/g, ' ').toUpperCase() : 'CHECK CONDITION'}
     </div>
   </div>
 );
 
 const StatusNode = ({ data }: any) => (
-  <div className="px-4 py-3 border-2 border-green-500 rounded-lg bg-card shadow-lg min-w-[200px]">
+  <div className="px-4 py-3 border-2 border-green-500 rounded-lg bg-card shadow-lg min-w-[220px] relative">
+    <div className="absolute -top-3 -left-3 bg-green-500 text-green-950 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+      {data.stepNumber || '?'}
+    </div>
     <div className="flex items-center gap-2 mb-2">
       <Play className="h-4 w-4 text-green-500" />
-      <span className="font-semibold text-sm">Update Status</span>
+      <span className="font-semibold text-sm">✅ Change Status</span>
     </div>
-    <div className="text-xs text-muted-foreground">
-      Set to: {data.nextStatus || 'contacted'}
+    <div className="text-xs font-medium text-foreground">
+      Move lead to: {data.nextStatus ? data.nextStatus.replace(/_/g, ' ').toUpperCase() : 'CONTACTED'}
     </div>
   </div>
 );
 
 const StartNode = () => (
-  <div className="px-4 py-3 border-2 border-secondary rounded-full bg-gradient-primary text-primary-foreground shadow-lg">
-    <span className="font-semibold text-sm">Start</span>
+  <div className="px-6 py-4 border-2 border-secondary rounded-full bg-gradient-primary text-primary-foreground shadow-lg">
+    <span className="font-bold text-base">🚀 WORKFLOW START</span>
   </div>
 );
 
@@ -172,6 +184,7 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
           type: step.action_type,
           position: { x: 250, y: (index + 1) * 120 + 50 },
           data: {
+            stepNumber: index + 1,
             emailType: step.email_type,
             tone: step.tone,
             aiHint: step.ai_prompt_hint,
@@ -222,11 +235,15 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
   }, []);
 
   const addNode = (type: string) => {
+    const stepNumber = nodes.length; // Current length = next step number
     const newNode: WorkflowNode = {
       id: `${type}-${Date.now()}`,
       type,
       position: { x: 250, y: nodes.length * 120 + 150 },
-      data: getDefaultNodeData(type),
+      data: { 
+        ...getDefaultNodeData(type),
+        stepNumber
+      },
     };
     setNodes((nds) => [...nds, newNode]);
     
@@ -434,6 +451,14 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
             <Button variant="ghost" size="sm" onClick={onBack}>
               Back
             </Button>
+          </div>
+          <div className="bg-accent/50 border border-border rounded-lg p-3 mt-2">
+            <p className="text-xs text-muted-foreground">
+              📋 <strong>You're building:</strong> An automated email sequence that runs when leads match certain conditions.
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              ➡️ <strong>Flow:</strong> Steps run top-to-bottom. Arrows show the path.
+            </p>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
