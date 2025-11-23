@@ -26,6 +26,7 @@ interface ContactCardProps {
   lead: any;
   onStatusChange: (status: string) => void;
   onRefresh: () => void;
+  isHighlighted?: boolean;
 }
 
 const statusColors = {
@@ -46,12 +47,17 @@ const statusLabels = {
   do_not_contact: "Do Not Contact",
 };
 
-export const ContactCard = ({ lead, onStatusChange, onRefresh }: ContactCardProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+export const ContactCard = ({ lead, onStatusChange, onRefresh, isHighlighted = false }: ContactCardProps) => {
+  const [isExpanded, setIsExpanded] = useState(isHighlighted);
   const [showEmailComposer, setShowEmailComposer] = useState(false);
 
   return (
-    <Card className="p-6 hover:shadow-lg transition-shadow">
+    <Card className={cn(
+      "p-6 transition-all duration-300",
+      isHighlighted 
+        ? "border-2 border-primary shadow-xl ring-2 ring-primary/20" 
+        : "hover:shadow-lg"
+    )}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">

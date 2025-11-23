@@ -53,16 +53,17 @@ const CRM = () => {
     fetchLeads();
   }, []);
 
+  const highlightedLeadId = searchParams.get('lead');
+
   useEffect(() => {
-    const leadId = searchParams.get('lead');
-    if (leadId && leads.length > 0) {
+    if (highlightedLeadId && leads.length > 0) {
       setView("list");
       setTimeout(() => {
-        const element = document.getElementById(`lead-${leadId}`);
+        const element = document.getElementById(`lead-${highlightedLeadId}`);
         element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
     }
-  }, [searchParams, leads]);
+  }, [highlightedLeadId, leads]);
 
   const fetchLeads = async () => {
     try {
@@ -244,6 +245,7 @@ const CRM = () => {
                   lead={lead}
                   onStatusChange={(status) => updateLeadStatus(lead.id, status)}
                   onRefresh={fetchLeads}
+                  isHighlighted={highlightedLeadId === lead.id}
                 />
               </div>
             ))}
