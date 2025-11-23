@@ -15,6 +15,7 @@ import { WorkflowBuilder } from "@/components/crm/WorkflowBuilder";
 import { AIInsights } from "@/components/crm/AIInsights";
 import { FeatureGate } from "@/components/FeatureGate";
 import { AIChatbot } from "@/components/crm/AIChatbot";
+import PipelineAnalytics from "@/components/crm/PipelineAnalytics";
 
 interface Lead {
   id: string;
@@ -36,7 +37,7 @@ interface Lead {
 const CRM = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights">("kanban");
+  const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights" | "analytics">("kanban");
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -176,7 +177,7 @@ const CRM = () => {
               </Button>
             </div>
           </div>
-
+          
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
             <Card className="p-4">
@@ -204,6 +205,27 @@ const CRM = () => {
               <p className="text-2xl font-bold">{statusStats.do_not_contact}</p>
             </Card>
           </div>
+          
+          {/* Analytics/Insights Toggle */}
+          {(view === "insights" || view === "analytics") && (
+            <div className="mt-4 flex gap-2 justify-center">
+              <Button
+                variant={view === "insights" ? "default" : "outline"}
+                onClick={() => setView("insights")}
+                size="sm"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Quick Insights
+              </Button>
+              <Button
+                variant={view === "analytics" ? "default" : "outline"}
+                onClick={() => setView("analytics")}
+                size="sm"
+              >
+                📊 Full Analytics
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -236,6 +258,10 @@ const CRM = () => {
         ) : view === "insights" ? (
           <FeatureGate feature="ai">
             <AIInsights />
+          </FeatureGate>
+        ) : view === "analytics" ? (
+          <FeatureGate feature="ai">
+            <PipelineAnalytics />
           </FeatureGate>
         ) : (
           <div className="grid gap-4">
