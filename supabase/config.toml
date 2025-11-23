@@ -65,3 +65,9 @@ verify_jwt = false
 
 [functions.get-pipeline-analytics]
 verify_jwt = true
+
+[functions.ai-orchestrator]
+verify_jwt = false
+
+[functions.send-daily-digest]
+verify_jwt = false

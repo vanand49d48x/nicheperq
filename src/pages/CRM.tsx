@@ -16,6 +16,7 @@ import { AIInsights } from "@/components/crm/AIInsights";
 import { FeatureGate } from "@/components/FeatureGate";
 import { AIChatbot } from "@/components/crm/AIChatbot";
 import PipelineAnalytics from "@/components/crm/PipelineAnalytics";
+import OrchestrationSettings from "@/components/crm/OrchestrationSettings";
 
 interface Lead {
   id: string;
@@ -37,7 +38,7 @@ interface Lead {
 const CRM = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights" | "analytics">("kanban");
+  const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights" | "analytics" | "orchestration">("kanban");
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -178,6 +179,18 @@ const CRM = () => {
             </div>
           </div>
           
+          {/* Orchestration Settings Access */}
+          {view === "orchestration" && (
+            <div className="mt-4">
+              <Button
+                variant="default"
+                size="sm"
+              >
+                ⚙️ Orchestration Settings
+              </Button>
+            </div>
+          )}
+          
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
             <Card className="p-4">
@@ -262,6 +275,10 @@ const CRM = () => {
         ) : view === "analytics" ? (
           <FeatureGate feature="ai">
             <PipelineAnalytics />
+          </FeatureGate>
+        ) : view === "orchestration" ? (
+          <FeatureGate feature="ai">
+            <OrchestrationSettings />
           </FeatureGate>
         ) : (
           <div className="grid gap-4">
