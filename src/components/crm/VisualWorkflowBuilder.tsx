@@ -185,6 +185,19 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
 
       setNodes(newNodes);
 
+      // Auto-connect nodes in sequence
+      const newEdges: Edge[] = [];
+      for (let i = 0; i < newNodes.length - 1; i++) {
+        newEdges.push({
+          id: `e${i}`,
+          source: newNodes[i].id,
+          target: newNodes[i + 1].id,
+          type: 'smoothstep',
+          animated: true,
+        });
+      }
+      setEdges(newEdges);
+
       toast({
         title: "Workflow Loaded",
         description: `"${workflow.name}" loaded successfully`,
@@ -216,6 +229,19 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
       data: getDefaultNodeData(type),
     };
     setNodes((nds) => [...nds, newNode]);
+    
+    // Auto-connect to the last node
+    if (nodes.length > 0) {
+      const lastNode = nodes[nodes.length - 1];
+      const newEdge: Edge = {
+        id: `e${edges.length}`,
+        source: lastNode.id,
+        target: newNode.id,
+        type: 'smoothstep',
+        animated: true,
+      };
+      setEdges((eds) => [...eds, newEdge]);
+    }
   };
 
   const getDefaultNodeData = (type: string): NodeData => {
