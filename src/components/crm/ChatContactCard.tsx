@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ExternalLink, Mail, Phone } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { AIEmailComposer } from "./AIEmailComposer";
 
 interface ContactRecommendation {
   id: string;
@@ -31,8 +34,21 @@ const priorityColors = {
 
 export const ChatContactCard = ({ contact }: ChatContactCardProps) => {
   const navigate = useNavigate();
+  const [showEmailComposer, setShowEmailComposer] = useState(false);
 
   return (
+    <>
+      <Dialog open={showEmailComposer} onOpenChange={setShowEmailComposer}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <AIEmailComposer
+            leadId={contact.id}
+            leadName={contact.business_name}
+            onEmailSent={() => setShowEmailComposer(false)}
+            onClose={() => setShowEmailComposer(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    
     <Card className="p-3 hover:bg-accent/50 transition-colors">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -87,7 +103,7 @@ export const ChatContactCard = ({ contact }: ChatContactCardProps) => {
               variant="ghost"
               size="sm"
               className="h-7 text-xs"
-              onClick={() => navigate('/crm')}
+              onClick={() => setShowEmailComposer(true)}
             >
               <Mail className="h-3 w-3 mr-1" />
               Draft Email
@@ -96,5 +112,6 @@ export const ChatContactCard = ({ contact }: ChatContactCardProps) => {
         </div>
       </div>
     </Card>
+    </>
   );
 };
