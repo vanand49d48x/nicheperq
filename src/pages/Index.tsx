@@ -12,12 +12,16 @@ import { LocationInput } from "@/components/LocationInput";
 import { LeadsTable } from "@/components/LeadsTable";
 import { LeadsMap } from "@/components/LeadsMap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Search, Map, List, Save, CheckCircle2, Phone, Mail, RefreshCw, Briefcase, MapPin, Radius, Lock, Zap, History, Calendar, Clock } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -75,6 +79,7 @@ const Index = () => {
   const [searchFilter, setSearchFilter] = useState("");
   const [enableScheduling, setEnableScheduling] = useState(false);
   const [scheduleFrequency, setScheduleFrequency] = useState("weekly");
+  const [scheduleStartDate, setScheduleStartDate] = useState<Date>();
   const { toast } = useToast();
   const location = useLocation();
 
@@ -295,6 +300,15 @@ const Index = () => {
       return;
     }
 
+    if (enableScheduling && !scheduleStartDate) {
+      toast({
+        title: "Start Date Required",
+        description: "Please select a start date for the scheduled search",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const searchCriteria = customCriteria.trim() || niche;
 
     try {
@@ -308,7 +322,9 @@ const Index = () => {
         return;
       }
 
-      const nextRun = enableScheduling ? calculateNextRun(scheduleFrequency) : null;
+      const nextRun = enableScheduling && scheduleStartDate 
+        ? calculateNextRun(scheduleFrequency, scheduleStartDate) 
+        : null;
 
       const { error } = await supabase
         .from('saved_searches')
@@ -331,13 +347,14 @@ const Index = () => {
       toast({
         title: "Search Saved",
         description: enableScheduling 
-          ? `Search scheduled to run ${scheduleFrequency}` 
+          ? `Search scheduled to run ${scheduleFrequency} starting ${format(scheduleStartDate!, "PPP")}` 
           : "You can find this search in your history",
       });
       setShowSaveDialog(false);
       setSearchName("");
       setEnableScheduling(false);
       setScheduleFrequency("weekly");
+      setScheduleStartDate(undefined);
     } catch (error) {
       console.error('Error saving search:', error);
       toast({
@@ -348,20 +365,26 @@ const Index = () => {
     }
   };
 
-  const calculateNextRun = (freq: string): string => {
+  const calculateNextRun = (freq: string, startDate: Date): string => {
+    const date = new Date(startDate);
+    
+    // If start date is in the past, calculate next occurrence from now
     const now = new Date();
-    switch (freq) {
-      case 'daily':
-        now.setDate(now.getDate() + 1);
-        break;
-      case 'weekly':
-        now.setDate(now.getDate() + 7);
-        break;
-      case 'monthly':
-        now.setMonth(now.getMonth() + 1);
-        break;
+    if (date < now) {
+      switch (freq) {
+        case 'daily':
+          date.setDate(now.getDate() + 1);
+          break;
+        case 'weekly':
+          date.setDate(now.getDate() + 7);
+          break;
+        case 'monthly':
+          date.setMonth(now.getMonth() + 1);
+          break;
+      }
     }
-    return now.toISOString();
+    
+    return date.toISOString();
   };
 
   const leadsWithEmail = allLeads.filter(lead => lead.website || lead.phone).length;
@@ -783,7 +806,7 @@ const Index = () => {
 
         {/* Save Search Dialog */}
         <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Save Search</DialogTitle>
               <DialogDescription>
@@ -818,24 +841,63 @@ const Index = () => {
                 </div>
 
                 {enableScheduling && (
-                  <div>
-                    <Label htmlFor="frequency" className="text-sm mb-2 block">
-                      Frequency
-                    </Label>
-                    <Select value={scheduleFrequency} onValueChange={setScheduleFrequency}>
-                      <SelectTrigger id="frequency">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      New leads will be automatically fetched {scheduleFrequency}
-                    </p>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="start-date" className="text-sm mb-2 block">
+                        Start Date
+                      </Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            id="start-date"
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !scheduleStartDate && "text-muted-foreground"
+                            )}
+                          >
+                            <Calendar className="mr-2 h-4 w-4" />
+                            {scheduleStartDate ? format(scheduleStartDate, "PPP") : <span>Pick a date</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarComponent
+                            mode="single"
+                            selected={scheduleStartDate}
+                            onSelect={setScheduleStartDate}
+                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                            initialFocus
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Choose when the first search should run
+                      </p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="frequency" className="text-sm mb-2 block">
+                        Frequency
+                      </Label>
+                      <Select value={scheduleFrequency} onValueChange={setScheduleFrequency}>
+                        <SelectTrigger id="frequency">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly (Every 7 days)</SelectItem>
+                          <SelectItem value="monthly">Monthly (Every 30 days)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {scheduleStartDate 
+                          ? `First run on ${format(scheduleStartDate, "PPP")}, then ${scheduleFrequency}`
+                          : `New leads will be fetched ${scheduleFrequency}`
+                        }
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
