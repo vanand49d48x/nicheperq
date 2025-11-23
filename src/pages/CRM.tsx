@@ -12,6 +12,7 @@ import { ContactCard } from "@/components/crm/ContactCard";
 import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { AIAutomationPanel } from "@/components/crm/AIAutomationPanel";
 import { WorkflowBuilder } from "@/components/crm/WorkflowBuilder";
+import VisualWorkflowBuilder from "@/components/crm/VisualWorkflowBuilder";
 import { AIInsights } from "@/components/crm/AIInsights";
 import { FeatureGate } from "@/components/FeatureGate";
 import { AIChatbot } from "@/components/crm/AIChatbot";
@@ -38,7 +39,7 @@ interface Lead {
 const CRM = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights" | "analytics" | "orchestration">("kanban");
+  const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights" | "analytics" | "orchestration" | "visual-workflows">("kanban");
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -166,7 +167,15 @@ const CRM = () => {
                 className="gap-2"
               >
                 <Zap className="h-4 w-4" />
-                AI Workflows
+                Workflows
+              </Button>
+              <Button
+                variant={view === "visual-workflows" ? "default" : "outline"}
+                onClick={() => setView("visual-workflows")}
+                className="gap-2"
+              >
+                🎨
+                Visual
               </Button>
               <Button
                 variant={view === "insights" ? "default" : "outline"}
@@ -174,22 +183,10 @@ const CRM = () => {
                 className="gap-2"
               >
                 <Sparkles className="h-4 w-4" />
-                AI Insights
+                Insights
               </Button>
             </div>
           </div>
-          
-          {/* Orchestration Settings Access */}
-          {view === "orchestration" && (
-            <div className="mt-4">
-              <Button
-                variant="default"
-                size="sm"
-              >
-                ⚙️ Orchestration Settings
-              </Button>
-            </div>
-          )}
           
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
@@ -279,6 +276,10 @@ const CRM = () => {
         ) : view === "orchestration" ? (
           <FeatureGate feature="ai">
             <OrchestrationSettings />
+          </FeatureGate>
+        ) : view === "visual-workflows" ? (
+          <FeatureGate feature="ai">
+            <VisualWorkflowBuilder />
           </FeatureGate>
         ) : (
           <div className="grid gap-4">
