@@ -79,9 +79,8 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
     icon: Sparkles,
     color: "purple",
     trigger: {
-      type: "status_change",
-      from_status: "new",
-      to_status: "contacted"
+      type: "lead_status",
+      value: "new"
     },
     steps: [
       {
@@ -313,7 +312,9 @@ export default function WorkflowTemplates({ onTemplateDeployed }: { onTemplateDe
                       <span>
                         Trigger: {template.trigger.type === 'inactivity' 
                           ? `${template.trigger.days}d inactivity`
-                          : `Status: ${template.trigger.to_status}`
+                          : template.trigger.type === 'lead_status'
+                          ? `New leads (status: ${template.trigger.value})`
+                          : `Status: ${template.trigger.to_status || template.trigger.value}`
                         }
                       </span>
                     </div>

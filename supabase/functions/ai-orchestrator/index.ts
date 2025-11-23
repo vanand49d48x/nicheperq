@@ -49,23 +49,37 @@ serve(async (req) => {
 });
 
 async function autoEnrollNewLeads(supabase: any) {
-  console.log('📥 Checking for new leads to auto-enroll...');
+  console.log('📥 Checking for ALL new leads to auto-enroll (no time restriction)...');
   
-  // Get leads created in last 24 hours that aren't enrolled
-  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  
+  // Get ALL leads with status 'new' that aren't enrolled in ANY workflow
   const { data: newLeads, error: leadsError } = await supabase
     .from('leads')
-    .select('*, workflow_enrollments(id)')
-    .gte('created_at', twentyFourHoursAgo)
-    .is('workflow_enrollments.id', null);
+    .select('id, user_id, contact_status, niche, created_at')
+    .eq('contact_status', 'new');
 
-  if (leadsError || !newLeads?.length) {
-    console.log('No new leads to enroll');
+  if (leadsError) {
+    console.error('Error fetching new leads:', leadsError);
     return;
   }
 
-  console.log(`Found ${newLeads.length} new leads`);
+  if (!newLeads?.length) {
+    console.log('No new leads found');
+    return;
+  }
+
+  console.log(`Found ${newLeads.length} leads with status 'new'`);
+
+  // Filter out leads that are already enrolled in any workflow
+  const leadIds = newLeads.map((l: any) => l.id);
+  const { data: existingEnrollments } = await supabase
+    .from('workflow_enrollments')
+    .select('lead_id')
+    .in('lead_id', leadIds);
+
+  const enrolledLeadIds = new Set(existingEnrollments?.map((e: any) => e.lead_id) || []);
+  const unenrolledLeads = newLeads.filter((lead: any) => !enrolledLeadIds.has(lead.id));
+
+  console.log(`${unenrolledLeads.length} leads not yet enrolled in workflows`);
 
   // Get active workflows with auto-enroll triggers
   const { data: workflows, error: workflowsError } = await supabase
@@ -73,22 +87,30 @@ async function autoEnrollNewLeads(supabase: any) {
     .select('*')
     .eq('is_active', true);
 
-  if (workflowsError || !workflows?.length) return;
+  if (workflowsError || !workflows?.length) {
+    console.log('No active workflows found');
+    return;
+  }
 
-  for (const lead of newLeads) {
+  console.log(`Found ${workflows.length} active workflows`);
+
+  let enrolledCount = 0;
+
+  for (const lead of unenrolledLeads) {
     // Find matching workflow based on lead properties
     const matchingWorkflow = workflows.find((w: any) => {
       const trigger = w.trigger;
       if (trigger.type === 'lead_status' && trigger.value === lead.contact_status) return true;
+      if (trigger.type === 'lead_status' && trigger.value === 'new' && lead.contact_status === 'new') return true;
       if (trigger.type === 'lead_imported' && lead.contact_status === 'new') return true;
       if (trigger.type === 'niche' && trigger.value === lead.niche) return true;
       return false;
     });
 
     if (matchingWorkflow) {
-      console.log(`Enrolling lead ${lead.id} in workflow ${matchingWorkflow.name}`);
+      console.log(`✅ Enrolling lead ${lead.id} (${lead.niche}) in workflow "${matchingWorkflow.name}"`);
       
-      await supabase.from('workflow_enrollments').insert({
+      const { error: enrollError } = await supabase.from('workflow_enrollments').insert({
         lead_id: lead.id,
         workflow_id: matchingWorkflow.id,
         user_id: lead.user_id,
@@ -97,8 +119,16 @@ async function autoEnrollNewLeads(supabase: any) {
         current_step_order: 1,
         next_action_at: new Date().toISOString(),
       });
+
+      if (enrollError) {
+        console.error(`Failed to enroll lead ${lead.id}:`, enrollError);
+      } else {
+        enrolledCount++;
+      }
     }
   }
+
+  console.log(`🎉 Successfully enrolled ${enrolledCount} leads into workflows`);
 }
 
 async function processEmailReplies(supabase: any) {
