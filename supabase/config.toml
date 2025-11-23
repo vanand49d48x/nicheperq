@@ -56,3 +56,9 @@ verify_jwt = true
 
 [functions.ai-lead-assistant]
 verify_jwt = true
+
+[functions.ai-workflow-enroller]
+verify_jwt = false
+
+[functions.track-email-event]
+verify_jwt = false
