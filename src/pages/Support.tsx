@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Loader2, MessageSquare, Send, AlertCircle } from "lucide-react";
+import { Loader2, MessageSquare, Send, AlertCircle, BookOpen, ExternalLink } from "lucide-react";
 
 interface Ticket {
   id: string;
@@ -33,6 +33,13 @@ interface TicketReply {
   created_at: string;
 }
 
+interface SuggestedArticle {
+  id: string;
+  title: string;
+  excerpt: string;
+  slug: string;
+}
+
 export default function Support() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -41,6 +48,7 @@ export default function Support() {
   const [ticketReplies, setTicketReplies] = useState<TicketReply[]>([]);
   const [replyMessage, setReplyMessage] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [suggestedArticles, setSuggestedArticles] = useState<SuggestedArticle[]>([]);
 
   // Form state
   const [subject, setSubject] = useState("");
@@ -51,6 +59,15 @@ export default function Support() {
   useEffect(() => {
     loadTickets();
   }, []);
+
+  useEffect(() => {
+    // Search for relevant KB articles when subject or description changes
+    if (subject || description) {
+      searchKBArticles();
+    } else {
+      setSuggestedArticles([]);
+    }
+  }, [subject, description]);
 
   const loadTickets = async () => {
     setLoading(true);
@@ -66,6 +83,24 @@ export default function Support() {
       setTickets(data || []);
     }
     setLoading(false);
+  };
+
+  const searchKBArticles = async () => {
+    const searchText = `${subject} ${description}`.toLowerCase();
+    
+    if (searchText.trim().length < 3) {
+      setSuggestedArticles([]);
+      return;
+    }
+
+    const { data } = await supabase
+      .from("knowledge_base_articles")
+      .select("id, title, excerpt, slug")
+      .eq("is_published", true)
+      .or(`title.ilike.%${searchText}%,content.ilike.%${searchText}%`)
+      .limit(3);
+
+    setSuggestedArticles(data || []);
   };
 
   const loadTicketReplies = async (ticketId: string) => {
@@ -298,6 +333,45 @@ export default function Support() {
                     </>
                   )}
                 </Button>
+
+                {/* Suggested KB Articles */}
+                {suggestedArticles.length > 0 && (
+                  <div className="mt-4 p-4 bg-muted rounded-lg">
+                    <div className="flex items-center gap-2 mb-3">
+                      <BookOpen className="h-4 w-4" />
+                      <p className="text-sm font-medium">
+                        These articles might help:
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      {suggestedArticles.map((article) => (
+                        <a
+                          key={article.id}
+                          href="/kb"
+                          className="block p-2 hover:bg-background rounded text-sm transition-colors"
+                        >
+                          <div className="font-medium">{article.title}</div>
+                          {article.excerpt && (
+                            <div className="text-muted-foreground text-xs mt-1">
+                              {article.excerpt}
+                            </div>
+                          )}
+                        </a>
+                      ))}
+                    </div>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="mt-2 px-0"
+                      asChild
+                    >
+                      <a href="/kb">
+                        <ExternalLink className="mr-2 h-3 w-3" />
+                        Browse all articles
+                      </a>
+                    </Button>
+                  </div>
+                )}
               </form>
             </CardContent>
           </Card>
