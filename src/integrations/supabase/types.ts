@@ -79,6 +79,33 @@ export type Database = {
           },
         ]
       }
+      ai_chat_messages: {
+        Row: {
+          context: Json | null
+          created_at: string
+          id: string
+          message: string
+          response: string
+          user_id: string
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          message: string
+          response: string
+          user_id: string
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          message?: string
+          response?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_email_drafts: {
         Row: {
           body: string

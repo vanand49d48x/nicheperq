@@ -44,3 +44,6 @@ verify_jwt = true
 
 [functions.get-churn-analytics]
 verify_jwt = true
+
+[functions.ai-crm-assistant]
+verify_jwt = true

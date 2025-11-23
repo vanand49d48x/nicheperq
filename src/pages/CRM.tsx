@@ -13,6 +13,7 @@ import { AIAutomationPanel } from "@/components/crm/AIAutomationPanel";
 import { WorkflowBuilder } from "@/components/crm/WorkflowBuilder";
 import { AIInsights } from "@/components/crm/AIInsights";
 import { FeatureGate } from "@/components/FeatureGate";
+import { AIChatbot } from "@/components/crm/AIChatbot";
 
 interface Lead {
   id: string;
@@ -229,6 +230,11 @@ const CRM = () => {
           </div>
         )}
       </div>
+      </FeatureGate>
+      
+      {/* AI Chatbot Widget */}
+      <FeatureGate feature="ai">
+        <AIChatbot />
       </FeatureGate>
     </DashboardLayout>
   );
