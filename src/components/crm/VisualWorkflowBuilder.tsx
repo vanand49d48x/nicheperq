@@ -140,6 +140,9 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
   const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState<string>('');
   const [currentWorkflowId, setCurrentWorkflowId] = useState<string | undefined>(workflowId);
+  const [triggerType, setTriggerType] = useState<string>('lead_status');
+  const [triggerValue, setTriggerValue] = useState<string>('new');
+  const [workflowDescription, setWorkflowDescription] = useState('');
 
   useEffect(() => {
     if (workflowId) {
@@ -166,7 +169,15 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
       if (stepsError) throw stepsError;
 
       setWorkflowName(workflow.name);
+      setWorkflowDescription(workflow.description || '');
       setCurrentWorkflowId(id);
+      
+      // Load trigger configuration
+      if (workflow.trigger && typeof workflow.trigger === 'object') {
+        const trigger = workflow.trigger as { type?: string; value?: string };
+        setTriggerType(trigger.type || 'lead_status');
+        setTriggerValue(trigger.value || 'new');
+      }
 
       // Convert steps to nodes
       const newNodes: WorkflowNode[] = [
@@ -179,9 +190,11 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
       ];
 
       steps.forEach((step, index) => {
+        // Map action_type back to node type for display
+        const nodeType = mapActionTypeToNodeType(step.action_type);
         newNodes.push({
           id: step.id,
-          type: step.action_type,
+          type: nodeType,
           position: { x: 250, y: (index + 1) * 120 + 50 },
           data: {
             stepNumber: index + 1,
@@ -340,16 +353,50 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
     }
   };
 
+  // Helper to map node type to action_type for database
+  const mapNodeTypeToActionType = (nodeType: string): string => {
+    const mapping: Record<string, string> = {
+      'email': 'send_email',
+      'delay': 'wait',
+      'condition': 'condition',
+      'status': 'update_status',
+    };
+    return mapping[nodeType] || nodeType;
+  };
+
+  // Helper to map action_type back to node type for UI
+  const mapActionTypeToNodeType = (actionType: string): string => {
+    const mapping: Record<string, string> = {
+      'send_email': 'email',
+      'email': 'email',
+      'wait': 'delay',
+      'delay': 'delay',
+      'condition': 'condition',
+      'update_status': 'status',
+      'status': 'status',
+    };
+    return mapping[actionType] || actionType;
+  };
+
   const saveWorkflow = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    if (nodes.filter(n => n.type !== 'start').length === 0) {
+      toast({
+        title: "No Steps",
+        description: "Add at least one step to your workflow before saving",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Convert visual nodes to workflow steps
     const steps = nodes
       .filter(n => n.type !== 'start')
       .map((node, index) => ({
         step_order: index + 1,
-        action_type: node.type || 'email',
+        action_type: mapNodeTypeToActionType(node.type || 'email'),
         delay_days: node.data?.delayDays || 0,
         email_type: node.data?.emailType || null,
         tone: node.data?.tone || null,
@@ -360,6 +407,12 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
         branch_to_step_order: null,
       }));
 
+    // Construct trigger object
+    const trigger = {
+      type: triggerType,
+      value: triggerValue,
+    };
+
     try {
       if (currentWorkflowId) {
         // Update existing workflow
@@ -367,7 +420,8 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
           .from('ai_workflows')
           .update({
             name: workflowName,
-            description: `Visual workflow with ${steps.length} steps`,
+            description: workflowDescription || `Workflow with ${steps.length} steps`,
+            trigger: trigger,
             updated_at: new Date().toISOString(),
           })
           .eq('id', currentWorkflowId);
@@ -403,8 +457,8 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
           .insert({
             user_id: user.id,
             name: workflowName,
-            description: `Visual workflow with ${steps.length} steps`,
-            trigger: { type: 'manual', value: '' },
+            description: workflowDescription || `Workflow with ${steps.length} steps`,
+            trigger: trigger,
             is_active: false,
           })
           .select()
@@ -462,13 +516,105 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label>Workflow Name</Label>
-            <Input
-              value={workflowName}
-              onChange={(e) => setWorkflowName(e.target.value)}
-              placeholder="My Workflow"
-            />
+          <div className="space-y-3">
+            <div>
+              <Label>Workflow Name</Label>
+              <Input
+                value={workflowName}
+                onChange={(e) => setWorkflowName(e.target.value)}
+                placeholder="My Workflow"
+              />
+            </div>
+
+            <div>
+              <Label>Description (Optional)</Label>
+              <Textarea
+                value={workflowDescription}
+                onChange={(e) => setWorkflowDescription(e.target.value)}
+                placeholder="What does this workflow do?"
+                rows={2}
+              />
+            </div>
+
+            <div>
+              <Label className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Auto-Enrollment Trigger
+              </Label>
+              <Select value={triggerType} onValueChange={setTriggerType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="lead_status">When Lead Status Is...</SelectItem>
+                  <SelectItem value="status_change">When Status Changes To...</SelectItem>
+                  <SelectItem value="inactivity">After Period of Inactivity</SelectItem>
+                  <SelectItem value="manual">Manual Only (No Auto-Enrollment)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {triggerType === 'lead_status' && (
+              <div>
+                <Label>Trigger Status</Label>
+                <Select value={triggerValue} onValueChange={setTriggerValue}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="contacted">Contacted</SelectItem>
+                    <SelectItem value="qualified">Qualified</SelectItem>
+                    <SelectItem value="in_conversation">In Conversation</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Leads with this status will auto-enroll
+                </p>
+              </div>
+            )}
+
+            {triggerType === 'status_change' && (
+              <div>
+                <Label>New Status Value</Label>
+                <Select value={triggerValue} onValueChange={setTriggerValue}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="contacted">Contacted</SelectItem>
+                    <SelectItem value="qualified">Qualified</SelectItem>
+                    <SelectItem value="in_conversation">In Conversation</SelectItem>
+                    <SelectItem value="proposal_sent">Proposal Sent</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  When leads move to this status
+                </p>
+              </div>
+            )}
+
+            {triggerType === 'inactivity' && (
+              <div>
+                <Label>Days Inactive</Label>
+                <Input
+                  type="number"
+                  value={triggerValue}
+                  onChange={(e) => setTriggerValue(e.target.value)}
+                  placeholder="7"
+                  min="1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Days without contact before enrollment
+                </p>
+              </div>
+            )}
+
+            {triggerType === 'manual' && (
+              <p className="text-xs text-muted-foreground">
+                This workflow will only run when you manually enroll leads
+              </p>
+            )}
           </div>
 
           <Separator />
