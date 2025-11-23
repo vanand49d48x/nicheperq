@@ -458,7 +458,8 @@ To unsubscribe, reply with "unsubscribe".
       break;
     }
 
-    case 'wait': {
+    case 'wait':
+    case 'delay': {
       console.log(`Waiting ${step.delay_days} days for lead ${lead.id}`);
       break;
     }
