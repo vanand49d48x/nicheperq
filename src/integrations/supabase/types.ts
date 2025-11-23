@@ -169,7 +169,6 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
-          steps: Json
           trigger: Json
           updated_at: string
           user_id: string
@@ -180,7 +179,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
-          steps: Json
           trigger: Json
           updated_at?: string
           user_id: string
@@ -191,7 +189,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
-          steps?: Json
           trigger?: Json
           updated_at?: string
           user_id?: string
@@ -273,24 +270,39 @@ export type Database = {
       }
       email_tracking: {
         Row: {
+          click_count: number | null
+          email_clicked_at: string | null
           email_draft_id: string
+          email_opened_at: string | null
+          email_replied_at: string | null
           event_data: Json | null
           event_type: string
           id: string
+          open_count: number | null
           timestamp: string
         }
         Insert: {
+          click_count?: number | null
+          email_clicked_at?: string | null
           email_draft_id: string
+          email_opened_at?: string | null
+          email_replied_at?: string | null
           event_data?: Json | null
           event_type: string
           id?: string
+          open_count?: number | null
           timestamp?: string
         }
         Update: {
+          click_count?: number | null
+          email_clicked_at?: string | null
           email_draft_id?: string
+          email_opened_at?: string | null
+          email_replied_at?: string | null
           event_data?: Json | null
           event_type?: string
           id?: string
+          open_count?: number | null
           timestamp?: string
         }
         Relationships: [
@@ -853,6 +865,128 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_enrollments: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_step_order: number
+          enrolled_at: string
+          id: string
+          lead_id: string
+          metadata: Json | null
+          next_action_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          workflow_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_step_order?: number
+          enrolled_at?: string
+          id?: string
+          lead_id: string
+          metadata?: Json | null
+          next_action_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          workflow_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_step_order?: number
+          enrolled_at?: string
+          id?: string
+          lead_id?: string
+          metadata?: Json | null
+          next_action_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_enrollments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_enrollments_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "ai_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_steps: {
+        Row: {
+          action_type: string
+          ai_prompt_hint: string | null
+          branch_to_step_order: number | null
+          condition_type: string | null
+          condition_value: string | null
+          created_at: string
+          delay_days: number
+          email_type: string | null
+          id: string
+          next_status: string | null
+          step_order: number
+          task_description: string | null
+          task_title: string | null
+          tone: string | null
+          workflow_id: string
+        }
+        Insert: {
+          action_type: string
+          ai_prompt_hint?: string | null
+          branch_to_step_order?: number | null
+          condition_type?: string | null
+          condition_value?: string | null
+          created_at?: string
+          delay_days?: number
+          email_type?: string | null
+          id?: string
+          next_status?: string | null
+          step_order: number
+          task_description?: string | null
+          task_title?: string | null
+          tone?: string | null
+          workflow_id: string
+        }
+        Update: {
+          action_type?: string
+          ai_prompt_hint?: string | null
+          branch_to_step_order?: number | null
+          condition_type?: string | null
+          condition_value?: string | null
+          created_at?: string
+          delay_days?: number
+          email_type?: string | null
+          id?: string
+          next_status?: string | null
+          step_order?: number
+          task_description?: string | null
+          task_title?: string | null
+          tone?: string | null
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_steps_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "ai_workflows"
             referencedColumns: ["id"]
           },
         ]
