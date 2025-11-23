@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Users, TrendingUp, Calendar, Settings2, Search, Filter } from "lucide-react";
 import { SupportTicketsTab } from "@/components/admin/SupportTicketsTab";
+import { KnowledgeBaseTab } from "@/components/admin/KnowledgeBaseTab";
 
 type AppRole = 'admin' | 'advanced' | 'standard' | 'basic' | 'pro' | 'free';
 
@@ -520,6 +521,7 @@ export default function Admin() {
           <TabsList>
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="support">Support Tickets</TabsTrigger>
+            <TabsTrigger value="kb">Knowledge Base</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-4">
@@ -723,6 +725,10 @@ export default function Admin() {
 
           <TabsContent value="support">
             <SupportTicketsTab />
+          </TabsContent>
+
+          <TabsContent value="kb">
+            <KnowledgeBaseTab />
           </TabsContent>
         </Tabs>
       </div>

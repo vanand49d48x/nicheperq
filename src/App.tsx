@@ -23,6 +23,7 @@ import Analytics from "./pages/Analytics";
 import ChurnAnalytics from "./pages/ChurnAnalytics";
 import Profile from "./pages/Profile";
 import Support from "./pages/Support";
+import KnowledgeBase from "./pages/KnowledgeBase";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -123,6 +124,11 @@ const App = () => (
           <Route path="/support" element={
             <ProtectedRoute>
               <Support />
+            </ProtectedRoute>
+          } />
+          <Route path="/kb" element={
+            <ProtectedRoute>
+              <KnowledgeBase />
             </ProtectedRoute>
           } />
           <Route path="*" element={<NotFound />} />
