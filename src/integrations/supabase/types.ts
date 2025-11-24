@@ -268,6 +268,63 @@ export type Database = {
           },
         ]
       }
+      email_accounts: {
+        Row: {
+          created_at: string
+          from_email: string
+          from_name: string
+          id: string
+          is_verified: boolean
+          last_verified_at: string | null
+          oauth_access_token_enc: string | null
+          oauth_expires_at: string | null
+          oauth_refresh_token_enc: string | null
+          provider: string
+          smtp_host: string | null
+          smtp_password_enc: string | null
+          smtp_port: number | null
+          smtp_username: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_email: string
+          from_name: string
+          id?: string
+          is_verified?: boolean
+          last_verified_at?: string | null
+          oauth_access_token_enc?: string | null
+          oauth_expires_at?: string | null
+          oauth_refresh_token_enc?: string | null
+          provider: string
+          smtp_host?: string | null
+          smtp_password_enc?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_email?: string
+          from_name?: string
+          id?: string
+          is_verified?: boolean
+          last_verified_at?: string | null
+          oauth_access_token_enc?: string | null
+          oauth_expires_at?: string | null
+          oauth_refresh_token_enc?: string | null
+          provider?: string
+          smtp_host?: string | null
+          smtp_password_enc?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_tracking: {
         Row: {
           click_count: number | null

@@ -17,6 +17,7 @@ import WorkflowManager from "@/components/crm/WorkflowManager";
 import { AIInsights } from "@/components/crm/AIInsights";
 import { FeatureGate } from "@/components/FeatureGate";
 import { AIChatbot } from "@/components/crm/AIChatbot";
+import { EmailAccountBanner } from "@/components/crm/EmailAccountBanner";
 import PipelineAnalytics from "@/components/crm/PipelineAnalytics";
 import OrchestrationSettings from "@/components/crm/OrchestrationSettings";
 
@@ -132,6 +133,9 @@ const CRM = () => {
     <DashboardLayout>
       <FeatureGate feature="crm">
         <div className="container mx-auto py-8 px-6 max-w-7xl">
+        {/* Email Account Banner */}
+        <EmailAccountBanner />
+        
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">

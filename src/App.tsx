@@ -24,6 +24,7 @@ import ChurnAnalytics from "./pages/ChurnAnalytics";
 import Profile from "./pages/Profile";
 import Support from "./pages/Support";
 import KnowledgeBase from "./pages/KnowledgeBase";
+import EmailSettings from "./pages/EmailSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -129,6 +130,11 @@ const App = () => (
           <Route path="/kb" element={
             <ProtectedRoute>
               <KnowledgeBase />
+            </ProtectedRoute>
+          } />
+          <Route path="/email-settings" element={
+            <ProtectedRoute>
+              <EmailSettings />
             </ProtectedRoute>
           } />
           <Route path="*" element={<NotFound />} />
