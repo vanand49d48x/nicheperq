@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Search, BookOpen, ThumbsUp, Eye, ChevronRight, Home, ExternalLink } from "lucide-react";
+import { Search, BookOpen, ThumbsUp, Eye, ChevronRight, Home, ExternalLink, Menu, ArrowLeft, ArrowRight, Hash } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +34,12 @@ interface Article {
   created_at: string;
 }
 
+interface TocItem {
+  id: string;
+  text: string;
+  level: number;
+}
+
 export default function KnowledgeBase() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -42,6 +48,7 @@ export default function KnowledgeBase() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeHeading, setActiveHeading] = useState<string>("");
 
   useEffect(() => {
     loadData();
@@ -139,12 +146,61 @@ export default function KnowledgeBase() {
     ? categories.find(c => c.id === selectedCategory)
     : null;
 
+  // Extract table of contents from article content
+  const tableOfContents = useMemo(() => {
+    if (!selectedArticle) return [];
+    
+    const headingRegex = /^(#{1,3})\s+(.+)$/gm;
+    const toc: TocItem[] = [];
+    let match;
+    
+    while ((match = headingRegex.exec(selectedArticle.content)) !== null) {
+      const level = match[1].length;
+      const text = match[2].trim();
+      const id = text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+      toc.push({ id, text, level });
+    }
+    
+    return toc;
+  }, [selectedArticle]);
+
+  // Get next/previous articles
+  const { nextArticle, prevArticle } = useMemo(() => {
+    if (!selectedArticle || !selectedCategory) return {};
+    
+    const categoryArticles = filteredArticles.filter(a => a.category_id === selectedCategory);
+    const currentIndex = categoryArticles.findIndex(a => a.id === selectedArticle.id);
+    
+    return {
+      nextArticle: currentIndex < categoryArticles.length - 1 ? categoryArticles[currentIndex + 1] : null,
+      prevArticle: currentIndex > 0 ? categoryArticles[currentIndex - 1] : null,
+    };
+  }, [selectedArticle, selectedCategory, filteredArticles]);
+
+  // Convert markdown-style content to HTML with proper heading IDs
+  const renderContent = (content: string) => {
+    return content
+      .replace(/^### (.+)$/gm, (_, text) => {
+        const id = text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+        return `<h3 id="${id}">${text}</h3>`;
+      })
+      .replace(/^## (.+)$/gm, (_, text) => {
+        const id = text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+        return `<h2 id="${id}">${text}</h2>`;
+      })
+      .replace(/^# (.+)$/gm, (_, text) => {
+        const id = text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
+        return `<h1 id="${id}">${text}</h1>`;
+      })
+      .replace(/\n/g, "<br />");
+  };
+
   return (
     <DashboardLayout>
       <div className="flex h-[calc(100vh-4rem)] bg-background">
-        {/* Sidebar Navigation */}
+        {/* Left Sidebar - Categories Navigation */}
         <aside className={cn(
-          "w-64 border-r border-border bg-card transition-all duration-300",
+          "w-64 border-r border-border bg-card transition-all duration-300 flex-shrink-0",
           !sidebarOpen && "w-0 overflow-hidden"
         )}>
           <ScrollArea className="h-full">
@@ -198,19 +254,31 @@ export default function KnowledgeBase() {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full">
+        <main className="flex-1 overflow-hidden flex">
+          <ScrollArea className="flex-1">
             <div className="max-w-4xl mx-auto p-8 space-y-8 animate-fade-in">
-              {/* Search Bar */}
-              <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm pb-4 -mt-4 pt-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    placeholder="Search knowledge base..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 h-12"
-                  />
+              {/* Header with Toggle */}
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="lg:hidden"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+                
+                {/* Search Bar */}
+                <div className="flex-1 sticky top-0 z-10 bg-background/80 backdrop-blur-sm">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      placeholder="Search knowledge base..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10 h-12"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -253,9 +321,11 @@ export default function KnowledgeBase() {
               {/* Content */}
               {selectedArticle ? (
                 // Article View
-                <article className="space-y-6">
+                <article className="space-y-6 pb-12">
                   <div className="space-y-4">
-                    <h1 className="text-4xl font-bold tracking-tight">{selectedArticle.title}</h1>
+                    <h1 className="text-4xl font-bold tracking-tight bg-gradient-primary bg-clip-text text-transparent">
+                      {selectedArticle.title}
+                    </h1>
                     
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
@@ -271,7 +341,7 @@ export default function KnowledgeBase() {
                     {selectedArticle.tags && selectedArticle.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {selectedArticle.tags.map((tag) => (
-                          <Badge key={tag} variant="secondary">
+                          <Badge key={tag} variant="secondary" className="rounded-full">
                             {tag}
                           </Badge>
                         ))}
@@ -282,24 +352,71 @@ export default function KnowledgeBase() {
                   <Separator />
 
                   <div 
-                    className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-a:text-primary hover:prose-a:text-primary/80"
+                    className="prose prose-slate dark:prose-invert max-w-none 
+                      prose-headings:scroll-mt-20 prose-headings:font-bold 
+                      prose-h1:text-3xl prose-h1:mb-4 prose-h1:mt-8
+                      prose-h2:text-2xl prose-h2:mb-3 prose-h2:mt-6 prose-h2:border-b prose-h2:pb-2
+                      prose-h3:text-xl prose-h3:mb-2 prose-h3:mt-4
+                      prose-p:leading-7 prose-p:mb-4
+                      prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+                      prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+                      prose-pre:bg-muted prose-pre:border prose-pre:border-border
+                      prose-ul:my-4 prose-ol:my-4
+                      prose-li:my-1"
                     dangerouslySetInnerHTML={{
-                      __html: selectedArticle.content.replace(/\n/g, "<br />"),
+                      __html: renderContent(selectedArticle.content),
                     }}
                   />
 
-                  <Separator />
+                  {/* Next/Previous Navigation */}
+                  {(prevArticle || nextArticle) && (
+                    <>
+                      <Separator className="my-8" />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {prevArticle && (
+                          <Card 
+                            className="p-4 cursor-pointer hover:border-primary transition-all group"
+                            onClick={() => handleViewArticle(prevArticle)}
+                          >
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                              <ArrowLeft className="h-4 w-4" />
+                              <span>Previous</span>
+                            </div>
+                            <p className="font-medium group-hover:text-primary transition-colors">
+                              {prevArticle.title}
+                            </p>
+                          </Card>
+                        )}
+                        {nextArticle && (
+                          <Card 
+                            className="p-4 cursor-pointer hover:border-primary transition-all group md:ml-auto"
+                            onClick={() => handleViewArticle(nextArticle)}
+                          >
+                            <div className="flex items-center justify-end gap-2 text-sm text-muted-foreground mb-1">
+                              <span>Next</span>
+                              <ArrowRight className="h-4 w-4" />
+                            </div>
+                            <p className="font-medium text-right group-hover:text-primary transition-colors">
+                              {nextArticle.title}
+                            </p>
+                          </Card>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  <Separator className="my-8" />
 
                   {/* Feedback Section */}
-                  <Card className="bg-muted/50">
+                  <Card className="bg-gradient-card border-primary/20">
                     <div className="p-6 space-y-4">
-                      <p className="font-medium">Was this article helpful?</p>
+                      <p className="font-semibold text-lg">Was this article helpful?</p>
                       <div className="flex gap-3">
-                        <Button onClick={handleMarkHelpful} variant="default">
+                        <Button onClick={handleMarkHelpful} variant="default" size="lg">
                           <ThumbsUp className="mr-2 h-4 w-4" />
                           Yes, this helped
                         </Button>
-                        <Button variant="outline" asChild>
+                        <Button variant="outline" size="lg" asChild>
                           <a href="/support">
                             <ExternalLink className="mr-2 h-4 w-4" />
                             Contact Support
@@ -404,20 +521,22 @@ export default function KnowledgeBase() {
               ) : (
                 // Home View
                 <div className="space-y-12">
-                  <div className="text-center space-y-4 py-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-                      <BookOpen className="h-8 w-8 text-primary" />
+                  <div className="text-center space-y-4 py-12">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-primary mb-4">
+                      <BookOpen className="h-10 w-10 text-white" />
                     </div>
-                    <h1 className="text-4xl font-bold tracking-tight">Knowledge Base</h1>
-                    <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                    <h1 className="text-5xl font-bold tracking-tight bg-gradient-primary bg-clip-text text-transparent">
+                      Knowledge Base
+                    </h1>
+                    <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
                       Find answers to common questions and learn how to use NichePerQ
                     </p>
                   </div>
 
                   {/* Categories Grid */}
-                  <div className="space-y-4">
-                    <h2 className="text-2xl font-bold">Browse by Category</h2>
-                    <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-6">
+                    <h2 className="text-3xl font-bold">Browse by Category</h2>
+                    <div className="grid gap-6 md:grid-cols-2">
                       {categories.map((category) => {
                         const Icon = (LucideIcons as any)[category.icon] || BookOpen;
                         const articleCount = getArticlesByCategory(category.id).length;
@@ -425,12 +544,12 @@ export default function KnowledgeBase() {
                         return (
                           <Card
                             key={category.id}
-                            className="p-6 cursor-pointer hover:border-primary transition-all hover:shadow-md group"
+                            className="p-6 cursor-pointer hover:border-primary transition-all hover:shadow-lg hover:shadow-primary/10 group bg-gradient-card"
                             onClick={() => setSelectedCategory(category.id)}
                           >
                             <div className="flex items-start gap-4">
-                              <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                                <Icon className="h-6 w-6 text-primary" />
+                              <div className="p-3 bg-gradient-primary rounded-xl group-hover:scale-110 transition-transform">
+                                <Icon className="h-6 w-6 text-white" />
                               </div>
                               <div className="flex-1">
                                 <h3 className="text-lg font-semibold mb-1">{category.name}</h3>
@@ -480,6 +599,44 @@ export default function KnowledgeBase() {
               )}
             </div>
           </ScrollArea>
+
+          {/* Right Sidebar - Table of Contents (only for articles) */}
+          {selectedArticle && tableOfContents.length > 0 && (
+            <aside className="hidden xl:block w-64 border-l border-border bg-card flex-shrink-0">
+              <ScrollArea className="h-full">
+                <div className="p-6 space-y-4 sticky top-0">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                    <Hash className="h-4 w-4" />
+                    On this page
+                  </div>
+                  <nav className="space-y-1">
+                    {tableOfContents.map((item) => (
+                      <a
+                        key={item.id}
+                        href={`#${item.id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          document.getElementById(item.id)?.scrollIntoView({ 
+                            behavior: 'smooth',
+                            block: 'start'
+                          });
+                          setActiveHeading(item.id);
+                        }}
+                        className={cn(
+                          "block py-1 text-sm transition-colors hover:text-primary",
+                          item.level === 2 && "pl-0 font-medium",
+                          item.level === 3 && "pl-4",
+                          activeHeading === item.id ? "text-primary font-medium" : "text-muted-foreground"
+                        )}
+                      >
+                        {item.text}
+                      </a>
+                    ))}
+                  </nav>
+                </div>
+              </ScrollArea>
+            </aside>
+          )}
         </main>
       </div>
     </DashboardLayout>
