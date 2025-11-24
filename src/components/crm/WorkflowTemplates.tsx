@@ -28,7 +28,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
     steps: [
       {
         step_order: 1,
-        action_type: "send_email",
+        action_type: "email",
         delay_days: 0,
         email_type: "re_engagement",
         tone: "friendly",
@@ -36,12 +36,12 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 2,
-        action_type: "wait",
+        action_type: "delay",
         delay_days: 3
       },
       {
         step_order: 3,
-        action_type: "send_email",
+        action_type: "email",
         delay_days: 0,
         email_type: "value_share",
         tone: "helpful",
@@ -49,12 +49,12 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 4,
-        action_type: "wait",
+        action_type: "delay",
         delay_days: 4
       },
       {
         step_order: 5,
-        action_type: "send_email",
+        action_type: "email",
         delay_days: 0,
         email_type: "last_attempt",
         tone: "professional",
@@ -62,12 +62,12 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 6,
-        action_type: "wait",
+        action_type: "delay",
         delay_days: 7
       },
       {
         step_order: 7,
-        action_type: "update_status",
+        action_type: "status",
         delay_days: 0,
         next_status: "unqualified"
       }
@@ -85,7 +85,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
     steps: [
       {
         step_order: 1,
-        action_type: "send_email",
+        action_type: "email",
         delay_days: 0,
         email_type: "introduction",
         tone: "friendly",
@@ -93,12 +93,12 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 2,
-        action_type: "wait",
+        action_type: "delay",
         delay_days: 2
       },
       {
         step_order: 3,
-        action_type: "send_email",
+        action_type: "email",
         delay_days: 0,
         email_type: "qualification",
         tone: "consultative",
@@ -106,12 +106,12 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 4,
-        action_type: "wait",
+        action_type: "delay",
         delay_days: 3
       },
       {
         step_order: 5,
-        action_type: "send_email",
+        action_type: "email",
         delay_days: 0,
         email_type: "education",
         tone: "helpful",
@@ -119,12 +119,12 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 6,
-        action_type: "wait",
+        action_type: "delay",
         delay_days: 3
       },
       {
         step_order: 7,
-        action_type: "send_email",
+        action_type: "email",
         delay_days: 0,
         email_type: "meeting_request",
         tone: "professional",
@@ -132,12 +132,12 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 8,
-        action_type: "wait",
+        action_type: "delay",
         delay_days: 2
       },
       {
         step_order: 9,
-        action_type: "update_status",
+        action_type: "status",
         delay_days: 0,
         next_status: "qualified"
       }
@@ -156,7 +156,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
     steps: [
       {
         step_order: 1,
-        action_type: "send_email",
+        action_type: "email",
         delay_days: 0,
         email_type: "proposal_follow_up",
         tone: "enthusiastic",
@@ -164,12 +164,12 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 2,
-        action_type: "wait",
+        action_type: "delay",
         delay_days: 1
       },
       {
         step_order: 3,
-        action_type: "send_email",
+        action_type: "email",
         delay_days: 0,
         email_type: "social_proof",
         tone: "confident",
@@ -177,12 +177,12 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 4,
-        action_type: "wait",
+        action_type: "delay",
         delay_days: 1
       },
       {
         step_order: 5,
-        action_type: "send_email",
+        action_type: "email",
         delay_days: 0,
         email_type: "closing",
         tone: "direct",
@@ -190,12 +190,12 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 6,
-        action_type: "wait",
+        action_type: "delay",
         delay_days: 1
       },
       {
         step_order: 7,
-        action_type: "update_status",
+        action_type: "status",
         delay_days: 0,
         next_status: "negotiating"
       }
@@ -290,8 +290,8 @@ export default function WorkflowTemplates({ onTemplateDeployed }: { onTemplateDe
                       <Icon className={`h-5 w-5 text-${template.color}-500`} />
                       <CardTitle className="text-base">{template.name}</CardTitle>
                     </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {template.steps.filter(s => s.action_type === 'send_email').length} emails
+                     <Badge variant="secondary" className="text-xs">
+                      {template.steps.filter(s => s.action_type === 'email').length} emails
                     </Badge>
                   </div>
                   <CardDescription className="text-xs mt-2">

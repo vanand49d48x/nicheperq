@@ -689,21 +689,67 @@ export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: V
           </TabsContent>
           
           <TabsContent value="visual" className="flex-1 mt-0">
-            <div className="h-full border rounded-lg bg-background">
-              <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                onNodeClick={onNodeClick}
-                nodeTypes={nodeTypes}
-                fitView
-              >
-                <Background />
-                <Controls />
-                <MiniMap />
-              </ReactFlow>
+            <div className="h-full flex flex-col border rounded-lg bg-background">
+              {/* Add Node Toolbar */}
+              <div className="p-3 border-b bg-muted/30 flex gap-2 flex-wrap">
+                <p className="text-sm font-medium text-muted-foreground mr-2 flex items-center">
+                  Add Step:
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => addNode('email')}
+                  className="gap-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  Send Email
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => addNode('delay')}
+                  className="gap-2"
+                >
+                  <Clock className="h-4 w-4" />
+                  Wait
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => addNode('condition')}
+                  className="gap-2"
+                >
+                  <GitBranch className="h-4 w-4" />
+                  If/Then Branch
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => addNode('status')}
+                  className="gap-2"
+                >
+                  <Play className="h-4 w-4" />
+                  Change Status
+                </Button>
+              </div>
+              
+              {/* ReactFlow Canvas */}
+              <div className="flex-1">
+                <ReactFlow
+                  nodes={nodes}
+                  edges={edges}
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  onConnect={onConnect}
+                  onNodeClick={onNodeClick}
+                  nodeTypes={nodeTypes}
+                  fitView
+                >
+                  <Background />
+                  <Controls />
+                  <MiniMap />
+                </ReactFlow>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
