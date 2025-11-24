@@ -357,7 +357,7 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
   const mapNodeTypeToActionType = (nodeType: string): string => {
     const mapping: Record<string, string> = {
       'email': 'send_email',
-      'delay': 'delay',
+      'delay': 'wait',  // Fixed: database expects 'wait' not 'delay'
       'condition': 'condition',
       'status': 'update_status',
     };
@@ -369,6 +369,7 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
     const mapping: Record<string, string> = {
       'send_email': 'email',
       'email': 'email',
+      'wait': 'delay',  // Fixed: map 'wait' back to 'delay' for UI
       'delay': 'delay',
       'condition': 'condition',
       'update_status': 'status',

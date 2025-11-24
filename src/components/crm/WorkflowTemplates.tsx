@@ -36,7 +36,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 2,
-        action_type: "delay",
+        action_type: "wait",
         delay_days: 3
       },
       {
@@ -49,7 +49,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 4,
-        action_type: "delay",
+        action_type: "wait",
         delay_days: 4
       },
       {
@@ -62,7 +62,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 6,
-        action_type: "delay",
+        action_type: "wait",
         delay_days: 7
       },
       {
@@ -93,7 +93,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 2,
-        action_type: "delay",
+        action_type: "wait",
         delay_days: 2
       },
       {
@@ -106,7 +106,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 4,
-        action_type: "delay",
+        action_type: "wait",
         delay_days: 3
       },
       {
@@ -119,7 +119,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 6,
-        action_type: "delay",
+        action_type: "wait",
         delay_days: 3
       },
       {
@@ -132,7 +132,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 8,
-        action_type: "delay",
+        action_type: "wait",
         delay_days: 2
       },
       {
@@ -164,7 +164,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 2,
-        action_type: "delay",
+        action_type: "wait",
         delay_days: 1
       },
       {
@@ -177,7 +177,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 4,
-        action_type: "delay",
+        action_type: "wait",
         delay_days: 1
       },
       {
@@ -190,7 +190,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
       },
       {
         step_order: 6,
-        action_type: "delay",
+        action_type: "wait",
         delay_days: 1
       },
       {

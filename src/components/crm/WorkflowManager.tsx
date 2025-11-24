@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Play, Pause, Edit, Trash2, Plus, Sparkles } from "lucide-react";
+import { Play, Pause, Edit, Trash2, Plus, Sparkles, TestTube } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +16,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import WorkflowTemplates from "./WorkflowTemplates";
 
 interface Workflow {
@@ -39,6 +46,10 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workflowToDelete, setWorkflowToDelete] = useState<string | null>(null);
+  const [testDialogOpen, setTestDialogOpen] = useState(false);
+  const [testWorkflow, setTestWorkflow] = useState<Workflow | null>(null);
+  const [testPreview, setTestPreview] = useState<any>(null);
+  const [testingWorkflow, setTestingWorkflow] = useState(false);
 
   useEffect(() => {
     loadWorkflows();
@@ -137,6 +148,55 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
     }
   };
 
+  const openTestDialog = async (workflow: Workflow) => {
+    setTestWorkflow(workflow);
+    setTestDialogOpen(true);
+    setTestingWorkflow(true);
+
+    try {
+      // Fetch workflow steps
+      const { data: steps, error: stepsError } = await supabase
+        .from('workflow_steps')
+        .select('*')
+        .eq('workflow_id', workflow.id)
+        .order('step_order');
+
+      if (stepsError) throw stepsError;
+
+      // Get a sample lead that matches the trigger
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const triggerValue = typeof workflow.trigger === 'object' && workflow.trigger 
+        ? (workflow.trigger as any).value 
+        : 'new';
+
+      const { data: sampleLead } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('contact_status', triggerValue)
+        .limit(1)
+        .single();
+
+      setTestPreview({
+        workflow,
+        steps: steps || [],
+        sampleLead,
+        totalDays: steps?.reduce((sum, s) => sum + (s.delay_days || 0), 0) || 0,
+      });
+    } catch (error) {
+      console.error('Test error:', error);
+      toast({
+        title: "Test Failed",
+        description: "Could not preview workflow",
+        variant: "destructive",
+      });
+    } finally {
+      setTestingWorkflow(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -226,6 +286,15 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => openTestDialog(workflow)}
+                      title="Test workflow preview"
+                    >
+                      <TestTube className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => onEditWorkflow(workflow.id)}
                     >
                       <Edit className="h-4 w-4" />
@@ -263,6 +332,102 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Workflow Preview: {testWorkflow?.name}</DialogTitle>
+            <DialogDescription>
+              This shows what would happen when a lead matches the trigger
+            </DialogDescription>
+          </DialogHeader>
+          
+          {testingWorkflow ? (
+            <div className="py-8 text-center text-muted-foreground">Loading preview...</div>
+          ) : testPreview ? (
+            <div className="space-y-4">
+              <Card className="bg-accent/20">
+                <CardContent className="pt-4">
+                  <div className="text-sm">
+                    <p className="font-semibold mb-2">🎯 Trigger Condition:</p>
+                    <p className="text-muted-foreground">
+                      When lead status is: <Badge>{(testPreview.workflow.trigger as any)?.value || 'new'}</Badge>
+                    </p>
+                    {testPreview.sampleLead ? (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Example lead: {testPreview.sampleLead.business_name}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-yellow-600 mt-2">
+                        No matching leads found to test with
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-3">
+                <p className="font-semibold text-sm">📋 Workflow Steps ({testPreview.steps.length}):</p>
+                {testPreview.steps.map((step: any, index: number) => (
+                  <Card key={step.id} className="bg-card">
+                    <CardContent className="pt-4">
+                      <div className="flex items-start gap-3">
+                        <Badge className="shrink-0">Step {step.step_order}</Badge>
+                        <div className="flex-1">
+                          {step.action_type === 'send_email' && (
+                            <>
+                              <p className="font-medium">📧 Send Email</p>
+                              <p className="text-sm text-muted-foreground">
+                                Type: {step.email_type} • Tone: {step.tone}
+                              </p>
+                              {step.ai_prompt_hint && (
+                                <p className="text-xs text-muted-foreground mt-1 italic">
+                                  "{step.ai_prompt_hint.slice(0, 100)}..."
+                                </p>
+                              )}
+                            </>
+                          )}
+                          {step.action_type === 'wait' && (
+                            <>
+                              <p className="font-medium">⏰ Wait</p>
+                              <p className="text-sm text-muted-foreground">
+                                Delay {step.delay_days} day{step.delay_days !== 1 ? 's' : ''} before next step
+                              </p>
+                            </>
+                          )}
+                          {step.action_type === 'update_status' && (
+                            <>
+                              <p className="font-medium">✅ Update Status</p>
+                              <p className="text-sm text-muted-foreground">
+                                Change lead status to: {step.next_status}
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <Card className="bg-primary/10 border-primary/20">
+                <CardContent className="pt-4">
+                  <p className="text-sm font-semibold">⏱️ Total Duration: {testPreview.totalDays} days</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Workflow takes {testPreview.totalDays} days from trigger to completion
+                  </p>
+                </CardContent>
+              </Card>
+
+              <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded p-3">
+                <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                  💡 This is a preview only. Activate the workflow for it to run automatically on matching leads.
+                </p>
+              </div>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
