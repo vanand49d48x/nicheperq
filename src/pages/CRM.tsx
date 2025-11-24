@@ -42,6 +42,7 @@ const CRM = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights" | "analytics" | "orchestration" | "visual-workflows" | "workflow-editor">("kanban");
   const [editingWorkflowId, setEditingWorkflowId] = useState<string | undefined>();
+  const [workflowRefreshTrigger, setWorkflowRefreshTrigger] = useState(0);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -266,6 +267,7 @@ const CRM = () => {
                 setEditingWorkflowId(id);
                 setView('workflow-editor');
               }}
+              refreshTrigger={workflowRefreshTrigger}
             />
           </FeatureGate>
         ) : view === "insights" ? (
@@ -291,6 +293,7 @@ const CRM = () => {
                 setEditingWorkflowId(id);
                 setView('workflow-editor');
               }}
+              refreshTrigger={workflowRefreshTrigger}
             />
           </FeatureGate>
         ) : view === "workflow-editor" ? (
@@ -302,11 +305,9 @@ const CRM = () => {
                 setView('visual-workflows');
               }}
               onSaved={() => {
+                setWorkflowRefreshTrigger(prev => prev + 1);
+                setEditingWorkflowId(undefined);
                 setView('visual-workflows');
-                toast({
-                  title: "Success",
-                  description: "Return to 'Your Workflows' to activate it",
-                });
               }}
             />
           </FeatureGate>

@@ -38,9 +38,10 @@ interface Workflow {
 interface WorkflowManagerProps {
   onCreateNew: () => void;
   onEditWorkflow: (workflowId: string) => void;
+  refreshTrigger?: number;
 }
 
-export default function WorkflowManager({ onCreateNew, onEditWorkflow }: WorkflowManagerProps) {
+export default function WorkflowManager({ onCreateNew, onEditWorkflow, refreshTrigger }: WorkflowManagerProps) {
   const { toast } = useToast();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,10 +54,11 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
 
   useEffect(() => {
     loadWorkflows();
-  }, []);
+  }, [refreshTrigger]);
 
   const loadWorkflows = async () => {
     try {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -67,6 +69,8 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
+      console.log('Loaded workflows:', data?.length || 0);
       setWorkflows(data || []);
     } catch (error) {
       console.error('Error loading workflows:', error);
@@ -90,6 +94,8 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
         .from('workflow_steps')
         .select('id')
         .eq('workflow_id', workflowId);
+
+      console.log(`Workflow ${workflowId} has ${steps?.length || 0} steps`);
 
       if (!steps || steps.length === 0) {
         toast({
@@ -195,9 +201,8 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
 
       if (error) throw error;
 
-      setWorkflows(workflows.map(w => 
-        w.id === workflowId ? { ...w, is_active: !currentState } : w
-      ));
+      // Refresh the workflow list to show updated status
+      await loadWorkflows();
 
       if (currentState) {
         toast({
