@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -23,7 +23,7 @@ const smtpSchema = z.object({
 
 interface EmailAccount {
   id: string;
-  provider: 'gmail' | 'smtp';
+  provider: 'smtp';
   from_name: string;
   from_email: string;
   is_verified: boolean;
@@ -65,11 +65,11 @@ export default function EmailSettings() {
 
       if (error) throw error;
       if (data) {
-        // Only load gmail or smtp accounts
-        if (data.provider === 'gmail' || data.provider === 'smtp') {
+        // Only load smtp accounts
+        if (data.provider === 'smtp') {
           setEmailAccount({
             id: data.id,
-            provider: data.provider as 'gmail' | 'smtp',
+            provider: data.provider as 'smtp',
             from_name: data.from_name,
             from_email: data.from_email,
             is_verified: data.is_verified,
@@ -89,67 +89,6 @@ export default function EmailSettings() {
     }
   };
 
-  const connectGmail = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Error",
-          description: "You must be logged in",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Get OAuth URL from edge function
-      const { data, error } = await supabase.functions.invoke('gmail-oauth-init', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        }
-      });
-
-      if (error) throw error;
-
-      // Open OAuth popup
-      const popup = window.open(data.authUrl, 'Gmail OAuth', 'width=600,height=700');
-      
-      // Listen for OAuth callback
-      const handleMessage = async (event: MessageEvent) => {
-        if (event.data.type === 'oauth-success' && event.data.provider === 'gmail') {
-          window.removeEventListener('message', handleMessage);
-          toast({
-            title: "Gmail Connected",
-            description: `Successfully connected ${event.data.email}`,
-          });
-          await loadEmailAccount();
-        } else if (event.data.type === 'oauth-error') {
-          window.removeEventListener('message', handleMessage);
-          toast({
-            title: "Connection Failed",
-            description: event.data.error || "Failed to connect Gmail",
-            variant: "destructive",
-          });
-        }
-      };
-
-      window.addEventListener('message', handleMessage);
-
-      // Clean up if popup is closed
-      const checkPopup = setInterval(() => {
-        if (popup?.closed) {
-          clearInterval(checkPopup);
-          window.removeEventListener('message', handleMessage);
-        }
-      }, 1000);
-    } catch (error: any) {
-      console.error('Error connecting Gmail:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to initiate Gmail connection",
-        variant: "destructive",
-      });
-    }
-  };
 
   const saveSMTP = async () => {
     try {
@@ -385,135 +324,116 @@ export default function EmailSettings() {
                 </AlertDescription>
               </Alert>
 
-              <Tabs defaultValue="smtp" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="gmail">Gmail</TabsTrigger>
-                  <TabsTrigger value="smtp">Custom SMTP</TabsTrigger>
-                </TabsList>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Configure your own SMTP server (works with Gmail, SendGrid, Mailgun, etc.)
+                </p>
 
-                <TabsContent value="gmail" className="space-y-4">
-                  <Alert className="mb-4">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="from_name">From Name</Label>
+                      <Input
+                        id="from_name"
+                        value={smtpForm.from_name}
+                        onChange={(e) => setSmtpForm({ ...smtpForm, from_name: e.target.value })}
+                        placeholder="Your Name"
+                      />
+                      {smtpErrors.from_name && (
+                        <p className="text-sm text-destructive mt-1">{smtpErrors.from_name}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="from_email">From Email</Label>
+                      <Input
+                        id="from_email"
+                        type="email"
+                        value={smtpForm.from_email}
+                        onChange={(e) => setSmtpForm({ ...smtpForm, from_email: e.target.value })}
+                        placeholder="you@company.com"
+                      />
+                      {smtpErrors.from_email && (
+                        <p className="text-sm text-destructive mt-1">{smtpErrors.from_email}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="smtp_host">SMTP Host</Label>
+                      <Input
+                        id="smtp_host"
+                        value={smtpForm.smtp_host}
+                        onChange={(e) => setSmtpForm({ ...smtpForm, smtp_host: e.target.value })}
+                        placeholder="smtp.gmail.com"
+                      />
+                      {smtpErrors.smtp_host && (
+                        <p className="text-sm text-destructive mt-1">{smtpErrors.smtp_host}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="smtp_port">SMTP Port</Label>
+                      <Input
+                        id="smtp_port"
+                        type="number"
+                        value={smtpForm.smtp_port}
+                        onChange={(e) => setSmtpForm({ ...smtpForm, smtp_port: parseInt(e.target.value) || 587 })}
+                        placeholder="587"
+                      />
+                      {smtpErrors.smtp_port && (
+                        <p className="text-sm text-destructive mt-1">{smtpErrors.smtp_port}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="smtp_username">SMTP Username</Label>
+                    <Input
+                      id="smtp_username"
+                      value={smtpForm.smtp_username}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, smtp_username: e.target.value })}
+                      placeholder="your-email@gmail.com"
+                    />
+                    {smtpErrors.smtp_username && (
+                      <p className="text-sm text-destructive mt-1">{smtpErrors.smtp_username}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="smtp_password">SMTP Password</Label>
+                    <Input
+                      id="smtp_password"
+                      type="password"
+                      value={smtpForm.smtp_password}
+                      onChange={(e) => setSmtpForm({ ...smtpForm, smtp_password: e.target.value })}
+                      placeholder="Your app password or SMTP password"
+                    />
+                    {smtpErrors.smtp_password && (
+                      <p className="text-sm text-destructive mt-1">{smtpErrors.smtp_password}</p>
+                    )}
+                  </div>
+
+                  <Button onClick={saveSMTP} className="w-full">
+                    Save SMTP Settings
+                  </Button>
+
+                  <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      <strong>Setup Required:</strong> You need to configure OAuth credentials in Google Cloud Console.
-                      Add GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET to your backend secrets.
+                      <strong>Using Gmail?</strong> Enable 2-factor authentication and use an{" "}
+                      <a 
+                        href="https://myaccount.google.com/apppasswords" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        App Password
+                      </a>
+                      {" "}instead of your regular password.
                     </AlertDescription>
                   </Alert>
-                  <p className="text-sm text-muted-foreground">
-                    Connect your Gmail account to send emails via Google's servers with OAuth authentication
-                  </p>
-                  <Button onClick={connectGmail} className="w-full">
-                    <Mail className="h-4 w-4 mr-2" />
-                    Connect Gmail
-                  </Button>
-                  <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
-                    <p className="font-medium">Required scopes:</p>
-                    <ul className="list-disc list-inside pl-2">
-                      <li>gmail.send</li>
-                      <li>userinfo.email</li>
-                      <li>userinfo.profile</li>
-                    </ul>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="smtp" className="space-y-4">
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Configure your own SMTP server (works with Gmail, SendGrid, Mailgun, etc.)
-                  </p>
-
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="from_name">From Name</Label>
-                        <Input
-                          id="from_name"
-                          value={smtpForm.from_name}
-                          onChange={(e) => setSmtpForm({ ...smtpForm, from_name: e.target.value })}
-                          placeholder="Your Name"
-                        />
-                        {smtpErrors.from_name && (
-                          <p className="text-sm text-destructive mt-1">{smtpErrors.from_name}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="from_email">From Email</Label>
-                        <Input
-                          id="from_email"
-                          type="email"
-                          value={smtpForm.from_email}
-                          onChange={(e) => setSmtpForm({ ...smtpForm, from_email: e.target.value })}
-                          placeholder="you@company.com"
-                        />
-                        {smtpErrors.from_email && (
-                          <p className="text-sm text-destructive mt-1">{smtpErrors.from_email}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="smtp_host">SMTP Host</Label>
-                        <Input
-                          id="smtp_host"
-                          value={smtpForm.smtp_host}
-                          onChange={(e) => setSmtpForm({ ...smtpForm, smtp_host: e.target.value })}
-                          placeholder="smtp.gmail.com"
-                        />
-                        {smtpErrors.smtp_host && (
-                          <p className="text-sm text-destructive mt-1">{smtpErrors.smtp_host}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label htmlFor="smtp_port">SMTP Port</Label>
-                        <Input
-                          id="smtp_port"
-                          type="number"
-                          value={smtpForm.smtp_port}
-                          onChange={(e) => setSmtpForm({ ...smtpForm, smtp_port: parseInt(e.target.value) || 587 })}
-                          placeholder="587"
-                        />
-                        {smtpErrors.smtp_port && (
-                          <p className="text-sm text-destructive mt-1">{smtpErrors.smtp_port}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="smtp_username">SMTP Username</Label>
-                      <Input
-                        id="smtp_username"
-                        value={smtpForm.smtp_username}
-                        onChange={(e) => setSmtpForm({ ...smtpForm, smtp_username: e.target.value })}
-                        placeholder="your-email@gmail.com"
-                      />
-                      {smtpErrors.smtp_username && (
-                        <p className="text-sm text-destructive mt-1">{smtpErrors.smtp_username}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <Label htmlFor="smtp_password">SMTP Password / App Password</Label>
-                      <Input
-                        id="smtp_password"
-                        type="password"
-                        value={smtpForm.smtp_password}
-                        onChange={(e) => setSmtpForm({ ...smtpForm, smtp_password: e.target.value })}
-                        placeholder="••••••••"
-                      />
-                      {smtpErrors.smtp_password && (
-                        <p className="text-sm text-destructive mt-1">{smtpErrors.smtp_password}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        For Gmail, use an App Password (not your regular password)
-                      </p>
-                    </div>
-
-                    <Button onClick={saveSMTP} className="w-full">
-                      Save SMTP Configuration
-                    </Button>
-                  </div>
-                </TabsContent>
-              </Tabs>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
