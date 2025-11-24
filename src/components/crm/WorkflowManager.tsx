@@ -82,6 +82,106 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
 
   const toggleActive = async (workflowId: string, currentState: boolean) => {
     try {
+      const workflow = workflows.find(w => w.id === workflowId);
+      if (!workflow) return;
+
+      // If activating, enroll matching leads
+      if (!currentState) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        let enrolledCount = 0;
+        const trigger = workflow.trigger as any;
+
+        // Get first step to calculate next_action_at
+        const { data: firstStep } = await supabase
+          .from('workflow_steps')
+          .select('*')
+          .eq('workflow_id', workflowId)
+          .eq('step_order', 1)
+          .single();
+
+        if (!firstStep) {
+          toast({
+            title: "Error",
+            description: "Workflow has no steps configured",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Calculate next action time
+        const nextActionAt = new Date();
+        nextActionAt.setDate(nextActionAt.getDate() + (firstStep.delay_days || 0));
+
+        // Enroll leads based on trigger type
+        if (trigger.type === 'inactivity') {
+          // Cold Lead Revival: inactive for X days
+          const daysAgo = new Date();
+          daysAgo.setDate(daysAgo.getDate() - (trigger.days || 14));
+
+          const { data: inactiveLeads } = await supabase
+            .from('leads')
+            .select('id')
+            .eq('user_id', user.id)
+            .not('contact_status', 'in', '("closed_won","closed_lost","unqualified")')
+            .or(`last_contacted_at.lte.${daysAgo.toISOString()},last_contacted_at.is.null`);
+
+          if (inactiveLeads && inactiveLeads.length > 0) {
+            const enrollments = inactiveLeads.map(lead => ({
+              workflow_id: workflowId,
+              lead_id: lead.id,
+              user_id: user.id,
+              current_step_order: 1,
+              next_action_at: nextActionAt.toISOString(),
+              status: 'active',
+              enrolled_at: new Date().toISOString()
+            }));
+
+            const { error: enrollError } = await supabase
+              .from('workflow_enrollments')
+              .insert(enrollments);
+
+            if (!enrollError) enrolledCount = inactiveLeads.length;
+          }
+        } else if (trigger.type === 'lead_status' || trigger.type === 'status_change') {
+          // New Lead Nurture or status-based triggers
+          const targetStatus = trigger.value || trigger.to_status || 'new';
+
+          const { data: matchingLeads } = await supabase
+            .from('leads')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('contact_status', targetStatus);
+
+          if (matchingLeads && matchingLeads.length > 0) {
+            const enrollments = matchingLeads.map(lead => ({
+              workflow_id: workflowId,
+              lead_id: lead.id,
+              user_id: user.id,
+              current_step_order: 1,
+              next_action_at: nextActionAt.toISOString(),
+              status: 'active',
+              enrolled_at: new Date().toISOString()
+            }));
+
+            const { error: enrollError } = await supabase
+              .from('workflow_enrollments')
+              .insert(enrollments);
+
+            if (!enrollError) enrolledCount = matchingLeads.length;
+          }
+        }
+
+        toast({
+          title: "Workflow Activated!",
+          description: enrolledCount > 0 
+            ? `${enrolledCount} leads enrolled and workflow activated` 
+            : "Workflow activated - new matching leads will be enrolled automatically",
+        });
+      }
+
+      // Update workflow status
       const { error } = await supabase
         .from('ai_workflows')
         .update({ is_active: !currentState })
@@ -93,10 +193,12 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
         w.id === workflowId ? { ...w, is_active: !currentState } : w
       ));
 
-      toast({
-        title: currentState ? "Workflow Paused" : "Workflow Activated",
-        description: `Workflow is now ${!currentState ? 'active' : 'paused'}`,
-      });
+      if (currentState) {
+        toast({
+          title: "Workflow Paused",
+          description: "Workflow is now paused",
+        });
+      }
     } catch (error) {
       console.error('Error toggling workflow:', error);
       toast({
