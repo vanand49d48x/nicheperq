@@ -85,6 +85,21 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
       const workflow = workflows.find(w => w.id === workflowId);
       if (!workflow) return;
 
+      // Check if workflow has steps before allowing activation
+      const { data: steps } = await supabase
+        .from('workflow_steps')
+        .select('id')
+        .eq('workflow_id', workflowId);
+
+      if (!steps || steps.length === 0) {
+        toast({
+          title: "Cannot Activate",
+          description: "This workflow has no steps. Edit it and add steps first.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // If activating, enroll matching leads
       if (!currentState) {
         const { data: { user } } = await supabase.auth.getUser();
@@ -101,18 +116,9 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow }: Workflo
           .eq('step_order', 1)
           .single();
 
-        if (!firstStep) {
-          toast({
-            title: "Error",
-            description: "Workflow has no steps configured",
-            variant: "destructive",
-          });
-          return;
-        }
-
         // Calculate next action time
         const nextActionAt = new Date();
-        nextActionAt.setDate(nextActionAt.getDate() + (firstStep.delay_days || 0));
+        nextActionAt.setDate(nextActionAt.getDate() + (firstStep?.delay_days || 0));
 
         // Enroll leads based on trigger type
         if (trigger.type === 'inactivity') {
