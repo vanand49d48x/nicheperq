@@ -83,3 +83,15 @@ verify_jwt = true
 
 [functions.send-workspace-email]
 verify_jwt = false
+
+[functions.gmail-oauth-init]
+verify_jwt = true
+
+[functions.gmail-oauth-callback]
+verify_jwt = false
+
+[functions.outlook-oauth-init]
+verify_jwt = true
+
+[functions.outlook-oauth-callback]
+verify_jwt = false
