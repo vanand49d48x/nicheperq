@@ -87,17 +87,127 @@ export default function EmailSettings() {
   };
 
   const connectGmail = async () => {
-    toast({
-      title: "Coming Soon",
-      description: "Gmail OAuth integration will be available soon. Please use Custom SMTP for now.",
-    });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Error",
+          description: "You must be logged in",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get OAuth URL from edge function
+      const { data, error } = await supabase.functions.invoke('gmail-oauth-init', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        }
+      });
+
+      if (error) throw error;
+
+      // Open OAuth popup
+      const popup = window.open(data.authUrl, 'Gmail OAuth', 'width=600,height=700');
+      
+      // Listen for OAuth callback
+      const handleMessage = async (event: MessageEvent) => {
+        if (event.data.type === 'oauth-success' && event.data.provider === 'gmail') {
+          window.removeEventListener('message', handleMessage);
+          toast({
+            title: "Gmail Connected",
+            description: `Successfully connected ${event.data.email}`,
+          });
+          await loadEmailAccount();
+        } else if (event.data.type === 'oauth-error') {
+          window.removeEventListener('message', handleMessage);
+          toast({
+            title: "Connection Failed",
+            description: event.data.error || "Failed to connect Gmail",
+            variant: "destructive",
+          });
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+
+      // Clean up if popup is closed
+      const checkPopup = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(checkPopup);
+          window.removeEventListener('message', handleMessage);
+        }
+      }, 1000);
+    } catch (error: any) {
+      console.error('Error connecting Gmail:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to initiate Gmail connection",
+        variant: "destructive",
+      });
+    }
   };
 
   const connectOutlook = async () => {
-    toast({
-      title: "Coming Soon",
-      description: "Outlook OAuth integration will be available soon. Please use Custom SMTP for now.",
-    });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Error",
+          description: "You must be logged in",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get OAuth URL from edge function
+      const { data, error } = await supabase.functions.invoke('outlook-oauth-init', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        }
+      });
+
+      if (error) throw error;
+
+      // Open OAuth popup
+      const popup = window.open(data.authUrl, 'Outlook OAuth', 'width=600,height=700');
+      
+      // Listen for OAuth callback
+      const handleMessage = async (event: MessageEvent) => {
+        if (event.data.type === 'oauth-success' && event.data.provider === 'outlook') {
+          window.removeEventListener('message', handleMessage);
+          toast({
+            title: "Outlook Connected",
+            description: `Successfully connected ${event.data.email}`,
+          });
+          await loadEmailAccount();
+        } else if (event.data.type === 'oauth-error') {
+          window.removeEventListener('message', handleMessage);
+          toast({
+            title: "Connection Failed",
+            description: event.data.error || "Failed to connect Outlook",
+            variant: "destructive",
+          });
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+
+      // Clean up if popup is closed
+      const checkPopup = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(checkPopup);
+          window.removeEventListener('message', handleMessage);
+        }
+      }, 1000);
+    } catch (error: any) {
+      console.error('Error connecting Outlook:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to initiate Outlook connection",
+        variant: "destructive",
+      });
+    }
   };
 
   const saveSMTP = async () => {
@@ -342,23 +452,53 @@ export default function EmailSettings() {
                 </TabsList>
 
                 <TabsContent value="gmail" className="space-y-4">
+                  <Alert className="mb-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Setup Required:</strong> You need to configure OAuth credentials in Google Cloud Console.
+                      Add GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET to your backend secrets.
+                    </AlertDescription>
+                  </Alert>
                   <p className="text-sm text-muted-foreground">
-                    Connect your Gmail account to send emails via Google's servers
+                    Connect your Gmail account to send emails via Google's servers with OAuth authentication
                   </p>
                   <Button onClick={connectGmail} className="w-full">
                     <Mail className="h-4 w-4 mr-2" />
                     Connect Gmail
                   </Button>
+                  <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+                    <p className="font-medium">Required scopes:</p>
+                    <ul className="list-disc list-inside pl-2">
+                      <li>gmail.send</li>
+                      <li>userinfo.email</li>
+                      <li>userinfo.profile</li>
+                    </ul>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="outlook" className="space-y-4">
+                  <Alert className="mb-4">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Setup Required:</strong> You need to configure OAuth credentials in Azure Portal.
+                      Add MICROSOFT_OAUTH_CLIENT_ID and MICROSOFT_OAUTH_CLIENT_SECRET to your backend secrets.
+                    </AlertDescription>
+                  </Alert>
                   <p className="text-sm text-muted-foreground">
-                    Connect your Outlook/Microsoft 365 account
+                    Connect your Outlook/Microsoft 365 account with OAuth authentication
                   </p>
                   <Button onClick={connectOutlook} className="w-full">
                     <Mail className="h-4 w-4 mr-2" />
                     Connect Outlook
                   </Button>
+                  <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
+                    <p className="font-medium">Required scopes:</p>
+                    <ul className="list-disc list-inside pl-2">
+                      <li>SMTP.Send</li>
+                      <li>User.Read</li>
+                      <li>offline_access</li>
+                    </ul>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="smtp" className="space-y-4">
