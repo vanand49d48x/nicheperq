@@ -121,9 +121,10 @@ const nodeTypes: NodeTypes = {
 interface VisualWorkflowBuilderProps {
   workflowId?: string;
   onBack: () => void;
+  onSaved?: () => void;
 }
 
-export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWorkflowBuilderProps) {
+export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: VisualWorkflowBuilderProps) {
   const { toast } = useToast();
   const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowNode>([
     {
@@ -356,10 +357,10 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
   // Helper to map node type to action_type for database
   const mapNodeTypeToActionType = (nodeType: string): string => {
     const mapping: Record<string, string> = {
-      'email': 'send_email',
-      'delay': 'wait',  // Fixed: database expects 'wait' not 'delay'
+      'email': 'email',      // Database accepts 'email'
+      'delay': 'delay',      // Database accepts 'delay'
       'condition': 'condition',
-      'status': 'update_status',
+      'status': 'status',    // Database accepts 'status'
     };
     return mapping[nodeType] || nodeType;
   };
@@ -367,13 +368,13 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
   // Helper to map action_type back to node type for UI
   const mapActionTypeToNodeType = (actionType: string): string => {
     const mapping: Record<string, string> = {
-      'send_email': 'email',
       'email': 'email',
-      'wait': 'delay',  // Fixed: map 'wait' back to 'delay' for UI
+      'send_email': 'email',
       'delay': 'delay',
+      'wait': 'delay',
       'condition': 'condition',
-      'update_status': 'status',
       'status': 'status',
+      'update_status': 'status',
     };
     return mapping[actionType] || actionType;
   };
@@ -450,6 +451,8 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
           title: "Workflow Updated",
           description: `"${workflowName}" has been updated successfully`,
         });
+        
+        if (onSaved) onSaved();
       } else {
         // Create new workflow
         const { data: workflow, error: workflowError } = await supabase
@@ -484,12 +487,14 @@ export default function VisualWorkflowBuilder({ workflowId, onBack }: VisualWork
           title: "Workflow Saved",
           description: `"${workflowName}" has been saved successfully`,
         });
+        
+        if (onSaved) onSaved();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Save error:', error);
       toast({
         title: "Save Failed",
-        description: "Could not save workflow",
+        description: error.message || "Could not save workflow. Please check that all steps are configured correctly.",
         variant: "destructive",
       });
     }

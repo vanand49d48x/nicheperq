@@ -301,6 +301,13 @@ const CRM = () => {
                 setEditingWorkflowId(undefined);
                 setView('visual-workflows');
               }}
+              onSaved={() => {
+                setView('visual-workflows');
+                toast({
+                  title: "Success",
+                  description: "Return to 'Your Workflows' to activate it",
+                });
+              }}
             />
           </FeatureGate>
         ) : (
