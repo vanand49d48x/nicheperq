@@ -252,14 +252,13 @@ async function executeStepAction(
   canSendEmail: boolean = true
 ): Promise<boolean> {
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
   let emailSent = false;
 
   switch (step.action_type) {
     case 'send_email':
     case 'email': {
-      if (!LOVABLE_API_KEY || !RESEND_API_KEY || !canSendEmail) {
-        console.log(`⏭️ Skipping email send (API keys: ${!!LOVABLE_API_KEY}/${!!RESEND_API_KEY}, can send: ${canSendEmail})`);
+      if (!LOVABLE_API_KEY || !canSendEmail) {
+        console.log(`⏭️ Skipping email send (API key: ${!!LOVABLE_API_KEY}, can send: ${canSendEmail})`);
         break;
       }
 
@@ -336,14 +335,11 @@ Hint: ${step.ai_prompt_hint || 'Write a compelling email'}
         if (draftError) throw draftError;
 
         // Generate recipient email (placeholder until we have real emails)
-        // TODO: Replace with actual email extraction from lead data
         const recipientEmail = lead.phone?.includes('@') 
           ? lead.phone 
           : `contact@${lead.business_name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`;
 
-        // Send email via Resend
-        const resend = new Resend(RESEND_API_KEY);
-        
+        // Send email via workspace email account
         const emailBody = `${emailData.body}
 
 ---
@@ -353,14 +349,55 @@ ${lead.city}${lead.state ? ', ' + lead.state : ''}
 To unsubscribe, reply with "unsubscribe".
 `;
 
-        const { data: emailResult, error: emailError } = await resend.emails.send({
-          from: 'NichePerQ Outreach <support@nicheperq.com>',
-          to: [recipientEmail],
-          subject: emailData.subject,
-          text: emailBody,
+        const sendResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-workspace-email`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: enrollment.user_id,
+            to_email: recipientEmail,
+            subject: emailData.subject,
+            body_text: emailBody,
+            body_html: emailBody.replace(/\n/g, '<br>'),
+          })
         });
 
-        if (emailError) throw new Error(`Failed to send email: ${emailError.message}`);
+        const sendResult = await sendResponse.json();
+
+        if (sendResult.error === 'NO_EMAIL_ACCOUNT') {
+          // Log that email was skipped due to missing email account
+          await supabase
+            .from('lead_interactions')
+            .insert({
+              lead_id: lead.id,
+              user_id: enrollment.user_id,
+              interaction_type: 'workflow_email_skipped',
+              metadata: {
+                workflow_id: workflow.id,
+                step_order: step.step_order,
+                reason: 'No verified email account configured'
+              },
+              occurred_at: new Date().toISOString()
+            });
+
+          console.log(`⚠️ Email skipped for lead ${lead.id} - no email account configured`);
+          
+          // Update draft status
+          await supabase
+            .from('ai_email_drafts')
+            .update({
+              status: 'failed',
+            })
+            .eq('id', draft.id);
+
+          break;
+        }
+
+        if (!sendResponse.ok || sendResult.error) {
+          throw new Error(sendResult.error || 'Failed to send email');
+        }
 
         // Update draft status to sent
         await supabase
@@ -384,7 +421,6 @@ To unsubscribe, reply with "unsubscribe".
             email_draft_id: draft.id,
             event_type: 'sent',
             event_data: { 
-              message_id: emailResult?.id,
               workflow_id: workflow.id,
               recipient: recipientEmail 
             }
