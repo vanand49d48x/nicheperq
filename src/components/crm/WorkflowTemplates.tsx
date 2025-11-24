@@ -18,69 +18,54 @@ interface WorkflowTemplate {
 const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
   {
     name: "Cold Lead Revival",
-    description: "Re-engage leads that went cold. 4-touch sequence over 14 days with value-first approach.",
+    description: "Re-engage leads that went cold. 3-email sequence over 14 days with value-first approach.",
     icon: TrendingUp,
     color: "blue",
     trigger: {
-      type: "inactivity",
-      days: 14
+      type: "no_activity",
+      days_inactive: 14
     },
     steps: [
       {
         step_order: 1,
         action_type: "email",
         delay_days: 0,
-        email_type: "re_engagement",
+        email_type: "value_add",
         tone: "friendly",
-        ai_prompt_hint: "Brief check-in referencing our last conversation. Ask if their priorities have changed. Offer one new insight about their niche."
+        ai_prompt_hint: "Soft check-in, share 1 helpful insight or resource, ask if timing is bad."
       },
       {
         step_order: 2,
-        action_type: "delay",
-        delay_days: 3
+        action_type: "email",
+        delay_days: 5,
+        email_type: "follow_up",
+        tone: "friendly",
+        ai_prompt_hint: "Quick bump, acknowledge they're busy, offer to close the loop if no interest."
       },
       {
         step_order: 3,
         action_type: "email",
-        delay_days: 0,
-        email_type: "value_share",
-        tone: "professional",
-        ai_prompt_hint: "Share a case study or success story relevant to their niche. No hard sell, just value. Ask one thoughtful question."
+        delay_days: 5,
+        email_type: "breakup",
+        tone: "friendly",
+        ai_prompt_hint: "Polite breakup; say you'll stop reaching out unless they want to reconnect."
       },
       {
         step_order: 4,
-        action_type: "delay",
-        delay_days: 4
-      },
-      {
-        step_order: 5,
-        action_type: "email",
-        delay_days: 0,
-        email_type: "last_attempt",
-        tone: "professional",
-        ai_prompt_hint: "Final breakup email. Acknowledge they might not be interested right now. Leave door open for future. Use reverse psychology - 'Should I close your file?'"
-      },
-      {
-        step_order: 6,
-        action_type: "delay",
-        delay_days: 7
-      },
-      {
-        step_order: 7,
         action_type: "status",
-        delay_days: 0,
-        next_status: "unqualified"
+        delay_days: 4,
+        next_status: "cold"
       }
     ]
   },
   {
     name: "New Lead Nurture",
-    description: "Welcome and qualify new leads. 5-touch sequence over 10 days building trust and understanding needs.",
+    description: "Welcome and qualify new leads. 5-email sequence over 10 days building trust and value.",
     icon: Sparkles,
     color: "purple",
     trigger: {
-      type: "lead_status",
-      value: "new"
+      type: "new_lead",
+      status: "new"
     },
     steps: [
       {
@@ -89,69 +74,50 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
         delay_days: 0,
         email_type: "introduction",
         tone: "friendly",
-        ai_prompt_hint: "Warm welcome. Briefly introduce yourself and your value proposition for their niche. Ask about their biggest challenge right now."
+        ai_prompt_hint: "Intro & welcome email. Introduce yourself and set expectations."
       },
       {
         step_order: 2,
-        action_type: "delay",
-        delay_days: 2
+        action_type: "email",
+        delay_days: 2,
+        email_type: "value",
+        tone: "professional",
+        ai_prompt_hint: "Value email - case study or quick win relevant to their niche."
       },
       {
         step_order: 3,
         action_type: "email",
-        delay_days: 0,
-        email_type: "qualification",
+        delay_days: 3,
+        email_type: "social_proof",
         tone: "professional",
-        ai_prompt_hint: "Ask qualifying questions about their business goals, timeline, and decision-making process. Show genuine curiosity about their niche."
+        ai_prompt_hint: "Social proof + ask for call. Share testimonials and request a meeting."
       },
       {
         step_order: 4,
-        action_type: "delay",
-        delay_days: 3
+        action_type: "email",
+        delay_days: 3,
+        email_type: "objection_handling",
+        tone: "professional",
+        ai_prompt_hint: "Objection handling. Address common concerns preemptively."
       },
       {
         step_order: 5,
         action_type: "email",
-        delay_days: 0,
-        email_type: "education",
-        tone: "professional",
-        ai_prompt_hint: "Share educational content or insight specific to their niche. Position yourself as a trusted advisor, not a salesperson."
-      },
-      {
-        step_order: 6,
-        action_type: "delay",
-        delay_days: 3
-      },
-      {
-        step_order: 7,
-        action_type: "email",
-        delay_days: 0,
-        email_type: "meeting_request",
-        tone: "professional",
-        ai_prompt_hint: "Soft call-to-action. Suggest a brief call to discuss their specific needs. Make it low-pressure and high-value."
-      },
-      {
-        step_order: 8,
-        action_type: "delay",
-        delay_days: 2
-      },
-      {
-        step_order: 9,
-        action_type: "status",
-        delay_days: 0,
-        next_status: "qualified"
+        delay_days: 2,
+        email_type: "deadline",
+        tone: "direct",
+        ai_prompt_hint: "Soft deadline / 'is this a priority?' Create gentle urgency."
       }
     ]
   },
   {
     name: "Hot Lead Closer",
-    description: "Move qualified leads to closed. Aggressive 3-day sequence with urgency and social proof.",
+    description: "Close deals faster after proposal sent. 3-email sequence over 3 days with urgency.",
     icon: Mail,
     color: "green",
     trigger: {
-      type: "status_change",
-      from_status: "qualified",
-      to_status: "proposal_sent"
+      type: "status_changed",
+      status: "proposal_sent"
     },
     steps: [
       {
@@ -160,44 +126,29 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
         delay_days: 0,
         email_type: "proposal_follow_up",
         tone: "professional",
-        ai_prompt_hint: "Follow up on proposal. Highlight 2-3 key benefits specific to their niche. Create urgency with a soft deadline or limited availability."
+        ai_prompt_hint: "Recap proposal + call to action. Make it easy to say yes."
       },
       {
         step_order: 2,
-        action_type: "delay",
-        delay_days: 1
+        action_type: "email",
+        delay_days: 1,
+        email_type: "objection_handling",
+        tone: "professional",
+        ai_prompt_hint: "Answer typical objections, add social proof. Reinforce value."
       },
       {
         step_order: 3,
         action_type: "email",
-        delay_days: 0,
-        email_type: "social_proof",
-        tone: "professional",
-        ai_prompt_hint: "Share a relevant success story or testimonial from someone in their niche. Use numbers and specifics. Address common objections proactively."
+        delay_days: 2,
+        email_type: "last_call",
+        tone: "direct",
+        ai_prompt_hint: "Last call / next steps; if no reply, update status to 'Stalled / Nurture'."
       },
       {
         step_order: 4,
-        action_type: "delay",
-        delay_days: 1
-      },
-      {
-        step_order: 5,
-        action_type: "email",
-        delay_days: 0,
-        email_type: "closing",
-        tone: "direct",
-        ai_prompt_hint: "Direct ask. What questions can I answer? What's holding you back? Offer to hop on a quick call to finalize details. Create urgency - limited slots, pricing changes, etc."
-      },
-      {
-        step_order: 6,
-        action_type: "delay",
-        delay_days: 1
-      },
-      {
-        step_order: 7,
         action_type: "status",
-        delay_days: 0,
-        next_status: "negotiating"
+        delay_days: 1,
+        next_status: "nurture"
       }
     ]
   }
@@ -317,11 +268,11 @@ export default function WorkflowTemplates({ onTemplateDeployed }: { onTemplateDe
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <TrendingUp className="h-3 w-3" />
                       <span>
-                        Trigger: {template.trigger.type === 'inactivity' 
-                          ? `${template.trigger.days}d inactivity`
-                          : template.trigger.type === 'lead_status'
-                          ? `New leads (status: ${template.trigger.value})`
-                          : `Status: ${template.trigger.to_status || template.trigger.value}`
+                        Trigger: {template.trigger.type === 'no_activity' 
+                          ? `${template.trigger.days_inactive}d inactivity`
+                          : template.trigger.type === 'new_lead'
+                          ? `New leads (status: ${template.trigger.status})`
+                          : `Status change: ${template.trigger.status}`
                         }
                       </span>
                     </div>
