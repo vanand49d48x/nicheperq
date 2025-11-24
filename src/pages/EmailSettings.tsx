@@ -444,64 +444,7 @@ export default function EmailSettings() {
                 </AlertDescription>
               </Alert>
 
-              <Tabs defaultValue="smtp" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="gmail">Gmail</TabsTrigger>
-                  <TabsTrigger value="outlook">Outlook</TabsTrigger>
-                  <TabsTrigger value="smtp">Custom SMTP</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="gmail" className="space-y-4">
-                  <Alert className="mb-4">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>Setup Required:</strong> You need to configure OAuth credentials in Google Cloud Console.
-                      Add GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET to your backend secrets.
-                    </AlertDescription>
-                  </Alert>
-                  <p className="text-sm text-muted-foreground">
-                    Connect your Gmail account to send emails via Google's servers with OAuth authentication
-                  </p>
-                  <Button onClick={connectGmail} className="w-full">
-                    <Mail className="h-4 w-4 mr-2" />
-                    Connect Gmail
-                  </Button>
-                  <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
-                    <p className="font-medium">Required scopes:</p>
-                    <ul className="list-disc list-inside pl-2">
-                      <li>gmail.send</li>
-                      <li>userinfo.email</li>
-                      <li>userinfo.profile</li>
-                    </ul>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="outlook" className="space-y-4">
-                  <Alert className="mb-4">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>Setup Required:</strong> You need to configure OAuth credentials in Azure Portal.
-                      Add MICROSOFT_OAUTH_CLIENT_ID and MICROSOFT_OAUTH_CLIENT_SECRET to your backend secrets.
-                    </AlertDescription>
-                  </Alert>
-                  <p className="text-sm text-muted-foreground">
-                    Connect your Outlook/Microsoft 365 account with OAuth authentication
-                  </p>
-                  <Button onClick={connectOutlook} className="w-full">
-                    <Mail className="h-4 w-4 mr-2" />
-                    Connect Outlook
-                  </Button>
-                  <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
-                    <p className="font-medium">Required scopes:</p>
-                    <ul className="list-disc list-inside pl-2">
-                      <li>SMTP.Send</li>
-                      <li>User.Read</li>
-                      <li>offline_access</li>
-                    </ul>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="smtp" className="space-y-4">
+              <div className="space-y-4">
                   <p className="text-sm text-muted-foreground mb-4">
                     Configure your own SMTP server (works with Gmail, SendGrid, Mailgun, etc.)
                   </p>
