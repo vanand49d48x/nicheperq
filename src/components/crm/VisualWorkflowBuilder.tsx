@@ -34,9 +34,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Plus, Save, Mail, Clock, GitBranch, Play, Eye, Sparkles } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Save, Mail, Clock, GitBranch, Play, Eye, Sparkles, ListOrdered } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { WorkflowStepEditor } from "./WorkflowStepEditor";
 
 // Custom Node Components
 const EmailNode = ({ data }: any) => (
@@ -144,6 +146,8 @@ export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: V
   const [triggerType, setTriggerType] = useState<string>('lead_status');
   const [triggerValue, setTriggerValue] = useState<string>('new');
   const [workflowDescription, setWorkflowDescription] = useState('');
+  const [viewMode, setViewMode] = useState<'visual' | 'steps'>('steps');
+  const [stepEditorSteps, setStepEditorSteps] = useState<any[]>([]);
 
   useEffect(() => {
     if (workflowId) {
@@ -179,6 +183,9 @@ export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: V
         setTriggerType(trigger.type || 'lead_status');
         setTriggerValue(trigger.value || 'new');
       }
+
+      // Load steps for step editor
+      setStepEditorSteps(steps || []);
 
       // Convert steps to nodes
       const newNodes: WorkflowNode[] = [
@@ -383,30 +390,55 @@ export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: V
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    if (nodes.filter(n => n.type !== 'start').length === 0) {
-      toast({
-        title: "No Steps",
-        description: "Add at least one step to your workflow before saving",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Convert visual nodes to workflow steps
-    const steps = nodes
-      .filter(n => n.type !== 'start')
-      .map((node, index) => ({
+    // Use step editor steps if in step mode, otherwise use visual nodes
+    let steps;
+    if (viewMode === 'steps') {
+      if (stepEditorSteps.length === 0) {
+        toast({
+          title: "No Steps",
+          description: "Add at least one step to your workflow before saving",
+          variant: "destructive",
+        });
+        return;
+      }
+      steps = stepEditorSteps.map((step, index) => ({
         step_order: index + 1,
-        action_type: mapNodeTypeToActionType(node.type || 'email'),
-        delay_days: node.data?.delayDays || 0,
-        email_type: node.data?.emailType || null,
-        tone: node.data?.tone || null,
-        ai_prompt_hint: node.data?.aiHint || null,
-        condition_type: node.data?.conditionType || null,
-        condition_value: node.data?.conditionValue || null,
-        next_status: node.data?.nextStatus || null,
+        action_type: step.action_type,
+        delay_days: step.delay_days || 0,
+        email_type: step.email_type || null,
+        tone: step.tone || null,
+        ai_prompt_hint: step.ai_prompt_hint || null,
+        condition_type: step.condition_type || null,
+        condition_value: step.condition_value || null,
+        next_status: step.next_status || null,
         branch_to_step_order: null,
       }));
+    } else {
+      if (nodes.filter(n => n.type !== 'start').length === 0) {
+        toast({
+          title: "No Steps",
+          description: "Add at least one step to your workflow before saving",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Convert visual nodes to workflow steps
+      steps = nodes
+        .filter(n => n.type !== 'start')
+        .map((node, index) => ({
+          step_order: index + 1,
+          action_type: mapNodeTypeToActionType(node.type || 'email'),
+          delay_days: node.data?.delayDays || 0,
+          email_type: node.data?.emailType || null,
+          tone: node.data?.tone || null,
+          ai_prompt_hint: node.data?.aiHint || null,
+          condition_type: node.data?.conditionType || null,
+          condition_value: node.data?.conditionValue || null,
+          next_status: node.data?.nextStatus || null,
+          branch_to_step_order: null,
+        }));
+    }
 
     // Construct trigger object
     const trigger = {
@@ -516,7 +548,7 @@ export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: V
               📋 <strong>You're building:</strong> An automated email sequence that runs when leads match certain conditions.
             </p>
             <p className="text-xs text-muted-foreground mt-2">
-              ➡️ <strong>Flow:</strong> Steps run top-to-bottom. Arrows show the path.
+              ➡️ <strong>Flow:</strong> Steps run top-to-bottom with delays between each action.
             </p>
           </div>
         </CardHeader>
@@ -624,50 +656,6 @@ export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: V
 
           <Separator />
 
-          <div className="space-y-2">
-            <Label>Add Step</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => addNode('email')}
-                className="w-full"
-              >
-                <Mail className="h-4 w-4 mr-1" />
-                Email
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => addNode('delay')}
-                className="w-full"
-              >
-                <Clock className="h-4 w-4 mr-1" />
-                Wait
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => addNode('condition')}
-                className="w-full"
-              >
-                <GitBranch className="h-4 w-4 mr-1" />
-                Branch
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => addNode('status')}
-                className="w-full"
-              >
-                <Play className="h-4 w-4 mr-1" />
-                Status
-              </Button>
-            </div>
-          </div>
-
-          <Separator />
-
           <Button onClick={saveWorkflow} className="w-full">
             <Save className="h-4 w-4 mr-2" />
             Save Workflow
@@ -675,26 +663,50 @@ export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: V
         </CardContent>
       </Card>
 
-      {/* Canvas */}
-      <div className="flex-1 border rounded-lg bg-background">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onNodeClick={onNodeClick}
-          nodeTypes={nodeTypes}
-          fitView
-        >
-          <Background />
-          <Controls />
-          <MiniMap />
-        </ReactFlow>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'visual' | 'steps')} className="flex-1 flex flex-col">
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="steps" className="gap-2">
+              <ListOrdered className="h-4 w-4" />
+              Step Editor
+            </TabsTrigger>
+            <TabsTrigger value="visual" className="gap-2">
+              <GitBranch className="h-4 w-4" />
+              Visual Canvas
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="steps" className="flex-1 overflow-y-auto p-4 mt-0">
+            <WorkflowStepEditor
+              steps={stepEditorSteps}
+              onChange={setStepEditorSteps}
+            />
+          </TabsContent>
+          
+          <TabsContent value="visual" className="flex-1 mt-0">
+            <div className="h-full border rounded-lg bg-background">
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onNodeClick={onNodeClick}
+                nodeTypes={nodeTypes}
+                fitView
+              >
+                <Background />
+                <Controls />
+                <MiniMap />
+              </ReactFlow>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
-      {/* Properties Panel */}
-      {selectedNode && selectedNode.type !== 'start' && (
+      {/* Properties Panel - Only show in Visual mode */}
+      {viewMode === 'visual' && selectedNode && selectedNode.type !== 'start' && (
         <Card className="w-80 flex-shrink-0 overflow-y-auto">
           <CardHeader>
             <CardTitle className="text-lg">Step Properties</CardTitle>
