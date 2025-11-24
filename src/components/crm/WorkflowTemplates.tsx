@@ -44,7 +44,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
         action_type: "email",
         delay_days: 0,
         email_type: "value_share",
-        tone: "helpful",
+        tone: "professional",
         ai_prompt_hint: "Share a case study or success story relevant to their niche. No hard sell, just value. Ask one thoughtful question."
       },
       {
@@ -101,7 +101,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
         action_type: "email",
         delay_days: 0,
         email_type: "qualification",
-        tone: "consultative",
+        tone: "professional",
         ai_prompt_hint: "Ask qualifying questions about their business goals, timeline, and decision-making process. Show genuine curiosity about their niche."
       },
       {
@@ -114,7 +114,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
         action_type: "email",
         delay_days: 0,
         email_type: "education",
-        tone: "helpful",
+        tone: "professional",
         ai_prompt_hint: "Share educational content or insight specific to their niche. Position yourself as a trusted advisor, not a salesperson."
       },
       {
@@ -159,7 +159,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
         action_type: "email",
         delay_days: 0,
         email_type: "proposal_follow_up",
-        tone: "enthusiastic",
+        tone: "professional",
         ai_prompt_hint: "Follow up on proposal. Highlight 2-3 key benefits specific to their niche. Create urgency with a soft deadline or limited availability."
       },
       {
@@ -172,7 +172,7 @@ const WORKFLOW_TEMPLATES: WorkflowTemplate[] = [
         action_type: "email",
         delay_days: 0,
         email_type: "social_proof",
-        tone: "confident",
+        tone: "professional",
         ai_prompt_hint: "Share a relevant success story or testimonial from someone in their niche. Use numbers and specifics. Address common objections proactively."
       },
       {
@@ -241,23 +241,30 @@ export default function WorkflowTemplates({ onTemplateDeployed }: { onTemplateDe
         workflow_id: workflow.id
       }));
 
+      console.log('Inserting steps:', stepsToInsert);
+
       const { error: stepsError } = await supabase
         .from('workflow_steps')
         .insert(stepsToInsert);
 
-      if (stepsError) throw stepsError;
+      if (stepsError) {
+        console.error('Steps insert error:', stepsError);
+        throw stepsError;
+      }
+
+      console.log(`Successfully inserted ${stepsToInsert.length} steps for workflow ${workflow.id}`);
 
       toast({
         title: "Template Deployed!",
-        description: `${template.name} has been added to your workflows. Review and activate when ready.`,
+        description: `${template.name} with ${stepsToInsert.length} steps has been added. Scroll down to "Your Workflows" to activate it.`,
       });
 
       onTemplateDeployed();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deploying template:', error);
       toast({
         title: "Deployment Failed",
-        description: "Could not deploy workflow template",
+        description: error?.message || "Could not deploy workflow template",
         variant: "destructive",
       });
     } finally {
