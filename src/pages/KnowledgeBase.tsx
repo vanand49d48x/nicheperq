@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Search, BookOpen, ThumbsUp, Eye, ArrowLeft, ExternalLink } from "lucide-react";
+import { Search, BookOpen, ThumbsUp, Eye, ChevronRight, Home, ExternalLink } from "lucide-react";
 import * as LucideIcons from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Category {
   id: string;
@@ -35,19 +37,16 @@ interface Article {
 export default function KnowledgeBase() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
-  const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  useEffect(() => {
-    filterArticles();
-  }, [searchTerm, selectedCategory, articles]);
 
   const loadData = async () => {
     setLoading(true);
@@ -82,35 +81,29 @@ export default function KnowledgeBase() {
     setLoading(false);
   };
 
-  const filterArticles = () => {
-    let filtered = articles;
-
-    if (selectedCategory) {
-      filtered = filtered.filter((a) => a.category_id === selectedCategory);
-    }
-
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (a) =>
-          a.title.toLowerCase().includes(term) ||
-          a.content.toLowerCase().includes(term) ||
-          a.excerpt?.toLowerCase().includes(term) ||
-          a.tags?.some((tag) => tag.toLowerCase().includes(term))
-      );
-    }
-
-    setFilteredArticles(filtered);
-  };
+  const filteredArticles = articles.filter((article) => {
+    const matchesCategory = !selectedCategory || article.category_id === selectedCategory;
+    const matchesSearch = !searchTerm || 
+      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.excerpt?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.tags?.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    return matchesCategory && matchesSearch;
+  });
 
   const handleViewArticle = async (article: Article) => {
     setSelectedArticle(article);
+    setSearchTerm("");
 
     // Increment view count
     await supabase
       .from("knowledge_base_articles")
       .update({ view_count: article.view_count + 1 })
       .eq("id", article.id);
+    
+    // Reload to get updated counts
+    loadData();
   };
 
   const handleMarkHelpful = async () => {
@@ -142,155 +135,212 @@ export default function KnowledgeBase() {
     return articles.filter((a) => a.category_id === categoryId);
   };
 
-  const popularArticles = [...articles]
-    .sort((a, b) => b.view_count - a.view_count)
-    .slice(0, 5);
+  const currentCategory = selectedCategory 
+    ? categories.find(c => c.id === selectedCategory)
+    : null;
 
   return (
     <DashboardLayout>
-      <div className="container max-w-7xl py-8 px-6 animate-fade-in">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Knowledge Base</h1>
-          <p className="text-muted-foreground mt-2">
-            Find answers to common questions and learn how to use NichePerQ
-          </p>
-        </div>
+      <div className="flex h-[calc(100vh-4rem)] bg-background">
+        {/* Sidebar Navigation */}
+        <aside className={cn(
+          "w-64 border-r border-border bg-card transition-all duration-300",
+          !sidebarOpen && "w-0 overflow-hidden"
+        )}>
+          <ScrollArea className="h-full">
+            <div className="p-6 space-y-6">
+              {/* Home Button */}
+              <Button
+                variant={!selectedCategory && !selectedArticle ? "secondary" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => {
+                  setSelectedCategory(null);
+                  setSelectedArticle(null);
+                  setSearchTerm("");
+                }}
+              >
+                <Home className="mr-2 h-4 w-4" />
+                Home
+              </Button>
 
-        {/* Search Bar */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Search for articles..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12 text-lg"
-              />
-            </div>
-          </CardContent>
-        </Card>
+              <Separator />
 
-        {searchTerm || selectedCategory ? (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">
-                {searchTerm ? `Search results for "${searchTerm}"` : "Articles"}
-              </h2>
-              {selectedCategory && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedCategory(null);
-                    setSearchTerm("");
-                  }}
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to categories
-                </Button>
-              )}
-            </div>
-
-            {filteredArticles.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No articles found</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
-                {filteredArticles.map((article) => (
-                  <Card
-                    key={article.id}
-                    className="cursor-pointer hover:border-primary transition-colors"
-                    onClick={() => handleViewArticle(article)}
-                  >
-                    <CardHeader>
-                      <CardTitle className="flex items-start justify-between">
-                        <span>{article.title}</span>
-                        <div className="flex gap-3 text-sm text-muted-foreground font-normal">
-                          <span className="flex items-center gap-1">
-                            <Eye className="h-4 w-4" />
-                            {article.view_count}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <ThumbsUp className="h-4 w-4" />
-                            {article.helpful_count}
-                          </span>
-                        </div>
-                      </CardTitle>
-                      {article.excerpt && (
-                        <CardDescription>{article.excerpt}</CardDescription>
-                      )}
-                    </CardHeader>
-                    {article.tags && article.tags.length > 0 && (
-                      <CardContent>
-                        <div className="flex flex-wrap gap-2">
-                          {article.tags.map((tag) => (
-                            <Badge key={tag} variant="outline">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </CardContent>
-                    )}
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {/* Categories Grid */}
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Browse by Category</h2>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {/* Categories */}
+              <div className="space-y-1">
+                <h3 className="mb-3 text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  Categories
+                </h3>
                 {categories.map((category) => {
+                  const Icon = (LucideIcons as any)[category.icon] || BookOpen;
                   const articleCount = getArticlesByCategory(category.id).length;
+                  const isActive = selectedCategory === category.id;
+
                   return (
-                    <Card
+                    <Button
                       key={category.id}
-                      className="cursor-pointer hover:border-primary transition-colors"
-                      onClick={() => setSelectedCategory(category.id)}
+                      variant={isActive ? "secondary" : "ghost"}
+                      className="w-full justify-start group"
+                      onClick={() => {
+                        setSelectedCategory(category.id);
+                        setSelectedArticle(null);
+                        setSearchTerm("");
+                      }}
                     >
-                      <CardHeader>
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 bg-primary/10 rounded-lg">
-                            {getCategoryIcon(category.icon)}
-                          </div>
-                          <div className="flex-1">
-                            <CardTitle className="text-lg">{category.name}</CardTitle>
-                            <CardDescription className="mt-1">
-                              {category.description}
-                            </CardDescription>
-                            <p className="text-sm text-muted-foreground mt-2">
-                              {articleCount} {articleCount === 1 ? "article" : "articles"}
-                            </p>
-                          </div>
-                        </div>
-                      </CardHeader>
-                    </Card>
+                      <Icon className="mr-2 h-4 w-4" />
+                      <span className="flex-1 text-left">{category.name}</span>
+                      <span className="text-xs text-muted-foreground">{articleCount}</span>
+                    </Button>
                   );
                 })}
               </div>
             </div>
+          </ScrollArea>
+        </aside>
 
-            {/* Popular Articles */}
-            {popularArticles.length > 0 && (
-              <div>
-                <h2 className="text-2xl font-bold mb-4">Popular Articles</h2>
-                <div className="grid gap-4">
-                  {popularArticles.map((article) => (
-                    <Card
-                      key={article.id}
-                      className="cursor-pointer hover:border-primary transition-colors"
-                      onClick={() => handleViewArticle(article)}
-                    >
-                      <CardHeader>
-                        <CardTitle className="flex items-start justify-between">
-                          <span className="text-lg">{article.title}</span>
-                          <div className="flex gap-3 text-sm text-muted-foreground font-normal">
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="max-w-4xl mx-auto p-8 space-y-8 animate-fade-in">
+              {/* Search Bar */}
+              <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm pb-4 -mt-4 pt-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search knowledge base..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 h-12"
+                  />
+                </div>
+              </div>
+
+              {/* Breadcrumb */}
+              {(selectedCategory || selectedArticle) && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <button
+                    onClick={() => {
+                      setSelectedCategory(null);
+                      setSelectedArticle(null);
+                      setSearchTerm("");
+                    }}
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Home
+                  </button>
+                  {currentCategory && (
+                    <>
+                      <ChevronRight className="h-4 w-4" />
+                      <button
+                        onClick={() => {
+                          setSelectedArticle(null);
+                          setSearchTerm("");
+                        }}
+                        className="hover:text-foreground transition-colors"
+                      >
+                        {currentCategory.name}
+                      </button>
+                    </>
+                  )}
+                  {selectedArticle && (
+                    <>
+                      <ChevronRight className="h-4 w-4" />
+                      <span className="text-foreground">{selectedArticle.title}</span>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Content */}
+              {selectedArticle ? (
+                // Article View
+                <article className="space-y-6">
+                  <div className="space-y-4">
+                    <h1 className="text-4xl font-bold tracking-tight">{selectedArticle.title}</h1>
+                    
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Eye className="h-4 w-4" />
+                        {selectedArticle.view_count} views
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <ThumbsUp className="h-4 w-4" />
+                        {selectedArticle.helpful_count} helpful
+                      </span>
+                    </div>
+
+                    {selectedArticle.tags && selectedArticle.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedArticle.tags.map((tag) => (
+                          <Badge key={tag} variant="secondary">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  <div 
+                    className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-a:text-primary hover:prose-a:text-primary/80"
+                    dangerouslySetInnerHTML={{
+                      __html: selectedArticle.content.replace(/\n/g, "<br />"),
+                    }}
+                  />
+
+                  <Separator />
+
+                  {/* Feedback Section */}
+                  <Card className="bg-muted/50">
+                    <div className="p-6 space-y-4">
+                      <p className="font-medium">Was this article helpful?</p>
+                      <div className="flex gap-3">
+                        <Button onClick={handleMarkHelpful} variant="default">
+                          <ThumbsUp className="mr-2 h-4 w-4" />
+                          Yes, this helped
+                        </Button>
+                        <Button variant="outline" asChild>
+                          <a href="/support">
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            Contact Support
+                          </a>
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                </article>
+              ) : searchTerm ? (
+                // Search Results
+                <div className="space-y-6">
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tight mb-2">
+                      Search Results
+                    </h1>
+                    <p className="text-muted-foreground">
+                      {filteredArticles.length} {filteredArticles.length === 1 ? 'result' : 'results'} for "{searchTerm}"
+                    </p>
+                  </div>
+
+                  {filteredArticles.length === 0 ? (
+                    <Card>
+                      <div className="p-12 text-center">
+                        <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                        <p className="text-muted-foreground">No articles found</p>
+                      </div>
+                    </Card>
+                  ) : (
+                    <div className="space-y-4">
+                      {filteredArticles.map((article) => (
+                        <Card
+                          key={article.id}
+                          className="p-6 cursor-pointer hover:border-primary transition-all hover:shadow-md"
+                          onClick={() => handleViewArticle(article)}
+                        >
+                          <h3 className="text-xl font-semibold mb-2">{article.title}</h3>
+                          {article.excerpt && (
+                            <p className="text-muted-foreground mb-3">{article.excerpt}</p>
+                          )}
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Eye className="h-4 w-4" />
                               {article.view_count}
@@ -300,81 +350,137 @@ export default function KnowledgeBase() {
                               {article.helpful_count}
                             </span>
                           </div>
-                        </CardTitle>
-                      </CardHeader>
-                    </Card>
-                  ))}
+                        </Card>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Article Viewer Dialog */}
-        <Dialog open={!!selectedArticle} onOpenChange={() => setSelectedArticle(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl pr-8">{selectedArticle?.title}</DialogTitle>
-            </DialogHeader>
-
-            {selectedArticle && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Eye className="h-4 w-4" />
-                    {selectedArticle.view_count} views
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <ThumbsUp className="h-4 w-4" />
-                    {selectedArticle.helpful_count} found this helpful
-                  </span>
-                </div>
-
-                {selectedArticle.tags && selectedArticle.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {selectedArticle.tags.map((tag) => (
-                      <Badge key={tag} variant="outline">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                <div className="prose prose-sm max-w-none">
-                  <div
-                    dangerouslySetInnerHTML={{
-                      __html: selectedArticle.content.replace(/\n/g, "<br />"),
-                    }}
-                  />
-                </div>
-
-                <div className="border-t pt-6 space-y-4">
-                  <p className="font-medium">Was this article helpful?</p>
-                  <div className="flex gap-2">
-                    <Button onClick={handleMarkHelpful}>
-                      <ThumbsUp className="mr-2 h-4 w-4" />
-                      Yes, this helped
-                    </Button>
-                    <Button variant="outline" onClick={() => setSelectedArticle(null)}>
-                      Close
-                    </Button>
-                  </div>
-                  <div className="mt-4 p-4 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Still need help?
+              ) : selectedCategory ? (
+                // Category View
+                <div className="space-y-6">
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tight mb-2">
+                      {currentCategory?.name}
+                    </h1>
+                    <p className="text-muted-foreground">
+                      {currentCategory?.description}
                     </p>
-                    <Button variant="outline" size="sm" asChild>
-                      <a href="/support">
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        Contact Support
-                      </a>
-                    </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {filteredArticles.length === 0 ? (
+                      <Card>
+                        <div className="p-12 text-center">
+                          <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                          <p className="text-muted-foreground">No articles in this category yet</p>
+                        </div>
+                      </Card>
+                    ) : (
+                      filteredArticles.map((article) => (
+                        <Card
+                          key={article.id}
+                          className="p-6 cursor-pointer hover:border-primary transition-all hover:shadow-md"
+                          onClick={() => handleViewArticle(article)}
+                        >
+                          <h3 className="text-xl font-semibold mb-2">{article.title}</h3>
+                          {article.excerpt && (
+                            <p className="text-muted-foreground mb-3">{article.excerpt}</p>
+                          )}
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Eye className="h-4 w-4" />
+                              {article.view_count}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <ThumbsUp className="h-4 w-4" />
+                              {article.helpful_count}
+                            </span>
+                          </div>
+                        </Card>
+                      ))
+                    )}
                   </div>
                 </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+              ) : (
+                // Home View
+                <div className="space-y-12">
+                  <div className="text-center space-y-4 py-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                      <BookOpen className="h-8 w-8 text-primary" />
+                    </div>
+                    <h1 className="text-4xl font-bold tracking-tight">Knowledge Base</h1>
+                    <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                      Find answers to common questions and learn how to use NichePerQ
+                    </p>
+                  </div>
+
+                  {/* Categories Grid */}
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold">Browse by Category</h2>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {categories.map((category) => {
+                        const Icon = (LucideIcons as any)[category.icon] || BookOpen;
+                        const articleCount = getArticlesByCategory(category.id).length;
+
+                        return (
+                          <Card
+                            key={category.id}
+                            className="p-6 cursor-pointer hover:border-primary transition-all hover:shadow-md group"
+                            onClick={() => setSelectedCategory(category.id)}
+                          >
+                            <div className="flex items-start gap-4">
+                              <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                                <Icon className="h-6 w-6 text-primary" />
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="text-lg font-semibold mb-1">{category.name}</h3>
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  {category.description}
+                                </p>
+                                <p className="text-sm text-primary">
+                                  {articleCount} {articleCount === 1 ? 'article' : 'articles'}
+                                </p>
+                              </div>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Popular Articles */}
+                  {articles.length > 0 && (
+                    <div className="space-y-4">
+                      <h2 className="text-2xl font-bold">Popular Articles</h2>
+                      <div className="space-y-3">
+                        {[...articles]
+                          .sort((a, b) => b.view_count - a.view_count)
+                          .slice(0, 5)
+                          .map((article) => (
+                            <Card
+                              key={article.id}
+                              className="p-4 cursor-pointer hover:border-primary transition-all hover:shadow-md"
+                              onClick={() => handleViewArticle(article)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <h3 className="font-medium">{article.title}</h3>
+                                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Eye className="h-3.5 w-3.5" />
+                                    {article.view_count}
+                                  </span>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </main>
       </div>
     </DashboardLayout>
   );
