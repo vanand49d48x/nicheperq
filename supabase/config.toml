@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.send-daily-digest]
 verify_jwt = false
+
+[functions.run-workflows]
+verify_jwt = false
