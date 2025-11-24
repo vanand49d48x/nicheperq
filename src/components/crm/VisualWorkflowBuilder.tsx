@@ -479,9 +479,11 @@ export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: V
 
         if (stepsError) throw stepsError;
 
+        console.log(`Updated ${stepsToInsert.length} steps for workflow ${currentWorkflowId}`);
+
         toast({
-          title: "Workflow Updated",
-          description: `"${workflowName}" has been updated successfully`,
+          title: "Workflow Updated!",
+          description: `"${workflowName}" updated with ${stepsToInsert.length} step${stepsToInsert.length !== 1 ? 's' : ''}. Click Back to view it.`,
         });
         
         if (onSaved) onSaved();
@@ -513,11 +515,13 @@ export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: V
 
         if (stepsError) throw stepsError;
 
+        console.log(`Saved ${stepsToInsert.length} steps for workflow ${workflow.id}`);
+
         setCurrentWorkflowId(workflow.id);
 
         toast({
-          title: "Workflow Saved",
-          description: `"${workflowName}" has been saved successfully`,
+          title: "Workflow Saved!",
+          description: `"${workflowName}" saved with ${stepsToInsert.length} step${stepsToInsert.length !== 1 ? 's' : ''}. Click Back to view it in your workflow list.`,
         });
         
         if (onSaved) onSaved();
