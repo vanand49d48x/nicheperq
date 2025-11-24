@@ -354,7 +354,7 @@ To unsubscribe, reply with "unsubscribe".
 `;
 
         const { data: emailResult, error: emailError } = await resend.emails.send({
-          from: 'NichePerQ Outreach <auth@nicheperq.com>',
+          from: 'NichePerQ Outreach <support@nicheperq.com>',
           to: [recipientEmail],
           subject: emailData.subject,
           text: emailBody,

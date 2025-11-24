@@ -80,7 +80,7 @@ serve(async (req) => {
     }
 
     const { error } = await resend.emails.send({
-      from: "NichePerQ <auth@nicheperq.com>",
+      from: "NichePerQ <support@nicheperq.com>",
       to: [user.email],
       subject,
       html,
