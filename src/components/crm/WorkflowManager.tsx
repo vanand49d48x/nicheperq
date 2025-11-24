@@ -201,8 +201,10 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow, refreshTr
 
       if (error) throw error;
 
-      // Refresh the workflow list to show updated status
-      await loadWorkflows();
+      // Update local state without full reload
+      setWorkflows(workflows.map(w => 
+        w.id === workflowId ? { ...w, is_active: !currentState } : w
+      ));
 
       if (currentState) {
         toast({
