@@ -95,6 +95,18 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, statusFilter, on
         throw error;
       }
 
+      // Fetch updated lead to get AI scores without full refresh
+      const { data: updatedLead, error: fetchError } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('id', leadId)
+        .single();
+
+      if (!fetchError && updatedLead) {
+        // Update the lead in the parent component without full refresh
+        onRefresh();
+      }
+
       // Auto-tag after analysis
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -102,7 +114,6 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, statusFilter, on
       }
 
       toast.success('AI analysis complete! Scores updated.');
-      onRefresh();
     } catch (error) {
       console.error('Error analyzing lead:', error);
       toast.error(`Failed to analyze lead: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -112,6 +123,120 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, statusFilter, on
         next.delete(leadId);
         return next;
       });
+    }
+  };
+
+  const analyzeBatchLeads = async () => {
+    if (selectedLeads.size === 0) {
+      toast.error('Please select leads to analyze');
+      return;
+    }
+
+    const leadsToAnalyze = Array.from(selectedLeads);
+    let successCount = 0;
+    let failCount = 0;
+
+    toast.info(`Analyzing ${leadsToAnalyze.length} leads...`);
+
+    for (const leadId of leadsToAnalyze) {
+      try {
+        setAnalyzingLeads(prev => new Set(prev).add(leadId));
+        
+        const { error } = await supabase.functions.invoke('ai-analyze-lead', {
+          body: { lead_id: leadId }
+        });
+
+        if (error) throw error;
+
+        // Auto-tag after analysis
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await applyAutoTags(supabase, leadId, user.id);
+        }
+
+        successCount++;
+      } catch (error) {
+        console.error(`Error analyzing lead ${leadId}:`, error);
+        failCount++;
+      } finally {
+        setAnalyzingLeads(prev => {
+          const next = new Set(prev);
+          next.delete(leadId);
+          return next;
+        });
+      }
+    }
+
+    onRefresh();
+    setSelectedLeads(new Set());
+    setBatchMode(false);
+
+    if (failCount === 0) {
+      toast.success(`Successfully analyzed ${successCount} leads!`);
+    } else {
+      toast.warning(`Analyzed ${successCount} leads, ${failCount} failed`);
+    }
+  };
+
+  const analyzeAllNewLeads = async () => {
+    const newLeads = leads.filter(lead => !lead.ai_quality_score);
+    
+    if (newLeads.length === 0) {
+      toast.info('All leads have already been analyzed!');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `This will analyze ${newLeads.length} leads. This may take a few minutes. Continue?`
+    );
+
+    if (!confirmed) return;
+
+    let successCount = 0;
+    let failCount = 0;
+
+    toast.info(`Starting analysis of ${newLeads.length} leads...`);
+
+    for (const lead of newLeads) {
+      try {
+        setAnalyzingLeads(prev => new Set(prev).add(lead.id));
+        
+        const { error } = await supabase.functions.invoke('ai-analyze-lead', {
+          body: { lead_id: lead.id }
+        });
+
+        if (error) throw error;
+
+        // Auto-tag after analysis
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await applyAutoTags(supabase, lead.id, user.id);
+        }
+
+        successCount++;
+        
+        // Show progress
+        if (successCount % 5 === 0) {
+          toast.info(`Analyzed ${successCount}/${newLeads.length} leads...`);
+        }
+      } catch (error) {
+        console.error(`Error analyzing lead ${lead.id}:`, error);
+        failCount++;
+      } finally {
+        setAnalyzingLeads(prev => {
+          const next = new Set(prev);
+          next.delete(lead.id);
+          return next;
+        });
+      }
+    }
+
+    onRefresh();
+
+    if (failCount === 0) {
+      toast.success(`Successfully analyzed all ${successCount} leads!`);
+    } else {
+      toast.warning(`Analyzed ${successCount} leads, ${failCount} failed`);
     }
   };
 
@@ -183,18 +308,44 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, statusFilter, on
         </div>
       )}
       
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Button
+            variant={batchMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              setBatchMode(!batchMode);
+              setSelectedLeads(new Set());
+            }}
+            className="gap-2"
+          >
+            <Checkbox checked={batchMode} />
+            Batch Mode {selectedLeads.size > 0 && `(${selectedLeads.size})`}
+          </Button>
+
+          {batchMode && selectedLeads.size > 0 && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={analyzeBatchLeads}
+              className="gap-2"
+              disabled={analyzingLeads.size > 0}
+            >
+              <Sparkles className="h-4 w-4" />
+              Analyze Selected ({selectedLeads.size})
+            </Button>
+          )}
+        </div>
+
         <Button
-          variant={batchMode ? "default" : "outline"}
+          variant="outline"
           size="sm"
-          onClick={() => {
-            setBatchMode(!batchMode);
-            setSelectedLeads(new Set());
-          }}
+          onClick={analyzeAllNewLeads}
           className="gap-2"
+          disabled={analyzingLeads.size > 0}
         >
-          <Checkbox checked={batchMode} />
-          Batch Mode {selectedLeads.size > 0 && `(${selectedLeads.size})`}
+          <Sparkles className="h-4 w-4" />
+          Auto-Analyze All New
         </Button>
       </div>
 
