@@ -142,8 +142,17 @@ serve(async (req) => {
         .eq('user_id', user.id)
         .single();
 
-      // Only update if no custom overrides are set
-      const hasCustomOverride = existingRole?.custom_lead_limit !== null;
+      // Detect admin override: custom limit set OR features/role don't match subscription tier
+      const expectedCrmAccess = hasCrmAccess;
+      const expectedAiAccess = hasAiAccess;
+      const expectedRole = role;
+      
+      const hasCustomOverride = existingRole && (
+        existingRole.custom_lead_limit !== null ||
+        existingRole.has_crm_access !== expectedCrmAccess ||
+        existingRole.has_ai_access !== expectedAiAccess ||
+        existingRole.role !== expectedRole
+      );
       
       if (!hasCustomOverride) {
         const { error: roleError } = await supabaseClient
@@ -172,7 +181,7 @@ serve(async (req) => {
         hasAiAccess = existingRole.has_ai_access;
       }
     } else {
-      logStep("No active subscription, setting role to free");
+      logStep("No active subscription, checking for manual overrides");
       
       // Check for admin overrides
       const { data: existingRole } = await supabaseClient
@@ -181,7 +190,13 @@ serve(async (req) => {
         .eq('user_id', user.id)
         .single();
 
-      const hasCustomOverride = existingRole?.custom_lead_limit !== null;
+      // If no subscription, any role other than 'free' or any feature access is a manual override
+      const hasCustomOverride = existingRole && (
+        existingRole.custom_lead_limit !== null ||
+        existingRole.role !== 'free' ||
+        existingRole.has_crm_access === true ||
+        existingRole.has_ai_access === true
+      );
       
       if (!hasCustomOverride) {
         // Update user role to free if no subscription and no admin override
