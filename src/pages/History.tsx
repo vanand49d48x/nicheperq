@@ -259,38 +259,105 @@ const History = () => {
                   Find Leads
                 </Button>
               </Card>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {leads.map((lead) => (
-                  <Card key={lead.id} className="p-6 hover:shadow-lg transition-shadow">
-                    <h3 className="font-semibold mb-2 truncate">{lead.business_name}</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Building2 className="h-4 w-4" />
-                        <span className="truncate">{lead.niche}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        <span>{lead.city}{lead.state ? `, ${lead.state}` : ''}</span>
-                      </div>
-                      {lead.rating && (
-                        <div className="flex items-center gap-1">
-                          <span>⭐ {lead.rating}</span>
-                        </div>
-                      )}
-                      {lead.phone && (
-                        <div className="text-xs text-muted-foreground truncate">
-                          📞 {lead.phone}
-                        </div>
-                      )}
-                      <div className="text-xs text-muted-foreground pt-2">
-                        Found {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
+            ) : (() => {
+              // Group leads by niche
+              const leadsByNiche = leads.reduce((acc, lead) => {
+                const niche = lead.niche || 'Uncategorized';
+                if (!acc[niche]) acc[niche] = [];
+                acc[niche].push(lead);
+                return acc;
+              }, {} as Record<string, Lead[]>);
+
+              // Helper to categorize dates
+              const getDateCategory = (dateStr: string) => {
+                const date = new Date(dateStr);
+                const now = new Date();
+                const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+                
+                if (diffDays === 0) return 'Today';
+                if (diffDays <= 7) return 'This Week';
+                if (diffDays <= 30) return 'This Month';
+                if (diffDays <= 90) return 'Last 3 Months';
+                return 'Older';
+              };
+
+              return (
+                <Accordion type="multiple" className="space-y-4" defaultValue={Object.keys(leadsByNiche).slice(0, 2)}>
+                  {Object.entries(leadsByNiche)
+                    .sort(([, a], [, b]) => b.length - a.length)
+                    .map(([niche, nicheLeads]) => {
+                      // Group by date within niche
+                      const leadsByDate = nicheLeads.reduce((acc, lead) => {
+                        const category = getDateCategory(lead.created_at);
+                        if (!acc[category]) acc[category] = [];
+                        acc[category].push(lead);
+                        return acc;
+                      }, {} as Record<string, Lead[]>);
+
+                      const dateOrder = ['Today', 'This Week', 'This Month', 'Last 3 Months', 'Older'];
+                      const sortedDateEntries = Object.entries(leadsByDate)
+                        .sort(([a], [b]) => dateOrder.indexOf(a) - dateOrder.indexOf(b));
+
+                      return (
+                        <AccordionItem key={niche} value={niche} className="border rounded-lg px-4">
+                          <AccordionTrigger className="hover:no-underline py-4">
+                            <div className="flex items-center justify-between w-full pr-4">
+                              <div className="flex items-center gap-3">
+                                <Building2 className="h-5 w-5 text-primary" />
+                                <span className="font-semibold text-lg">{niche}</span>
+                              </div>
+                              <Badge variant="secondary" className="text-sm">{nicheLeads.length} leads</Badge>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent className="pt-2 pb-4">
+                            <div className="space-y-6">
+                              {sortedDateEntries.map(([dateCategory, dateLeads]) => (
+                                <div key={dateCategory}>
+                                  <div className="flex items-center gap-2 mb-3 px-2">
+                                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                      {dateCategory}
+                                    </span>
+                                    <Badge variant="outline" className="text-xs">
+                                      {dateLeads.length}
+                                    </Badge>
+                                  </div>
+                                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                                    {dateLeads.map((lead) => (
+                                      <Card key={lead.id} className="p-4 hover:shadow-md transition-shadow">
+                                        <h3 className="font-semibold mb-2 truncate">{lead.business_name}</h3>
+                                        <div className="space-y-2 text-sm">
+                                          <div className="flex items-center gap-2 text-muted-foreground">
+                                            <MapPin className="h-4 w-4" />
+                                            <span>{lead.city}{lead.state ? `, ${lead.state}` : ''}</span>
+                                          </div>
+                                          {lead.rating && (
+                                            <div className="flex items-center gap-1">
+                                              <span>⭐ {lead.rating}</span>
+                                            </div>
+                                          )}
+                                          {lead.phone && (
+                                            <div className="text-xs text-muted-foreground truncate">
+                                              📞 {lead.phone}
+                                            </div>
+                                          )}
+                                          <div className="text-xs text-muted-foreground pt-1">
+                                            {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
+                                          </div>
+                                        </div>
+                                      </Card>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      );
+                    })}
+                </Accordion>
+              );
+            })()}
           </TabsContent>
 
           <TabsContent value="searches" className="space-y-6">
