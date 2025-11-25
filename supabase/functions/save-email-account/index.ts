@@ -30,9 +30,17 @@ serve(async (req) => {
     );
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Unauthorized');
+    
+    if (userError) {
+      console.error('Auth error:', userError);
+      throw new Error('Authentication failed: ' + userError.message);
     }
+    
+    if (!user) {
+      throw new Error('No user found');
+    }
+
+    console.log('User authenticated:', user.id);
 
     const body = await req.json();
     const { provider, from_name, from_email, smtp_host, smtp_port, smtp_username, smtp_password } = body;

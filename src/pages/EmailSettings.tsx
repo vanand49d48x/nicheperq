@@ -35,6 +35,7 @@ export default function EmailSettings() {
   const [emailAccount, setEmailAccount] = useState<EmailAccount | null>(null);
   const [loading, setLoading] = useState(true);
   const [testingEmail, setTestingEmail] = useState(false);
+  const [savingSmtp, setSavingSmtp] = useState(false);
 
   // SMTP form state
   const [smtpForm, setSmtpForm] = useState({
@@ -92,6 +93,8 @@ export default function EmailSettings() {
 
   const saveSMTP = async () => {
     try {
+      setSavingSmtp(true);
+      
       // Validate form
       const result = smtpSchema.safeParse(smtpForm);
       if (!result.success) {
@@ -106,17 +109,18 @@ export default function EmailSettings() {
       }
       setSmtpErrors({});
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Get fresh session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
         toast({
-          title: "Error",
-          description: "You must be logged in",
+          title: "Authentication Error",
+          description: "Please log in again to save email settings",
           variant: "destructive",
         });
         return;
       }
 
-      // Call edge function to encrypt and save SMTP credentials
+      // Call edge function with explicit auth header
       const { data, error } = await supabase.functions.invoke('save-email-account', {
         body: {
           provider: 'smtp',
@@ -129,7 +133,10 @@ export default function EmailSettings() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
       toast({
         title: "SMTP Configured",
@@ -137,13 +144,25 @@ export default function EmailSettings() {
       });
 
       await loadEmailAccount();
+      
+      // Clear form
+      setSmtpForm({
+        from_name: "",
+        from_email: "",
+        smtp_host: "",
+        smtp_port: 587,
+        smtp_username: "",
+        smtp_password: "",
+      });
     } catch (error: any) {
       console.error('Error saving SMTP:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to save SMTP settings",
+        description: error.message || "Failed to save SMTP settings. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setSavingSmtp(false);
     }
   };
 
@@ -413,8 +432,8 @@ export default function EmailSettings() {
                     )}
                   </div>
 
-                  <Button onClick={saveSMTP} className="w-full">
-                    Save SMTP Settings
+                  <Button onClick={saveSMTP} className="w-full" disabled={savingSmtp}>
+                    {savingSmtp ? "Saving..." : "Save SMTP Settings"}
                   </Button>
 
                   <Alert>
