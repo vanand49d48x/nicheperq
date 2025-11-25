@@ -22,3 +22,7 @@ export const isMaskedPhone = (phone: string | null): boolean => {
 export const isMaskedWebsite = (website: string | null): boolean => {
   return website === 'https://***.***/***';
 };
+
+export const isMaskedEmail = (email: string | null): boolean => {
+  return email === '***@***.com';
+};
