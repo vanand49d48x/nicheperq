@@ -18,6 +18,7 @@ serve(async (req) => {
   }
 
   try {
+    // Get JWT token from Authorization header
     const authHeader = req.headers.get('Authorization');
     console.log('Auth header present:', !!authHeader);
     
@@ -31,6 +32,39 @@ serve(async (req) => {
       );
     }
 
+    // Extract JWT token (remove "Bearer " prefix)
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Decode JWT to get user ID (JWT is already validated by verify_jwt=true)
+    // JWT format: header.payload.signature
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid token format' }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
+    // Decode the payload (base64url)
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    const userId = payload.sub;
+    
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: 'No user ID in token' }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    console.log('Authenticated user ID:', userId);
+
+    // Create Supabase client for database operations
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -40,26 +74,6 @@ serve(async (req) => {
         } 
       }
     );
-
-    // Try to get the user from the JWT token
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    
-    console.log('User lookup result:', { hasUser: !!user, error: userError });
-    
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Authentication failed',
-          details: userError?.message || 'No user found'
-        }),
-        { 
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
-    }
-
-    console.log('Authenticated user:', user.id);
 
     const body = await req.json();
     const { provider, from_name, from_email, smtp_host, smtp_port, smtp_username, smtp_password } = body;
@@ -77,11 +91,11 @@ serve(async (req) => {
     const { data: existing } = await supabaseClient
       .from('email_accounts')
       .select('id')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .maybeSingle();
 
     const accountData = {
-      user_id: user.id,
+      user_id: userId,
       provider,
       from_name,
       from_email,
