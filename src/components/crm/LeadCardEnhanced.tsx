@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Phone, Globe, Star, Mail, PhoneCall, Tag, 
   Flame, TrendingUp, TrendingDown, Clock, Sparkles,
-  Loader2, Edit2, Check, X
+  Loader2, Edit2, Check, X, Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -48,6 +48,30 @@ export const LeadCardEnhanced = ({
 }: LeadCardEnhancedProps) => {
   const [editingPhone, setEditingPhone] = useState(false);
   const [phoneValue, setPhoneValue] = useState(lead.phone || "");
+  const [hasAiAccess, setHasAiAccess] = useState(false);
+
+  useEffect(() => {
+    checkAiAccess();
+  }, []);
+
+  const checkAiAccess = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('has_ai_access, role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (roleData) {
+        setHasAiAccess(roleData.role === 'admin' || roleData.has_ai_access);
+      }
+    } catch (error) {
+      console.error('Error checking AI access:', error);
+    }
+  };
 
   const getSentimentColor = (sentiment: string | null) => {
     switch (sentiment) {
@@ -128,7 +152,7 @@ export const LeadCardEnhanced = ({
     <Card
       className={cn(
         "p-3 cursor-pointer hover:shadow-md transition-all relative group",
-        getSentimentColor(lead.sentiment),
+        hasAiAccess && getSentimentColor(lead.sentiment),
         isSelected && "ring-2 ring-primary",
         isAnalyzing && "opacity-60"
       )}
@@ -156,32 +180,34 @@ export const LeadCardEnhanced = ({
           <h4 className="font-medium line-clamp-1 text-sm flex-1">
             {lead.business_name}
           </h4>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {getSentimentIcon(lead.sentiment)}
-            {lead.ai_quality_score !== null && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge 
-                    variant="outline" 
-                    className={cn("text-xs", getScoreColor(lead.ai_quality_score))}
-                  >
-                    {lead.ai_quality_score}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <div className="text-xs space-y-1">
-                    <p>Quality: {lead.ai_quality_score}</p>
-                    <p>Intent: {lead.ai_intent_score || 'N/A'}</p>
-                    <p>Close Prob: {lead.closing_probability || 'N/A'}%</p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            )}
-          </div>
+          {hasAiAccess && (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {getSentimentIcon(lead.sentiment)}
+              {lead.ai_quality_score !== null && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge 
+                      variant="outline" 
+                      className={cn("text-xs", getScoreColor(lead.ai_quality_score))}
+                    >
+                      {lead.ai_quality_score}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <div className="text-xs space-y-1">
+                      <p>Quality: {lead.ai_quality_score}</p>
+                      <p>Intent: {lead.ai_intent_score || 'N/A'}</p>
+                      <p>Close Prob: {lead.closing_probability || 'N/A'}%</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          )}
         </div>
 
         {/* AI Activity Highlight */}
-        {activityMessage && (
+        {hasAiAccess && activityMessage && (
           <div className={cn("text-xs flex items-center gap-1 p-1.5 bg-muted/50 rounded", activityMessage.color)}>
             <activityMessage.icon className="h-3 w-3" />
             <span className="line-clamp-1">{activityMessage.text}</span>
@@ -252,7 +278,7 @@ export const LeadCardEnhanced = ({
         {/* Tags and niche */}
         <div className="flex gap-1 flex-wrap">
           <Badge variant="outline" className="text-xs">{lead.niche}</Badge>
-          {lead.closing_probability !== null && (
+          {hasAiAccess && lead.closing_probability !== null && (
             <Badge variant="secondary" className="text-xs">
               {lead.closing_probability}%
             </Badge>
@@ -291,29 +317,62 @@ export const LeadCardEnhanced = ({
               </Button>
             )}
             {!lead.ai_quality_score && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAnalyze();
-                }}
-                title="AI Analyze"
-              >
-                <Sparkles className="h-3 w-3" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (hasAiAccess) {
+                          onAnalyze();
+                        }
+                      }}
+                      disabled={!hasAiAccess}
+                    >
+                      {hasAiAccess ? (
+                        <Sparkles className="h-3 w-3" />
+                      ) : (
+                        <Lock className="h-3 w-3" />
+                      )}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {hasAiAccess ? "AI Analyze" : "Upgrade to PRO"}
+                </TooltipContent>
+              </Tooltip>
             )}
             {(!lead.tags || lead.tags.length === 0) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2"
-                onClick={onAutoTag}
-                title="Auto-tag"
-              >
-                <Tag className="h-3 w-3" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (hasAiAccess) {
+                          onAutoTag(e);
+                        }
+                      }}
+                      disabled={!hasAiAccess}
+                    >
+                      {hasAiAccess ? (
+                        <Tag className="h-3 w-3" />
+                      ) : (
+                        <Lock className="h-3 w-3" />
+                      )}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {hasAiAccess ? "Auto-tag" : "Upgrade to PRO"}
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
         )}
