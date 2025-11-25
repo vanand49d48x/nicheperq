@@ -100,7 +100,6 @@ serve(async (req) => {
       from: `${emailAccount.from_name} <${emailAccount.from_email}>`,
       to: test_recipient,
       subject: "Test Email from NichePerQ",
-      content: "This is a test email to verify your SMTP configuration is working correctly.",
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>Email Configuration Test</h2>
