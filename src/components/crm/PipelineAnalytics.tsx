@@ -49,7 +49,19 @@ export default function PipelineAnalytics() {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('get-pipeline-analytics');
+      
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
+
+      const { data, error } = await supabase.functions.invoke('get-pipeline-analytics', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      
       if (error) throw error;
       setAnalytics(data);
     } catch (error) {
