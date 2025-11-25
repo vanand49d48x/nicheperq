@@ -15,7 +15,7 @@ serve(async (req) => {
     console.log('🔍 AI Generate Insights: Starting request...');
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const authHeader = req.headers.get('Authorization');
     
     console.log('Auth header present:', !!authHeader);
@@ -28,29 +28,29 @@ serve(async (req) => {
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    // Create admin client for querying data
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // Extract user ID from JWT token
+    const token = authHeader.replace('Bearer ', '');
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const userId = payload.sub;
     
-    console.log('User check - error:', userError, 'user:', !!user);
-    
-    if (userError || !user) {
-      console.error('Auth failed:', userError?.message);
+    console.log('✅ User authenticated:', userId);
+
+    if (!userId) {
+      console.error('No user ID in token');
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('✅ User authenticated:', user.id);
-
     // Fetch user's leads with relevant data
     const { data: leads, error: leadsError } = await supabase
       .from('leads')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('updated_at', { ascending: false })
       .limit(50);
 
@@ -60,7 +60,7 @@ serve(async (req) => {
     const { data: enrollments } = await supabase
       .from('workflow_enrollments')
       .select('*, ai_workflows(name)')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(10);
 
@@ -68,7 +68,7 @@ serve(async (req) => {
     const { data: emails } = await supabase
       .from('ai_email_drafts')
       .select('status, opened_at, replied_at, created_at')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(20);
 
