@@ -52,12 +52,19 @@ const History = () => {
   const [searchLeads, setSearchLeads] = useState<Lead[]>([]);
   const [isLoadingSearchLeads, setIsLoadingSearchLeads] = useState(false);
   
-  // Filters
+  // Filters for Saved Searches tab
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [nicheFilter, setNicheFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [searchText, setSearchText] = useState("");
+  
+  // Filters for All Leads tab
+  const [leadsDateFrom, setLeadsDateFrom] = useState("");
+  const [leadsDateTo, setLeadsDateTo] = useState("");
+  const [leadsNicheFilter, setLeadsNicheFilter] = useState("");
+  const [leadsCityFilter, setLeadsCityFilter] = useState("");
+  const [leadsSearchText, setLeadsSearchText] = useState("");
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -178,9 +185,21 @@ const History = () => {
     setSearchText("");
   };
 
+  const clearLeadsFilters = () => {
+    setLeadsDateFrom("");
+    setLeadsDateTo("");
+    setLeadsNicheFilter("");
+    setLeadsCityFilter("");
+    setLeadsSearchText("");
+  };
+
   // Get unique niches and cities for filter dropdowns
   const uniqueNiches = Array.from(new Set(searches.map(s => s.niche))).sort();
   const uniqueCities = Array.from(new Set(searches.map(s => s.city))).sort();
+  
+  // Get unique niches and cities for leads filter dropdowns
+  const uniqueLeadNiches = Array.from(new Set(leads.map(l => l.niche))).sort();
+  const uniqueLeadCities = Array.from(new Set(leads.map(l => l.city))).sort();
 
   // Filter searches based on criteria
   const filteredSearches = searches.filter(search => {
@@ -216,6 +235,40 @@ const History = () => {
   });
 
   const activeFiltersCount = [dateFrom, dateTo, nicheFilter, cityFilter, searchText].filter(Boolean).length;
+  const activeLeadsFiltersCount = [leadsDateFrom, leadsDateTo, leadsNicheFilter, leadsCityFilter, leadsSearchText].filter(Boolean).length;
+
+  // Filter leads based on criteria
+  const filteredLeads = leads.filter(lead => {
+    // Date range filter
+    if (leadsDateFrom) {
+      const leadDate = new Date(lead.created_at);
+      const fromDate = new Date(leadsDateFrom);
+      if (leadDate < fromDate) return false;
+    }
+    if (leadsDateTo) {
+      const leadDate = new Date(lead.created_at);
+      const toDate = new Date(leadsDateTo);
+      toDate.setHours(23, 59, 59, 999);
+      if (leadDate > toDate) return false;
+    }
+
+    // Niche filter
+    if (leadsNicheFilter && lead.niche !== leadsNicheFilter) return false;
+
+    // City filter
+    if (leadsCityFilter && lead.city !== leadsCityFilter) return false;
+
+    // Text search (search in business name, niche, city)
+    if (leadsSearchText) {
+      const text = leadsSearchText.toLowerCase();
+      const matchesName = lead.business_name.toLowerCase().includes(text);
+      const matchesNiche = lead.niche.toLowerCase().includes(text);
+      const matchesCity = lead.city.toLowerCase().includes(text);
+      if (!matchesName && !matchesNiche && !matchesCity) return false;
+    }
+
+    return true;
+  });
 
   return (
     <DashboardLayout>
@@ -238,6 +291,125 @@ const History = () => {
           </TabsList>
 
           <TabsContent value="leads" className="space-y-6">
+            {/* Filters for All Leads */}
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-5 w-5 text-muted-foreground" />
+                  <h3 className="font-semibold">Filters</h3>
+                  {activeLeadsFiltersCount > 0 && (
+                    <Badge variant="secondary">{activeLeadsFiltersCount} active</Badge>
+                  )}
+                </div>
+                {activeLeadsFiltersCount > 0 && (
+                  <Button variant="ghost" size="sm" onClick={clearLeadsFilters} className="gap-2">
+                    <X className="h-4 w-4" />
+                    Clear All
+                  </Button>
+                )}
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">From Date</label>
+                  <Input
+                    type="date"
+                    value={leadsDateFrom}
+                    onChange={(e) => setLeadsDateFrom(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">To Date</label>
+                  <Input
+                    type="date"
+                    value={leadsDateTo}
+                    onChange={(e) => setLeadsDateTo(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Niche</label>
+                  <select
+                    value={leadsNicheFilter}
+                    onChange={(e) => setLeadsNicheFilter(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md bg-background"
+                  >
+                    <option value="">All Niches</option>
+                    {uniqueLeadNiches.map(niche => (
+                      <option key={niche} value={niche}>{niche}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">City</label>
+                  <select
+                    value={leadsCityFilter}
+                    onChange={(e) => setLeadsCityFilter(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md bg-background"
+                  >
+                    <option value="">All Cities</option>
+                    {uniqueLeadCities.map(city => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium mb-2 block">Search</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Search by business name, niche, or city..."
+                      value={leadsSearchText}
+                      onChange={(e) => setLeadsSearchText(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Active Filter Badges */}
+            {activeLeadsFiltersCount > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {leadsDateFrom && (
+                  <Badge variant="secondary" className="gap-2">
+                    From: {format(new Date(leadsDateFrom), 'MMM d, yyyy')}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setLeadsDateFrom("")} />
+                  </Badge>
+                )}
+                {leadsDateTo && (
+                  <Badge variant="secondary" className="gap-2">
+                    To: {format(new Date(leadsDateTo), 'MMM d, yyyy')}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setLeadsDateTo("")} />
+                  </Badge>
+                )}
+                {leadsNicheFilter && (
+                  <Badge variant="secondary" className="gap-2">
+                    Niche: {leadsNicheFilter}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setLeadsNicheFilter("")} />
+                  </Badge>
+                )}
+                {leadsCityFilter && (
+                  <Badge variant="secondary" className="gap-2">
+                    City: {leadsCityFilter}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setLeadsCityFilter("")} />
+                  </Badge>
+                )}
+                {leadsSearchText && (
+                  <Badge variant="secondary" className="gap-2">
+                    Search: "{leadsSearchText}"
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setLeadsSearchText("")} />
+                  </Badge>
+                )}
+              </div>
+            )}
+
             {isLoadingLeads ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3].map((i) => (
@@ -248,20 +420,30 @@ const History = () => {
                   </Card>
                 ))}
               </div>
-            ) : leads.length === 0 ? (
+            ) : filteredLeads.length === 0 ? (
               <Card className="p-12 text-center">
                 <HistoryIcon className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No leads found yet</h3>
+                <h3 className="text-xl font-semibold mb-2">
+                  {activeLeadsFiltersCount > 0 ? "No leads match your filters" : "No leads found yet"}
+                </h3>
                 <p className="text-muted-foreground mb-6">
-                  Start searching for leads and they'll appear here
+                  {activeLeadsFiltersCount > 0 
+                    ? "Try adjusting your filters to see more results"
+                    : "Start searching for leads and they'll appear here"}
                 </p>
-                <Button onClick={() => navigate('/')}>
-                  Find Leads
-                </Button>
+                {activeLeadsFiltersCount > 0 ? (
+                  <Button onClick={clearLeadsFilters} variant="outline">
+                    Clear Filters
+                  </Button>
+                ) : (
+                  <Button onClick={() => navigate('/')}>
+                    Find Leads
+                  </Button>
+                )}
               </Card>
             ) : (() => {
               // Group leads by niche
-              const leadsByNiche = leads.reduce((acc, lead) => {
+              const leadsByNiche = filteredLeads.reduce((acc, lead) => {
                 const niche = lead.niche || 'Uncategorized';
                 if (!acc[niche]) acc[niche] = [];
                 acc[niche].push(lead);
@@ -282,10 +464,18 @@ const History = () => {
               };
 
               return (
-                <Accordion type="multiple" className="space-y-4" defaultValue={Object.keys(leadsByNiche).slice(0, 2)}>
+                <Accordion type="multiple" className="space-y-4">
                   {Object.entries(leadsByNiche)
-                    .sort(([, a], [, b]) => b.length - a.length)
+                    .sort(([, a], [, b]) => {
+                      // Sort by most recent lead in each niche
+                      const mostRecentA = Math.max(...a.map(l => new Date(l.created_at).getTime()));
+                      const mostRecentB = Math.max(...b.map(l => new Date(l.created_at).getTime()));
+                      return mostRecentB - mostRecentA;
+                    })
                     .map(([niche, nicheLeads]) => {
+                      // Get most recent lead date for this niche
+                      const mostRecentDate = new Date(Math.max(...nicheLeads.map(l => new Date(l.created_at).getTime())));
+                      
                       // Group by date within niche
                       const leadsByDate = nicheLeads.reduce((acc, lead) => {
                         const category = getDateCategory(lead.created_at);
@@ -306,7 +496,12 @@ const History = () => {
                                 <Building2 className="h-5 w-5 text-primary" />
                                 <span className="font-semibold text-lg">{niche}</span>
                               </div>
-                              <Badge variant="secondary" className="text-sm">{nicheLeads.length} leads</Badge>
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs text-muted-foreground">
+                                  Latest: {format(mostRecentDate, 'MMM d, yyyy')}
+                                </span>
+                                <Badge variant="secondary" className="text-sm">{nicheLeads.length} leads</Badge>
+                              </div>
                             </div>
                           </AccordionTrigger>
                           <AccordionContent className="pt-2 pb-4">
@@ -323,30 +518,32 @@ const History = () => {
                                     </Badge>
                                   </div>
                                   <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                                    {dateLeads.map((lead) => (
-                                      <Card key={lead.id} className="p-4 hover:shadow-md transition-shadow">
-                                        <h3 className="font-semibold mb-2 truncate">{lead.business_name}</h3>
-                                        <div className="space-y-2 text-sm">
-                                          <div className="flex items-center gap-2 text-muted-foreground">
-                                            <MapPin className="h-4 w-4" />
-                                            <span>{lead.city}{lead.state ? `, ${lead.state}` : ''}</span>
-                                          </div>
-                                          {lead.rating && (
-                                            <div className="flex items-center gap-1">
-                                              <span>⭐ {lead.rating}</span>
+                                    {dateLeads
+                                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                                      .map((lead) => (
+                                        <Card key={lead.id} className="p-4 hover:shadow-md transition-shadow">
+                                          <h3 className="font-semibold mb-2 truncate">{lead.business_name}</h3>
+                                          <div className="space-y-2 text-sm">
+                                            <div className="flex items-center gap-2 text-muted-foreground">
+                                              <MapPin className="h-4 w-4" />
+                                              <span>{lead.city}{lead.state ? `, ${lead.state}` : ''}</span>
                                             </div>
-                                          )}
-                                          {lead.phone && (
-                                            <div className="text-xs text-muted-foreground truncate">
-                                              📞 {lead.phone}
+                                            {lead.rating && (
+                                              <div className="flex items-center gap-1">
+                                                <span>⭐ {lead.rating}</span>
+                                              </div>
+                                            )}
+                                            {lead.phone && (
+                                              <div className="text-xs text-muted-foreground truncate">
+                                                📞 {lead.phone}
+                                              </div>
+                                            )}
+                                            <div className="text-xs text-muted-foreground pt-1">
+                                              {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
                                             </div>
-                                          )}
-                                          <div className="text-xs text-muted-foreground pt-1">
-                                            {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
                                           </div>
-                                        </div>
-                                      </Card>
-                                    ))}
+                                        </Card>
+                                      ))}
                                   </div>
                                 </div>
                               ))}
