@@ -6,6 +6,20 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Phone, Globe, Star, ChevronRight, Sparkles, TrendingUp, TrendingDown, Flame, Mail, PhoneCall, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragStartEvent,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -32,6 +46,8 @@ import { BatchActionsBar } from "./BatchActionsBar";
 import { KanbanFilters } from "./KanbanFilters";
 import { ColumnSummaryCard } from "./ColumnSummaryCard";
 import { LeadCardEnhanced } from "./LeadCardEnhanced";
+import { DraggableLeadCard } from "./DraggableLeadCard";
+import { DroppableColumn } from "./DroppableColumn";
 import { StageManager } from "./StageManager";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -63,6 +79,16 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
   const [pendingAnalysisCount, setPendingAnalysisCount] = useState(0);
   const [filters, setFilters] = useState<any>({});
   const [customColumns, setCustomColumns] = useState(columns);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
 
   // Extract available tags and locations from leads
   const availableTags = useMemo(() => {
@@ -348,8 +374,39 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
     }
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over) return;
+
+    const leadId = active.id as string;
+    const newStatus = over.id as string;
+    
+    // Find the lead to get its current status
+    const lead = leads.find(l => l.id === leadId);
+    if (!lead) return;
+
+    // Only update if status actually changed
+    if (lead.contact_status !== newStatus) {
+      onStatusChange(leadId, newStatus);
+      toast.success(`Lead moved to ${customColumns.find(c => c.id === newStatus)?.label}`);
+    }
+  };
+
+  const activeLead = activeId ? leads.find(l => l.id === activeId) : null;
+
   return (
-    <>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       {statusFilter && (
         <div className="mb-4 flex items-center justify-between bg-primary/10 rounded-lg p-3 border border-primary/20">
           <div className="flex items-center gap-2">
@@ -434,7 +491,11 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
             
             return (
               <div key={column.id} className="flex-shrink-0 w-80">
-                <div className={cn("rounded-lg p-4 h-[calc(100vh-16rem)] flex flex-col", column.color)}>
+                <DroppableColumn
+                  id={column.id}
+                  leads={columnLeads}
+                  className={cn("rounded-lg p-4 h-[calc(100vh-16rem)] flex flex-col", column.color)}
+                >
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold">{column.label}</h3>
                     <Badge variant="secondary">{columnLeads.length}</Badge>
@@ -447,7 +508,7 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
                     <div className="space-y-3 pr-4">
                       {columnLeads.map((lead) => (
                         <TooltipProvider key={lead.id}>
-                          <LeadCardEnhanced
+                          <DraggableLeadCard
                             lead={lead}
                             batchMode={batchMode}
                             isSelected={selectedLeads.has(lead.id)}
@@ -470,7 +531,7 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
                       )}
                     </div>
                   </div>
-                </div>
+                </DroppableColumn>
               </div>
             );
           })}
@@ -523,6 +584,19 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+
+      <DragOverlay>
+        {activeLead && (
+          <Card className="p-3 opacity-90 cursor-grabbing shadow-xl rotate-3">
+            <h4 className="font-medium text-sm line-clamp-1">
+              {activeLead.business_name}
+            </h4>
+            <p className="text-xs text-muted-foreground mt-1">
+              {activeLead.niche}
+            </p>
+          </Card>
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 };
