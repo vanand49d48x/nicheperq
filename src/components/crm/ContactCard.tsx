@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,7 @@ import { ContactNotes } from "./ContactNotes";
 import { AIEmailComposer } from "./AIEmailComposer";
 import { LeadAIPanel } from "./LeadAIPanel";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ContactCardProps {
   lead: any;
@@ -50,9 +51,28 @@ const statusLabels = {
   do_not_contact: "Do Not Contact",
 };
 
-export const ContactCard = ({ lead, onStatusChange, onRefresh, isHighlighted = false }: ContactCardProps) => {
+export const ContactCard = ({ lead: initialLead, onStatusChange, onRefresh, isHighlighted = false }: ContactCardProps) => {
   const [isExpanded, setIsExpanded] = useState(isHighlighted);
   const [showEmailComposer, setShowEmailComposer] = useState(false);
+  const [lead, setLead] = useState(initialLead);
+
+  // Sync with parent when initialLead changes
+  useEffect(() => {
+    setLead(initialLead);
+  }, [initialLead]);
+
+  const handleLocalRefresh = async () => {
+    // Fetch just this lead's updated data
+    const { data: updatedLead, error } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('id', lead.id)
+      .single();
+
+    if (!error && updatedLead) {
+      setLead(updatedLead);
+    }
+  };
 
   return (
     <Card className={cn(
@@ -179,7 +199,7 @@ export const ContactCard = ({ lead, onStatusChange, onRefresh, isHighlighted = f
             </TabsContent>
 
             <TabsContent value="ai-assistant" className="mt-4">
-              <LeadAIPanel lead={lead} onRefresh={onRefresh} />
+              <LeadAIPanel lead={lead} onRefresh={handleLocalRefresh} />
             </TabsContent>
           </Tabs>
         </div>
