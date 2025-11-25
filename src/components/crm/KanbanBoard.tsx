@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   DndContext,
   DragOverlay,
-  closestCorners,
+  closestCenter,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -16,9 +16,6 @@ import {
   DragStartEvent,
   DragEndEvent,
 } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import {
   Dialog,
   DialogContent,
@@ -412,7 +409,7 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
@@ -502,7 +499,6 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
               <div key={column.id} className="flex-shrink-0 w-80">
                 <DroppableColumn
                   id={column.id}
-                  leads={columnLeads}
                   className={cn("rounded-lg p-4 h-[calc(100vh-16rem)] flex flex-col", column.color)}
                 >
                   <div className="flex items-center justify-between mb-4">
@@ -516,21 +512,20 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
                   <div className="flex-1 mt-3 overflow-y-auto">
                     <div className="space-y-3 pr-4">
                       {columnLeads.map((lead) => (
-                        <TooltipProvider key={lead.id}>
-                          <DraggableLeadCard
-                            lead={lead}
-                            batchMode={batchMode}
-                            isSelected={selectedLeads.has(lead.id)}
-                            isAnalyzing={analyzingLeads.has(lead.id)}
-                            onSelect={() => toggleLeadSelection(lead.id)}
-                            onClick={() => !batchMode && setSelectedLead(lead)}
-                            onAnalyze={() => analyzeLeadWithAI(lead.id)}
-                            onQuickEmail={(e) => handleQuickEmail(lead, e)}
-                            onQuickCall={(e) => handleQuickCall(lead, e)}
-                            onAutoTag={(e) => handleAutoTag(lead.id, e)}
-                            onUpdate={onLeadUpdate || (() => {})}
-                          />
-                        </TooltipProvider>
+                        <DraggableLeadCard
+                          key={lead.id}
+                          lead={lead}
+                          batchMode={batchMode}
+                          isSelected={selectedLeads.has(lead.id)}
+                          isAnalyzing={analyzingLeads.has(lead.id)}
+                          onSelect={() => toggleLeadSelection(lead.id)}
+                          onClick={() => !batchMode && setSelectedLead(lead)}
+                          onAnalyze={() => analyzeLeadWithAI(lead.id)}
+                          onQuickEmail={(e) => handleQuickEmail(lead, e)}
+                          onQuickCall={(e) => handleQuickCall(lead, e)}
+                          onAutoTag={(e) => handleAutoTag(lead.id, e)}
+                          onUpdate={onLeadUpdate || (() => {})}
+                        />
                       ))}
 
                       {columnLeads.length === 0 && (
