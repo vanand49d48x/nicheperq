@@ -12,6 +12,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -44,6 +54,8 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, statusFilter, on
   const [analyzingLeads, setAnalyzingLeads] = useState<Set<string>>(new Set());
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [batchMode, setBatchMode] = useState(false);
+  const [showAnalyzeDialog, setShowAnalyzeDialog] = useState(false);
+  const [pendingAnalysisCount, setPendingAnalysisCount] = useState(0);
 
   const getLeadsForColumn = (columnId: string) => {
     return leads.filter(lead => lead.contact_status === columnId);
@@ -178,7 +190,7 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, statusFilter, on
     }
   };
 
-  const analyzeAllNewLeads = async () => {
+  const requestAnalyzeAllNewLeads = () => {
     const newLeads = leads.filter(lead => !lead.ai_quality_score);
     
     if (newLeads.length === 0) {
@@ -186,11 +198,13 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, statusFilter, on
       return;
     }
 
-    const confirmed = window.confirm(
-      `This will analyze ${newLeads.length} leads. This may take a few minutes. Continue?`
-    );
+    setPendingAnalysisCount(newLeads.length);
+    setShowAnalyzeDialog(true);
+  };
 
-    if (!confirmed) return;
+  const analyzeAllNewLeads = async () => {
+    const newLeads = leads.filter(lead => !lead.ai_quality_score);
+    setShowAnalyzeDialog(false);
 
     let successCount = 0;
     let failCount = 0;
@@ -340,7 +354,7 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, statusFilter, on
         <Button
           variant="outline"
           size="sm"
-          onClick={analyzeAllNewLeads}
+          onClick={requestAnalyzeAllNewLeads}
           className="gap-2"
           disabled={analyzingLeads.size > 0}
         >
@@ -576,6 +590,26 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, statusFilter, on
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showAnalyzeDialog} onOpenChange={setShowAnalyzeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Analyze Leads with AI</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will analyze {pendingAnalysisCount} leads using AI. This may take a few minutes.
+              <br />
+              <br />
+              Each lead will be scored for quality, intent, and closing probability.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={analyzeAllNewLeads}>
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
