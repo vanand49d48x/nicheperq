@@ -159,6 +159,14 @@ const CRM = () => {
     }
   };
 
+  const updateLeadInPlace = (leadId: string, updates: any) => {
+    setLeads(leads.map(lead => 
+      lead.id === leadId 
+        ? { ...lead, ...updates }
+        : lead
+    ));
+  };
+
   return (
     <DashboardLayout>
       <FeatureGate feature="crm">
@@ -315,6 +323,7 @@ const CRM = () => {
             leads={leads} 
             onStatusChange={updateLeadStatus}
             onRefresh={fetchLeads}
+            onLeadUpdate={updateLeadInPlace}
             statusFilter={statusFilter}
             onClearFilter={() => setStatusFilter(null)}
           />
