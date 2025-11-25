@@ -36,6 +36,14 @@ interface Lead {
   next_follow_up_at: string | null;
   notes: string | null;
   tags: string[];
+  ai_quality_score: number | null;
+  ai_intent_score: number | null;
+  closing_probability: number | null;
+  risk_score: number | null;
+  sentiment: string | null;
+  recommended_action: string | null;
+  recommended_tone: string | null;
+  last_ai_analysis_at: string | null;
 }
 
 const CRM = () => {

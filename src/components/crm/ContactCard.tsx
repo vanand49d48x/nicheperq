@@ -15,8 +15,7 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
-  Bot,
-  Mail
+  Bot
 } from "lucide-react";
 import { format } from "date-fns";
 import { ContactStatusSelector } from "./ContactStatusSelector";
@@ -76,14 +75,6 @@ export const ContactCard = ({ lead, onStatusChange, onRefresh, isHighlighted = f
               <MapPin className="h-4 w-4" />
               {lead.city}
             </span>
-            {lead.email && (
-              <span className="flex items-center gap-1">
-                <Mail className="h-4 w-4" />
-                <a href={`mailto:${lead.email}`} className="hover:text-primary">
-                  {lead.email}
-                </a>
-              </span>
-            )}
             {lead.phone && (
               <span className="flex items-center gap-1">
                 <Phone className="h-4 w-4" />
