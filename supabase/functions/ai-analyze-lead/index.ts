@@ -167,16 +167,30 @@ Consider:
     }
 
     const aiData = await aiResponse.json();
-    const toolCall = aiData.choices[0].message.tool_calls?.[0];
+    console.log('AI response received:', JSON.stringify(aiData, null, 2));
+    
+    const toolCall = aiData.choices[0]?.message?.tool_calls?.[0];
     
     if (!toolCall) {
+      console.error('No tool call in AI response. Full response:', JSON.stringify(aiData, null, 2));
       throw new Error('No tool call in AI response');
     }
 
+    console.log('Tool call arguments:', toolCall.function.arguments);
     const analysis = JSON.parse(toolCall.function.arguments);
+    console.log('Parsed analysis:', JSON.stringify(analysis, null, 2));
 
     // Update lead with AI scores
-    const { error: updateError } = await supabaseClient
+    console.log('Updating lead with scores:', {
+      lead_id,
+      ai_quality_score: analysis.quality_score,
+      ai_intent_score: analysis.intent_score,
+      closing_probability: analysis.closing_probability,
+      risk_score: analysis.risk_score,
+      sentiment: analysis.sentiment
+    });
+
+    const { data: updateData, error: updateError } = await supabaseClient
       .from('leads')
       .update({
         ai_quality_score: analysis.quality_score,
@@ -188,12 +202,15 @@ Consider:
         recommended_tone: analysis.recommended_tone,
         last_ai_analysis_at: new Date().toISOString()
       })
-      .eq('id', lead_id);
+      .eq('id', lead_id)
+      .select();
 
     if (updateError) {
       console.error('Error updating lead:', updateError);
       throw updateError;
     }
+
+    console.log('Lead updated successfully:', updateData);
 
     // Store historical record
     const { error: historyError } = await supabaseClient
@@ -216,6 +233,8 @@ Consider:
       console.error('Error storing history:', historyError);
     }
 
+    console.log('Analysis complete, returning success response');
+    
     return new Response(JSON.stringify({ 
       success: true,
       analysis 

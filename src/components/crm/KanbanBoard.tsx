@@ -83,11 +83,17 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, statusFilter, on
     setAnalyzingLeads(prev => new Set(prev).add(leadId));
     
     try {
+      console.log('Starting AI analysis for lead:', leadId);
       const { data, error } = await supabase.functions.invoke('ai-analyze-lead', {
         body: { lead_id: leadId }
       });
 
-      if (error) throw error;
+      console.log('AI analysis response:', { data, error });
+
+      if (error) {
+        console.error('AI analysis error:', error);
+        throw error;
+      }
 
       // Auto-tag after analysis
       const { data: { user } } = await supabase.auth.getUser();
@@ -95,11 +101,11 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, statusFilter, on
         await applyAutoTags(supabase, leadId, user.id);
       }
 
-      toast.success('AI analysis complete!');
+      toast.success('AI analysis complete! Scores updated.');
       onRefresh();
     } catch (error) {
       console.error('Error analyzing lead:', error);
-      toast.error('Failed to analyze lead');
+      toast.error(`Failed to analyze lead: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setAnalyzingLeads(prev => {
         const next = new Set(prev);
