@@ -16,82 +16,30 @@ interface Insight {
 
 export const AIInsights = () => {
   const [insights, setInsights] = useState<Insight[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    generateInsights();
-  }, []);
+  // Don't auto-generate on mount - user triggers manually
 
   const generateInsights = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const insights: Insight[] = [];
-
-      // Get leads needing attention
-      const { data: staleLeads } = await supabase
-        .from('leads')
-        .select('id, business_name, last_contacted_at, contact_status')
-        .eq('user_id', user.id)
-        .eq('contact_status', 'attempted')
-        .lt('last_contacted_at', new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString())
-        .limit(3);
-
-      staleLeads?.forEach(lead => {
-        insights.push({
-          type: 'priority',
-          title: 'Follow-up needed',
-          description: `No contact in 14+ days`,
-          leadId: lead.id,
-          leadName: lead.business_name
-        });
-      });
-
-      // Get highly-rated leads
-      const { data: topLeads } = await supabase
-        .from('leads')
-        .select('id, business_name, rating, review_count')
-        .eq('user_id', user.id)
-        .eq('contact_status', 'new')
-        .gte('rating', 4.5)
-        .gte('review_count', 50)
-        .limit(2);
-
-      topLeads?.forEach(lead => {
-        insights.push({
-          type: 'opportunity',
-          title: 'High-value prospect',
-          description: `${lead.rating}★ rating with ${lead.review_count} reviews`,
-          leadId: lead.id,
-          leadName: lead.business_name
-        });
-      });
-
-      // Get leads with upcoming follow-ups
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      setIsLoading(true);
       
-      const { data: upcomingFollowUps } = await supabase
-        .from('leads')
-        .select('id, business_name, next_follow_up_at')
-        .eq('user_id', user.id)
-        .not('next_follow_up_at', 'is', null)
-        .lte('next_follow_up_at', tomorrow.toISOString())
-        .limit(2);
+      // Get current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No active session');
+      }
 
-      upcomingFollowUps?.forEach(lead => {
-        insights.push({
-          type: 'warning',
-          title: 'Follow-up due soon',
-          description: 'Reminder scheduled',
-          leadId: lead.id,
-          leadName: lead.business_name
-        });
+      const { data, error } = await supabase.functions.invoke('ai-generate-insights', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
-
-      setInsights(insights);
+      
+      if (error) throw error;
+      
+      setInsights(data.insights || []);
     } catch (error) {
       console.error('Error generating insights:', error);
     } finally {
@@ -125,14 +73,6 @@ export const AIInsights = () => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <Card className="p-6">
-        <div className="text-center text-muted-foreground">Analyzing contacts...</div>
-      </Card>
-    );
-  }
-
   return (
     <Card className="p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -140,16 +80,36 @@ export const AIInsights = () => {
           <Sparkles className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-semibold">AI Insights</h3>
         </div>
-        <Button variant="outline" size="sm" onClick={generateInsights}>
-          Refresh
+        <Button 
+          variant="default" 
+          size="sm" 
+          onClick={generateInsights}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Sparkles className="h-4 w-4 mr-2 animate-spin" />
+              Analyzing...
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-4 w-4 mr-2" />
+              Generate AI Insights
+            </>
+          )}
         </Button>
       </div>
 
-      {insights.length === 0 ? (
+      {isLoading ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <Sparkles className="h-12 w-12 mx-auto mb-2 opacity-20 animate-pulse" />
+          <p>Analyzing your pipeline with AI...</p>
+        </div>
+      ) : insights.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <Sparkles className="h-12 w-12 mx-auto mb-2 opacity-20" />
-          <p>No insights available</p>
-          <p className="text-sm">Add more contacts to get AI recommendations</p>
+          <p>No insights yet</p>
+          <p className="text-sm">Click "Generate AI Insights" to analyze your pipeline</p>
         </div>
       ) : (
         <div className="space-y-3">
