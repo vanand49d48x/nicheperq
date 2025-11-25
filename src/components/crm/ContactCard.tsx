@@ -56,12 +56,10 @@ export const ContactCard = ({ lead: initialLead, onStatusChange, onRefresh, isHi
   const [showEmailComposer, setShowEmailComposer] = useState(false);
   const [lead, setLead] = useState(initialLead);
 
-  // Only sync with parent if lead ID changes (not on every prop update)
+  // Sync with parent lead updates
   useEffect(() => {
-    if (initialLead.id !== lead.id) {
-      setLead(initialLead);
-    }
-  }, [initialLead.id]);
+    setLead(initialLead);
+  }, [initialLead]);
 
   const handleLocalRefresh = async () => {
     // Fetch just this lead's updated data without triggering parent refresh
