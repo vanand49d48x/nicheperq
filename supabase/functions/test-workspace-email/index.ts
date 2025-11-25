@@ -23,16 +23,30 @@ serve(async (req) => {
       throw new Error('Missing authorization header');
     }
 
+    // Extract JWT token (remove "Bearer " prefix)
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Decode JWT to get user ID (JWT is already validated by verify_jwt=true)
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      throw new Error('Invalid token format');
+    }
+    
+    // Decode the payload (base64url)
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    const userId = payload.sub;
+    
+    if (!userId) {
+      throw new Error('No user ID in token');
+    }
+
+    console.log('Test email - Authenticated user ID:', userId);
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     );
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      throw new Error('Unauthorized');
-    }
 
     const { email_account_id, test_recipient } = await req.json();
 
@@ -41,7 +55,7 @@ serve(async (req) => {
       .from('email_accounts')
       .select('*')
       .eq('id', email_account_id)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     if (accountError || !emailAccount) {
