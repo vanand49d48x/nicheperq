@@ -20,6 +20,28 @@ export const LeadAIPanel = ({ lead, onRefresh }: LeadAIPanelProps) => {
   const [aiResponse, setAiResponse] = useState<string>("");
   const [additionalContext, setAdditionalContext] = useState("");
   const [copied, setCopied] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+
+  const handleAnalyzeLead = async () => {
+    setAnalyzing(true);
+    try {
+      const { error } = await supabase.functions.invoke('ai-analyze-lead', {
+        body: { lead_id: lead.id }
+      });
+
+      if (error) throw error;
+
+      toast.success('AI analysis complete!');
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Error analyzing lead:', error);
+      toast.error('Failed to analyze lead');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   const handleAIAction = async (type: string) => {
     setLoading(true);
@@ -84,43 +106,92 @@ export const LeadAIPanel = ({ lead, onRefresh }: LeadAIPanelProps) => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="text-center p-3 bg-muted rounded-lg">
-              <div className={`text-2xl font-bold ${getScoreColor(lead.ai_quality_score)}`}>
-                {lead.ai_quality_score || '—'}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">Quality Score</div>
-            </div>
-            <div className="text-center p-3 bg-muted rounded-lg">
-              <div className={`text-2xl font-bold ${getScoreColor(lead.ai_intent_score)}`}>
-                {lead.ai_intent_score || '—'}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">Intent Score</div>
-            </div>
-            <div className="text-center p-3 bg-muted rounded-lg">
-              <div className={`text-2xl font-bold ${getScoreColor(lead.closing_probability)}`}>
-                {lead.closing_probability || '—'}%
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">Close Probability</div>
-            </div>
-            <div className="text-center p-3 bg-muted rounded-lg">
-              <div className="text-2xl font-bold">
-                {lead.sentiment && (
-                  <Badge variant="outline" className={getSentimentColor(lead.sentiment)}>
-                    {lead.sentiment}
-                  </Badge>
+          {!lead.ai_quality_score ? (
+            <div className="text-center py-6">
+              <p className="text-sm text-muted-foreground mb-4">
+                This lead hasn't been analyzed yet. Run AI analysis to get insights.
+              </p>
+              <Button
+                onClick={handleAnalyzeLead}
+                disabled={analyzing}
+                className="gap-2"
+              >
+                {analyzing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Analyze Lead Now
+                  </>
                 )}
-                {!lead.sentiment && '—'}
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <div className={`text-2xl font-bold ${getScoreColor(lead.ai_quality_score)}`}>
+                    {lead.ai_quality_score || '—'}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Quality Score</div>
+                </div>
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <div className={`text-2xl font-bold ${getScoreColor(lead.ai_intent_score)}`}>
+                    {lead.ai_intent_score || '—'}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Intent Score</div>
+                </div>
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <div className={`text-2xl font-bold ${getScoreColor(lead.closing_probability)}`}>
+                    {lead.closing_probability || '—'}%
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Close Probability</div>
+                </div>
+                <div className="text-center p-3 bg-muted rounded-lg">
+                  <div className="text-2xl font-bold">
+                    {lead.sentiment && (
+                      <Badge variant="outline" className={getSentimentColor(lead.sentiment)}>
+                        {lead.sentiment}
+                      </Badge>
+                    )}
+                    {!lead.sentiment && '—'}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Sentiment</div>
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground mt-1">Sentiment</div>
-            </div>
-          </div>
 
-          {lead.recommended_action && (
-            <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
-              <p className="text-sm font-medium mb-1">Recommended Action:</p>
-              <p className="text-sm text-muted-foreground">{lead.recommended_action}</p>
-            </div>
+              {lead.recommended_action && (
+                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  <p className="text-sm font-medium mb-1">Recommended Action:</p>
+                  <p className="text-sm text-muted-foreground">{lead.recommended_action}</p>
+                </div>
+              )}
+
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleAnalyzeLead}
+                  disabled={analyzing}
+                  className="gap-2"
+                >
+                  {analyzing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Re-analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Re-analyze
+                    </>
+                  )}
+                </Button>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
