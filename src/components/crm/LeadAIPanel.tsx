@@ -32,8 +32,9 @@ export const LeadAIPanel = ({ lead, onRefresh }: LeadAIPanelProps) => {
       if (error) throw error;
 
       toast.success('AI analysis complete!');
+      // Refresh only this card's data, not the entire board
       if (onRefresh) {
-        onRefresh();
+        await onRefresh();
       }
     } catch (error) {
       console.error('Error analyzing lead:', error);
