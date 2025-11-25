@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
+import { Bell, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDistanceToNow } from "date-fns";
 
 interface Activity {
@@ -18,13 +20,31 @@ interface Activity {
   description: string;
   timestamp: string;
   leadName?: string;
+  leadId?: string;
+  workflowId?: string;
   isRead: boolean;
 }
 
+type FilterType = 'all' | 'lead' | 'workflow' | 'email' | 'automation';
+
 export function NotificationCenter() {
+  const navigate = useNavigate();
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [filteredActivities, setFilteredActivities] = useState<Activity[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+
+  useEffect(() => {
+    fetchActivities();
+
+    // Apply filter whenever activities or filter changes
+    if (activeFilter === 'all') {
+      setFilteredActivities(activities);
+    } else {
+      setFilteredActivities(activities.filter(a => a.type === activeFilter));
+    }
+  }, [activities, activeFilter]);
 
   useEffect(() => {
     fetchActivities();
@@ -99,6 +119,7 @@ export function NotificationCenter() {
           description: int.leads?.business_name || 'Unknown Lead',
           timestamp: int.occurred_at,
           leadName: int.leads?.business_name,
+          leadId: int.lead_id,
           isRead: false,
         });
       });
@@ -122,6 +143,7 @@ export function NotificationCenter() {
             description: `${email.subject} - ${email.leads?.business_name || 'Unknown Lead'}`,
             timestamp: email.opened_at || email.sent_at,
             leadName: email.leads?.business_name,
+            leadId: email.lead_id,
             isRead: false,
           });
         }
@@ -145,6 +167,8 @@ export function NotificationCenter() {
           description: enr.leads?.business_name || 'Unknown Lead',
           timestamp: enr.enrolled_at,
           leadName: enr.leads?.business_name,
+          leadId: enr.lead_id,
+          workflowId: enr.workflow_id,
           isRead: false,
         });
       });
@@ -167,6 +191,7 @@ export function NotificationCenter() {
           description: auto.leads?.business_name || 'Lead Activity',
           timestamp: auto.created_at,
           leadName: auto.leads?.business_name,
+          leadId: auto.lead_id,
           isRead: false,
         });
       });
@@ -212,6 +237,29 @@ export function NotificationCenter() {
     setActivities(activities.map(a => ({ ...a, isRead: true })));
   };
 
+  const handleActivityClick = (activity: Activity) => {
+    // Navigate based on activity type
+    if (activity.leadId) {
+      navigate(`/crm?highlight=${activity.leadId}`);
+      setIsOpen(false);
+    } else if (activity.type === 'workflow') {
+      navigate('/crm?view=workflows');
+      setIsOpen(false);
+    }
+  };
+
+  const getFilterCounts = () => {
+    return {
+      all: activities.length,
+      lead: activities.filter(a => a.type === 'lead').length,
+      workflow: activities.filter(a => a.type === 'workflow').length,
+      email: activities.filter(a => a.type === 'email').length,
+      automation: activities.filter(a => a.type === 'automation').length,
+    };
+  };
+
+  const filterCounts = getFilterCounts();
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
@@ -227,7 +275,7 @@ export function NotificationCenter() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[400px] p-0" align="end">
+      <PopoverContent className="w-[420px] p-0" align="end">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="font-semibold text-foreground">Activity Feed</h3>
           {unreadCount > 0 && (
@@ -241,17 +289,66 @@ export function NotificationCenter() {
             </Button>
           )}
         </div>
+        
+        <div className="px-4 py-3 border-b bg-muted/30">
+          <Tabs value={activeFilter} onValueChange={(v) => setActiveFilter(v as FilterType)} className="w-full">
+            <TabsList className="grid w-full grid-cols-5 h-auto">
+              <TabsTrigger value="all" className="text-xs px-2 py-1.5 relative">
+                All
+                {filterCounts.all > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                    {filterCounts.all}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="lead" className="text-xs px-2 py-1.5 relative">
+                👤
+                {filterCounts.lead > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                    {filterCounts.lead}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="workflow" className="text-xs px-2 py-1.5 relative">
+                ⚡
+                {filterCounts.workflow > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                    {filterCounts.workflow}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="email" className="text-xs px-2 py-1.5 relative">
+                📧
+                {filterCounts.email > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                    {filterCounts.email}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="automation" className="text-xs px-2 py-1.5 relative">
+                🤖
+                {filterCounts.automation > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                    {filterCounts.automation}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
         <ScrollArea className="h-[400px]">
-          {activities.length === 0 ? (
+          {filteredActivities.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
               <Bell className="h-12 w-12 mb-2 opacity-20" />
               <p className="text-sm">No recent activity</p>
             </div>
           ) : (
             <div className="divide-y">
-              {activities.map((activity) => (
+              {filteredActivities.map((activity) => (
                 <div
                   key={activity.id}
+                  onClick={() => handleActivityClick(activity)}
                   className={`p-4 hover:bg-muted/50 transition-colors cursor-pointer ${
                     !activity.isRead ? 'bg-primary/5' : ''
                   }`}
