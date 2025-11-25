@@ -96,10 +96,13 @@ serve(async (req) => {
     });
 
     // Send test email
+    const testMessage = "This is a test email to verify your SMTP configuration is working correctly. If you received this email, your workflow emails will be sent successfully!";
+    
     await client.send({
       from: `${emailAccount.from_name} <${emailAccount.from_email}>`,
       to: test_recipient,
       subject: "Test Email from NichePerQ",
+      content: testMessage,
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>Email Configuration Test</h2>
