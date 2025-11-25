@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Phone, Globe, Star, ChevronRight, Sparkles, TrendingUp, TrendingDown, Flame, Mail, PhoneCall, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -444,7 +443,7 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
                   {/* Column Summary Card */}
                   <ColumnSummaryCard leads={columnLeads} columnLabel={column.label} />
 
-                  <ScrollArea className="flex-1 mt-3">
+                  <div className="flex-1 mt-3 overflow-y-auto">
                     <div className="space-y-3 pr-4">
                       {columnLeads.map((lead) => (
                         <TooltipProvider key={lead.id}>
@@ -470,7 +469,7 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
                         </div>
                       )}
                     </div>
-                  </ScrollArea>
+                  </div>
                 </div>
               </div>
             );
