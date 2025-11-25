@@ -434,7 +434,6 @@ const Landing = () => {
               <h4 className="font-semibold mb-3">Product</h4>
               <div className="space-y-2 text-sm text-muted-foreground">
                 <Link to="/pricing" className="block hover:text-foreground">Pricing</Link>
-                <Link to="/email-sequence" className="block hover:text-foreground">Email Templates</Link>
               </div>
             </div>
             <div>
