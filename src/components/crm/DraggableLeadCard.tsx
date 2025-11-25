@@ -1,6 +1,7 @@
-import { useSortable } from "@dnd-kit/sortable";
+import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { LeadCardEnhanced } from "./LeadCardEnhanced";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface DraggableLeadCardProps {
   lead: any;
@@ -24,27 +25,27 @@ export const DraggableLeadCard = (props: DraggableLeadCardProps) => {
     listeners,
     setNodeRef,
     transform,
-    transition,
     isDragging,
-  } = useSortable({ 
+  } = useDraggable({ 
     id: lead.id,
     disabled: batchMode, // Disable dragging in batch mode
   });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     opacity: isDragging ? 0.5 : 1,
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-    >
-      <LeadCardEnhanced {...props} />
-    </div>
+    <TooltipProvider>
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+      >
+        <LeadCardEnhanced {...props} />
+      </div>
+    </TooltipProvider>
   );
 };
