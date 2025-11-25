@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Phone, Globe, Star, Mail, PhoneCall, Tag, 
   Flame, TrendingUp, TrendingDown, Clock, Sparkles,
-  Loader2, Edit2, Check, X, Lock
+  Loader2, Edit2, Check, X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -323,7 +323,7 @@ export const LeadCardEnhanced = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 px-2"
+                      className={cn("h-7 px-2", !hasAiAccess && "opacity-50")}
                       onClick={(e) => {
                         e.stopPropagation();
                         if (hasAiAccess) {
@@ -332,16 +332,15 @@ export const LeadCardEnhanced = ({
                       }}
                       disabled={!hasAiAccess}
                     >
-                      {hasAiAccess ? (
-                        <Sparkles className="h-3 w-3" />
-                      ) : (
-                        <Lock className="h-3 w-3" />
-                      )}
+                      <Sparkles className="h-3 w-3" />
                     </Button>
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {hasAiAccess ? "AI Analyze" : "Upgrade to PRO"}
+                  <div className="text-center">
+                    <p className="font-medium">AI Analyze Lead</p>
+                    {!hasAiAccess && <p className="text-xs text-muted-foreground">Upgrade to PRO</p>}
+                  </div>
                 </TooltipContent>
               </Tooltip>
             )}
@@ -352,7 +351,7 @@ export const LeadCardEnhanced = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 px-2"
+                      className={cn("h-7 px-2", !hasAiAccess && "opacity-50")}
                       onClick={(e) => {
                         e.stopPropagation();
                         if (hasAiAccess) {
@@ -361,16 +360,15 @@ export const LeadCardEnhanced = ({
                       }}
                       disabled={!hasAiAccess}
                     >
-                      {hasAiAccess ? (
-                        <Tag className="h-3 w-3" />
-                      ) : (
-                        <Lock className="h-3 w-3" />
-                      )}
+                      <Tag className="h-3 w-3" />
                     </Button>
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {hasAiAccess ? "Auto-tag" : "Upgrade to PRO"}
+                  <div className="text-center">
+                    <p className="font-medium">Auto-tag with AI</p>
+                    {!hasAiAccess && <p className="text-xs text-muted-foreground">Upgrade to PRO</p>}
+                  </div>
                 </TooltipContent>
               </Tooltip>
             )}
