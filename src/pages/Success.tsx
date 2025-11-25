@@ -153,7 +153,7 @@ export default function Success() {
 
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/dashboard')}
               className="flex-1"
               size="lg"
             >
