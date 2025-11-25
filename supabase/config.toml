@@ -95,3 +95,6 @@ verify_jwt = true
 
 [functions.outlook-oauth-callback]
 verify_jwt = false
+
+[functions.ai-generate-insights]
+verify_jwt = true
