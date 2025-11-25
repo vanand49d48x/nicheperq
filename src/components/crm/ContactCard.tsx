@@ -64,7 +64,7 @@ export const ContactCard = ({ lead: initialLead, onStatusChange, onRefresh, isHi
   }, [initialLead.id]);
 
   const handleLocalRefresh = async () => {
-    // Fetch just this lead's updated data
+    // Fetch just this lead's updated data without triggering parent refresh
     const { data: updatedLead, error } = await supabase
       .from('leads')
       .select('*')
@@ -72,6 +72,7 @@ export const ContactCard = ({ lead: initialLead, onStatusChange, onRefresh, isHi
       .single();
 
     if (!error && updatedLead) {
+      // Update local state only - this keeps the card in place
       setLead(updatedLead);
     }
   };
