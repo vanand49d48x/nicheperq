@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: Home },
@@ -107,16 +108,19 @@ export function AppSidebar() {
   return (
     <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold">
-            L
-          </div>
-          {!collapsed && (
-            <div>
-              <h2 className="text-lg font-semibold text-sidebar-foreground">NichePerQ</h2>
-              <p className="text-xs text-muted-foreground">Niche Insights. Real Growth.</p>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold">
+              L
             </div>
-          )}
+            {!collapsed && (
+              <div>
+                <h2 className="text-lg font-semibold text-sidebar-foreground">NichePerQ</h2>
+                <p className="text-xs text-muted-foreground">Niche Insights. Real Growth.</p>
+              </div>
+            )}
+          </div>
+          {!collapsed && <NotificationCenter />}
         </div>
       </SidebarHeader>
 
