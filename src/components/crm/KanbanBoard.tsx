@@ -387,14 +387,23 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
     const leadId = active.id as string;
     const newStatus = over.id as string;
     
+    console.log('Drag ended:', { leadId, newStatus, over });
+    
     // Find the lead to get its current status
     const lead = leads.find(l => l.id === leadId);
-    if (!lead) return;
+    if (!lead) {
+      console.log('Lead not found:', leadId);
+      return;
+    }
+
+    // Find the target column to get its label
+    const targetColumn = customColumns.find(c => c.id === newStatus);
+    console.log('Target column:', targetColumn, 'customColumns:', customColumns);
 
     // Only update if status actually changed
     if (lead.contact_status !== newStatus) {
       onStatusChange(leadId, newStatus);
-      toast.success(`Lead moved to ${customColumns.find(c => c.id === newStatus)?.label}`);
+      toast.success(`Lead moved to ${targetColumn?.label || newStatus}`);
     }
   };
 
