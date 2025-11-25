@@ -32,7 +32,7 @@ export const LeadAIPanel = ({ lead, onRefresh }: LeadAIPanelProps) => {
       if (error) throw error;
 
       toast.success('AI analysis complete!');
-      // Refresh only this card's data locally, not the entire board
+      // Only refresh this specific card's data, don't trigger full board refresh
       if (onRefresh) {
         await onRefresh();
       }
