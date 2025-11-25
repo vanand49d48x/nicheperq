@@ -1,16 +1,14 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function decrypt(text: string): string {
-  return atob(text);
-}
+const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -27,14 +25,11 @@ serve(async (req) => {
 
     // Extract JWT token (remove "Bearer " prefix)
     const token = authHeader.replace('Bearer ', '');
-    console.log('Token extracted, length:', token.length);
     
     // Decode JWT to get user ID (JWT is already validated by verify_jwt=true)
     const parts = token.split('.');
-    console.log('JWT parts:', parts.length);
-    
     if (parts.length !== 3) {
-      throw new Error('Invalid token format - expected 3 parts, got ' + parts.length);
+      throw new Error('Invalid token format');
     }
     
     let userId: string;
@@ -43,14 +38,12 @@ serve(async (req) => {
       const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
       userId = payload.sub;
       
-      console.log('Decoded JWT payload, user ID:', userId);
-      
       if (!userId) {
         throw new Error('No user ID in token');
       }
     } catch (decodeError) {
       console.error('JWT decode error:', decodeError);
-      throw new Error('Failed to decode JWT token: ' + (decodeError instanceof Error ? decodeError.message : 'Unknown error'));
+      throw new Error('Failed to decode JWT token');
     }
 
     console.log('Test email - Authenticated user ID:', userId);
@@ -75,63 +68,35 @@ serve(async (req) => {
       throw new Error('Email account not found');
     }
 
-    if (emailAccount.provider !== 'smtp') {
-      throw new Error('Only SMTP is supported for testing');
-    }
+    console.log('Sending test email via Resend to:', test_recipient);
 
-    console.log('Decrypting SMTP password...');
-    // Decrypt SMTP password
-    const smtpPassword = decrypt(emailAccount.smtp_password_enc);
-    
-    console.log('Creating SMTP client with config:', {
-      hostname: emailAccount.smtp_host,
-      port: emailAccount.smtp_port,
-      username: emailAccount.smtp_username,
-    });
-
-    // Create SMTP client
-    const client = new SMTPClient({
-      connection: {
-        hostname: emailAccount.smtp_host,
-        port: emailAccount.smtp_port,
-        tls: true,
-        auth: {
-          username: emailAccount.smtp_username,
-          password: smtpPassword,
-        },
-      },
-    });
-
-    console.log('SMTP client created, preparing to send...');
-    
-    // Send test email
-    const testMessage = "This is a test email to verify your SMTP configuration is working correctly. If you received this email, your workflow emails will be sent successfully!";
-    
-    console.log('Sending email to:', test_recipient);
-    
-    await client.send({
+    // Send test email using Resend
+    const { data, error } = await resend.emails.send({
       from: `${emailAccount.from_name} <${emailAccount.from_email}>`,
       to: test_recipient,
       subject: "Test Email from NichePerQ",
-      content: testMessage,
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2>Email Configuration Test</h2>
-          <p>This is a test email to verify your SMTP configuration is working correctly.</p>
-          <p>If you received this email, your workflow emails will be sent successfully!</p>
-          <hr style="margin: 20px 0;" />
-          <p style="color: #666; font-size: 12px;">Sent from NichePerQ</p>
+          <h2>✅ Email Configuration Test</h2>
+          <p>This is a test email to verify your email configuration is working correctly.</p>
+          <p><strong>If you received this email, your workflow emails will be sent successfully!</strong></p>
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;" />
+          <p style="color: #666; font-size: 12px;">
+            Sent from NichePerQ<br/>
+            From: ${emailAccount.from_name} &lt;${emailAccount.from_email}&gt;
+          </p>
         </div>
       `,
     });
 
-    console.log('Email sent successfully!');
-    
-    await client.close();
-    
-    console.log('SMTP connection closed.');
+    if (error) {
+      console.error('Resend error:', error);
+      throw new Error('Failed to send email: ' + error.message);
+    }
 
-    return new Response(JSON.stringify({ success: true }), {
+    console.log('Email sent successfully via Resend!');
+
+    return new Response(JSON.stringify({ success: true, message_id: data?.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
