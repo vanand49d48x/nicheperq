@@ -49,12 +49,24 @@ interface Lead {
 const CRM = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights" | "analytics" | "orchestration" | "visual-workflows" | "workflow-editor">("kanban");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights" | "analytics" | "orchestration" | "visual-workflows" | "workflow-editor">(
+    (searchParams.get('view') as any) || "kanban"
+  );
   const [editingWorkflowId, setEditingWorkflowId] = useState<string | undefined>();
   const [workflowRefreshTrigger, setWorkflowRefreshTrigger] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
+
+  // Update URL when view changes
+  const updateView = (newView: typeof view) => {
+    setView(newView);
+    setSearchParams(prev => {
+      const params = new URLSearchParams(prev);
+      params.set('view', newView);
+      return params;
+    });
+  };
 
   const statusStats = {
     new: leads.filter(l => l.contact_status === 'new').length,
@@ -73,7 +85,7 @@ const CRM = () => {
 
   useEffect(() => {
     if (highlightedLeadId && leads.length > 0) {
-      setView("list");
+      updateView("list");
       setTimeout(() => {
         const element = document.getElementById(`lead-${highlightedLeadId}`);
         element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -139,7 +151,7 @@ const CRM = () => {
   };
 
   const handleStatusCardClick = (status: string) => {
-    setView("kanban");
+    updateView("kanban");
     if (statusFilter === status) {
       setStatusFilter(null);
     } else {
@@ -164,7 +176,7 @@ const CRM = () => {
             <div className="flex gap-2">
               <Button
                 variant={view === "kanban" ? "default" : "outline"}
-                onClick={() => setView("kanban")}
+                onClick={() => updateView("kanban")}
                 className="gap-2"
               >
                 <LayoutGrid className="h-4 w-4" />
@@ -172,7 +184,7 @@ const CRM = () => {
               </Button>
               <Button
                 variant={view === "list" ? "default" : "outline"}
-                onClick={() => setView("list")}
+                onClick={() => updateView("list")}
                 className="gap-2"
               >
                 <List className="h-4 w-4" />
@@ -180,7 +192,7 @@ const CRM = () => {
               </Button>
               <Button
                 variant={view === "automation" ? "default" : "outline"}
-                onClick={() => setView("automation")}
+                onClick={() => updateView("automation")}
                 className="gap-2"
               >
                 <Bot className="h-4 w-4" />
@@ -188,7 +200,7 @@ const CRM = () => {
               </Button>
               <Button
                 variant={view === "workflows" ? "default" : "outline"}
-                onClick={() => setView("workflows")}
+                onClick={() => updateView("workflows")}
                 className="gap-2"
               >
                 <Zap className="h-4 w-4" />
@@ -196,7 +208,7 @@ const CRM = () => {
               </Button>
               <Button
                 variant={view === "insights" ? "default" : "outline"}
-                onClick={() => setView("insights")}
+                onClick={() => updateView("insights")}
                 className="gap-2"
               >
                 <Sparkles className="h-4 w-4" />
@@ -268,7 +280,7 @@ const CRM = () => {
             <div className="mt-4 flex gap-2 justify-center">
               <Button
                 variant={view === "insights" ? "default" : "outline"}
-                onClick={() => setView("insights")}
+                onClick={() => updateView("insights")}
                 size="sm"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
@@ -276,7 +288,7 @@ const CRM = () => {
               </Button>
               <Button
                 variant={view === "analytics" ? "default" : "outline"}
-                onClick={() => setView("analytics")}
+                onClick={() => updateView("analytics")}
                 size="sm"
               >
                 📊 Full Analytics
@@ -315,11 +327,11 @@ const CRM = () => {
             <WorkflowManager
               onCreateNew={() => {
                 setEditingWorkflowId(undefined);
-                setView('workflow-editor');
+                updateView('workflow-editor');
               }}
               onEditWorkflow={(id) => {
                 setEditingWorkflowId(id);
-                setView('workflow-editor');
+                updateView('workflow-editor');
               }}
               refreshTrigger={workflowRefreshTrigger}
             />
@@ -341,11 +353,11 @@ const CRM = () => {
             <WorkflowManager
               onCreateNew={() => {
                 setEditingWorkflowId(undefined);
-                setView('workflow-editor');
+                updateView('workflow-editor');
               }}
               onEditWorkflow={(id) => {
                 setEditingWorkflowId(id);
-                setView('workflow-editor');
+                updateView('workflow-editor');
               }}
               refreshTrigger={workflowRefreshTrigger}
             />
@@ -356,12 +368,12 @@ const CRM = () => {
               workflowId={editingWorkflowId}
               onBack={() => {
                 setEditingWorkflowId(undefined);
-                setView('visual-workflows');
+                updateView('visual-workflows');
               }}
               onSaved={() => {
                 setWorkflowRefreshTrigger(prev => prev + 1);
                 setEditingWorkflowId(undefined);
-                setView('visual-workflows');
+                updateView('visual-workflows');
               }}
             />
           </FeatureGate>
