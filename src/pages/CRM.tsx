@@ -44,6 +44,7 @@ const CRM = () => {
   const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights" | "analytics" | "orchestration" | "visual-workflows" | "workflow-editor">("kanban");
   const [editingWorkflowId, setEditingWorkflowId] = useState<string | undefined>();
   const [workflowRefreshTrigger, setWorkflowRefreshTrigger] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -129,6 +130,15 @@ const CRM = () => {
     }
   };
 
+  const handleStatusCardClick = (status: string) => {
+    setView("kanban");
+    if (statusFilter === status) {
+      setStatusFilter(null);
+    } else {
+      setStatusFilter(status);
+    }
+  };
+
   return (
     <DashboardLayout>
       <FeatureGate feature="crm">
@@ -189,27 +199,57 @@ const CRM = () => {
           
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-            <Card className="p-4">
+            <Card 
+              className={`p-4 cursor-pointer transition-all hover:shadow-md hover:scale-105 ${
+                statusFilter === 'new' ? 'ring-2 ring-primary' : ''
+              }`}
+              onClick={() => handleStatusCardClick('new')}
+            >
               <p className="text-sm text-muted-foreground mb-1">New</p>
               <p className="text-2xl font-bold">{statusStats.new}</p>
             </Card>
-            <Card className="p-4">
+            <Card 
+              className={`p-4 cursor-pointer transition-all hover:shadow-md hover:scale-105 ${
+                statusFilter === 'attempted' ? 'ring-2 ring-primary' : ''
+              }`}
+              onClick={() => handleStatusCardClick('attempted')}
+            >
               <p className="text-sm text-muted-foreground mb-1">Attempted</p>
               <p className="text-2xl font-bold">{statusStats.attempted}</p>
             </Card>
-            <Card className="p-4">
+            <Card 
+              className={`p-4 cursor-pointer transition-all hover:shadow-md hover:scale-105 ${
+                statusFilter === 'connected' ? 'ring-2 ring-primary' : ''
+              }`}
+              onClick={() => handleStatusCardClick('connected')}
+            >
               <p className="text-sm text-muted-foreground mb-1">Connected</p>
               <p className="text-2xl font-bold">{statusStats.connected}</p>
             </Card>
-            <Card className="p-4">
+            <Card 
+              className={`p-4 cursor-pointer transition-all hover:shadow-md hover:scale-105 ${
+                statusFilter === 'in_conversation' ? 'ring-2 ring-primary' : ''
+              }`}
+              onClick={() => handleStatusCardClick('in_conversation')}
+            >
               <p className="text-sm text-muted-foreground mb-1">In Conversation</p>
               <p className="text-2xl font-bold">{statusStats.in_conversation}</p>
             </Card>
-            <Card className="p-4 bg-gradient-primary text-primary-foreground">
+            <Card 
+              className={`p-4 bg-gradient-primary text-primary-foreground cursor-pointer transition-all hover:shadow-md hover:scale-105 ${
+                statusFilter === 'active_partner' ? 'ring-2 ring-accent ring-offset-2' : ''
+              }`}
+              onClick={() => handleStatusCardClick('active_partner')}
+            >
               <p className="text-sm mb-1 opacity-90">Active Partners</p>
               <p className="text-2xl font-bold">{statusStats.active_partner}</p>
             </Card>
-            <Card className="p-4">
+            <Card 
+              className={`p-4 cursor-pointer transition-all hover:shadow-md hover:scale-105 ${
+                statusFilter === 'do_not_contact' ? 'ring-2 ring-primary' : ''
+              }`}
+              onClick={() => handleStatusCardClick('do_not_contact')}
+            >
               <p className="text-sm text-muted-foreground mb-1">Do Not Contact</p>
               <p className="text-2xl font-bold">{statusStats.do_not_contact}</p>
             </Card>
@@ -255,6 +295,8 @@ const CRM = () => {
             leads={leads} 
             onStatusChange={updateLeadStatus}
             onRefresh={fetchLeads}
+            statusFilter={statusFilter}
+            onClearFilter={() => setStatusFilter(null)}
           />
         ) : view === "automation" ? (
           <FeatureGate feature="ai">
