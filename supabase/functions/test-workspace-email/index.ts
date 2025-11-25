@@ -79,8 +79,15 @@ serve(async (req) => {
       throw new Error('Only SMTP is supported for testing');
     }
 
+    console.log('Decrypting SMTP password...');
     // Decrypt SMTP password
     const smtpPassword = decrypt(emailAccount.smtp_password_enc);
+    
+    console.log('Creating SMTP client with config:', {
+      hostname: emailAccount.smtp_host,
+      port: emailAccount.smtp_port,
+      username: emailAccount.smtp_username,
+    });
 
     // Create SMTP client
     const client = new SMTPClient({
@@ -95,8 +102,12 @@ serve(async (req) => {
       },
     });
 
+    console.log('SMTP client created, preparing to send...');
+    
     // Send test email
     const testMessage = "This is a test email to verify your SMTP configuration is working correctly. If you received this email, your workflow emails will be sent successfully!";
+    
+    console.log('Sending email to:', test_recipient);
     
     await client.send({
       from: `${emailAccount.from_name} <${emailAccount.from_email}>`,
@@ -114,7 +125,11 @@ serve(async (req) => {
       `,
     });
 
+    console.log('Email sent successfully!');
+    
     await client.close();
+    
+    console.log('SMTP connection closed.');
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
