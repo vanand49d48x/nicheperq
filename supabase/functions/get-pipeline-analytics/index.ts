@@ -13,14 +13,18 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const authHeader = req.headers.get('Authorization')!;
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    
+    // Create admin client for querying data
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    // Extract user ID from JWT token
+    const token = authHeader.replace('Bearer ', '');
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const userId = payload.sub;
+
+    if (!userId) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -31,7 +35,7 @@ serve(async (req) => {
     const { data: leads, error: leadsError } = await supabase
       .from('leads')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
     if (leadsError) throw leadsError;
 
@@ -39,7 +43,7 @@ serve(async (req) => {
     const { data: emails, error: emailsError } = await supabase
       .from('ai_email_drafts')
       .select('*, email_tracking(*)')
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
     if (emailsError) throw emailsError;
 
@@ -47,7 +51,7 @@ serve(async (req) => {
     const { data: enrollments, error: enrollmentsError } = await supabase
       .from('workflow_enrollments')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
     if (enrollmentsError) throw enrollmentsError;
 
