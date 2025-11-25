@@ -116,7 +116,10 @@ export const AIInsights = () => {
           {insights.map((insight, index) => (
             <div
               key={index}
-              className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+              className={`flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors ${
+                insight.leadId ? 'cursor-pointer' : ''
+              }`}
+              onClick={() => insight.leadId && navigate(`/crm?lead=${insight.leadId}`)}
             >
               <div className={`p-2 rounded-full bg-${insight.type === 'opportunity' ? 'primary' : insight.type === 'priority' ? 'destructive' : 'secondary'}/10`}>
                 {getInsightIcon(insight.type)}
@@ -132,11 +135,6 @@ export const AIInsights = () => {
                 )}
                 <p className="text-xs text-muted-foreground">{insight.description}</p>
               </div>
-              {insight.leadId && (
-                <Button size="sm" variant="ghost" onClick={() => navigate(`/crm?lead=${insight.leadId}`)}>
-                  View
-                </Button>
-              )}
             </div>
           ))}
         </div>
