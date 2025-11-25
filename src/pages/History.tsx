@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -573,7 +574,7 @@ const History = () => {
                   </div>
                 </div>
 
-                {/* Leads */}
+                {/* Leads Organized by Niche */}
                 <div>
                   <h4 className="font-semibold mb-3">
                     Found Leads ({searchLeads.length})
@@ -595,40 +596,110 @@ const History = () => {
                         No leads found for this search
                       </p>
                     </Card>
-                  ) : (
-                    <div className="grid gap-4 md:grid-cols-2 max-h-[400px] overflow-y-auto pr-2">
-                      {searchLeads.map((lead) => (
-                        <Card key={lead.id} className="p-4">
-                          <h5 className="font-semibold mb-2 truncate">
-                            {lead.business_name}
-                          </h5>
-                          <div className="space-y-1 text-sm">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Building2 className="h-3 w-3" />
-                              <span className="truncate">{lead.niche}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <MapPin className="h-3 w-3" />
-                              <span>
-                                {lead.city}
-                                {lead.state ? `, ${lead.state}` : ''}
-                              </span>
-                            </div>
-                            {lead.rating && (
-                              <div className="flex items-center gap-1 text-xs">
-                                ⭐ {lead.rating}
-                              </div>
-                            )}
-                            {lead.phone && (
-                              <div className="text-xs text-muted-foreground truncate">
-                                📞 {lead.phone}
-                              </div>
-                            )}
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+                  ) : (() => {
+                    // Group leads by niche
+                    const leadsByNiche = searchLeads.reduce((acc, lead) => {
+                      const niche = lead.niche || 'Uncategorized';
+                      if (!acc[niche]) acc[niche] = [];
+                      acc[niche].push(lead);
+                      return acc;
+                    }, {} as Record<string, Lead[]>);
+
+                    // Group leads by date ranges within each niche
+                    const getDateCategory = (dateStr: string) => {
+                      const date = new Date(dateStr);
+                      const now = new Date();
+                      const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+                      
+                      if (diffDays === 0) return 'Today';
+                      if (diffDays <= 7) return 'This Week';
+                      if (diffDays <= 30) return 'This Month';
+                      if (diffDays <= 90) return 'Last 3 Months';
+                      return 'Older';
+                    };
+
+                    return (
+                      <Accordion type="multiple" className="space-y-2" defaultValue={Object.keys(leadsByNiche).slice(0, 2)}>
+                        {Object.entries(leadsByNiche)
+                          .sort(([, a], [, b]) => b.length - a.length)
+                          .map(([niche, nicheLeads]) => {
+                            // Group by date within niche
+                            const leadsByDate = nicheLeads.reduce((acc, lead) => {
+                              const category = getDateCategory(lead.created_at);
+                              if (!acc[category]) acc[category] = [];
+                              acc[category].push(lead);
+                              return acc;
+                            }, {} as Record<string, Lead[]>);
+
+                            const dateOrder = ['Today', 'This Week', 'This Month', 'Last 3 Months', 'Older'];
+                            const sortedDateEntries = Object.entries(leadsByDate)
+                              .sort(([a], [b]) => dateOrder.indexOf(a) - dateOrder.indexOf(b));
+
+                            return (
+                              <AccordionItem key={niche} value={niche} className="border rounded-lg px-4">
+                                <AccordionTrigger className="hover:no-underline">
+                                  <div className="flex items-center justify-between w-full pr-4">
+                                    <div className="flex items-center gap-2">
+                                      <Building2 className="h-4 w-4 text-primary" />
+                                      <span className="font-semibold">{niche}</span>
+                                    </div>
+                                    <Badge variant="secondary">{nicheLeads.length} leads</Badge>
+                                  </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="pt-4">
+                                  <div className="space-y-4">
+                                    {sortedDateEntries.map(([dateCategory, dateLeads]) => (
+                                      <div key={dateCategory}>
+                                        <div className="flex items-center gap-2 mb-3">
+                                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                                          <span className="text-sm font-medium text-muted-foreground">
+                                            {dateCategory}
+                                          </span>
+                                          <Badge variant="outline" className="text-xs">
+                                            {dateLeads.length}
+                                          </Badge>
+                                        </div>
+                                        <div className="grid gap-3 md:grid-cols-2 mb-4">
+                                          {dateLeads.map((lead) => (
+                                            <Card key={lead.id} className="p-3 hover:shadow-md transition-shadow">
+                                              <h5 className="font-semibold mb-2 truncate text-sm">
+                                                {lead.business_name}
+                                              </h5>
+                                              <div className="space-y-1 text-xs">
+                                                <div className="flex items-center gap-2 text-muted-foreground">
+                                                  <MapPin className="h-3 w-3" />
+                                                  <span>
+                                                    {lead.city}
+                                                    {lead.state ? `, ${lead.state}` : ''}
+                                                  </span>
+                                                </div>
+                                                {lead.rating && (
+                                                  <div className="flex items-center gap-1">
+                                                    ⭐ {lead.rating}
+                                                  </div>
+                                                )}
+                                                {lead.phone && (
+                                                  <div className="text-muted-foreground truncate">
+                                                    📞 {lead.phone}
+                                                  </div>
+                                                )}
+                                                <div className="text-muted-foreground pt-1">
+                                                  {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
+                                                </div>
+                                              </div>
+                                            </Card>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            );
+                          })}
+                      </Accordion>
+                    );
+                  })()}
                 </div>
               </div>
             )}
