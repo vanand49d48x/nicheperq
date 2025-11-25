@@ -56,7 +56,31 @@ const CRM = () => {
   const [editingWorkflowId, setEditingWorkflowId] = useState<string | undefined>();
   const [workflowRefreshTrigger, setWorkflowRefreshTrigger] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [hasAiAccess, setHasAiAccess] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    checkAiAccess();
+  }, []);
+
+  const checkAiAccess = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('has_ai_access, role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (roleData) {
+        setHasAiAccess(roleData.role === 'admin' || roleData.has_ai_access);
+      }
+    } catch (error) {
+      console.error('Error checking AI access:', error);
+    }
+  };
 
   // Update URL when view changes
   const updateView = (newView: typeof view) => {
@@ -198,30 +222,34 @@ const CRM = () => {
                 <List className="h-4 w-4" />
                 List
               </Button>
-              <Button
-                variant={view === "automation" ? "default" : "outline"}
-                onClick={() => updateView("automation")}
-                className="gap-2"
-              >
-                <Bot className="h-4 w-4" />
-                AI Activity
-              </Button>
-              <Button
-                variant={view === "workflows" ? "default" : "outline"}
-                onClick={() => updateView("workflows")}
-                className="gap-2"
-              >
-                <Zap className="h-4 w-4" />
-                Workflows
-              </Button>
-              <Button
-                variant={view === "insights" ? "default" : "outline"}
-                onClick={() => updateView("insights")}
-                className="gap-2"
-              >
-                <Sparkles className="h-4 w-4" />
-                Insights
-              </Button>
+              {hasAiAccess && (
+                <>
+                  <Button
+                    variant={view === "automation" ? "default" : "outline"}
+                    onClick={() => updateView("automation")}
+                    className="gap-2"
+                  >
+                    <Bot className="h-4 w-4" />
+                    AI Activity
+                  </Button>
+                  <Button
+                    variant={view === "workflows" ? "default" : "outline"}
+                    onClick={() => updateView("workflows")}
+                    className="gap-2"
+                  >
+                    <Zap className="h-4 w-4" />
+                    Workflows
+                  </Button>
+                  <Button
+                    variant={view === "insights" ? "default" : "outline"}
+                    onClick={() => updateView("insights")}
+                    className="gap-2"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Insights
+                  </Button>
+                </>
+              )}
             </div>
           </div>
           
@@ -284,7 +312,7 @@ const CRM = () => {
           </div>
           
           {/* Analytics/Insights Toggle */}
-          {(view === "insights" || view === "analytics") && (
+          {hasAiAccess && (view === "insights" || view === "analytics") && (
             <div className="mt-4 flex gap-2 justify-center">
               <Button
                 variant={view === "insights" ? "default" : "outline"}
