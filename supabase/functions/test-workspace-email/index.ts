@@ -19,25 +19,38 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader) {
       throw new Error('Missing authorization header');
     }
 
     // Extract JWT token (remove "Bearer " prefix)
     const token = authHeader.replace('Bearer ', '');
+    console.log('Token extracted, length:', token.length);
     
     // Decode JWT to get user ID (JWT is already validated by verify_jwt=true)
     const parts = token.split('.');
+    console.log('JWT parts:', parts.length);
+    
     if (parts.length !== 3) {
-      throw new Error('Invalid token format');
+      throw new Error('Invalid token format - expected 3 parts, got ' + parts.length);
     }
     
-    // Decode the payload (base64url)
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-    const userId = payload.sub;
-    
-    if (!userId) {
-      throw new Error('No user ID in token');
+    let userId: string;
+    try {
+      // Decode the payload (base64url)
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+      userId = payload.sub;
+      
+      console.log('Decoded JWT payload, user ID:', userId);
+      
+      if (!userId) {
+        throw new Error('No user ID in token');
+      }
+    } catch (decodeError) {
+      console.error('JWT decode error:', decodeError);
+      throw new Error('Failed to decode JWT token: ' + (decodeError instanceof Error ? decodeError.message : 'Unknown error'));
     }
 
     console.log('Test email - Authenticated user ID:', userId);
