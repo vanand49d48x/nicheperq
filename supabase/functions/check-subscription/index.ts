@@ -135,21 +135,78 @@ serve(async (req) => {
       } else {
         logStep("User role updated successfully", { role, hasCrmAccess, hasAiAccess });
       }
+      // Check for admin overrides before updating
+      const { data: existingRole } = await supabaseClient
+        .from('user_roles')
+        .select('custom_lead_limit, has_crm_access, has_ai_access, role')
+        .eq('user_id', user.id)
+        .single();
+
+      // Only update if no custom overrides are set
+      const hasCustomOverride = existingRole?.custom_lead_limit !== null;
+      
+      if (!hasCustomOverride) {
+        const { error: roleError } = await supabaseClient
+          .from('user_roles')
+          .update({ 
+            role,
+            has_crm_access: hasCrmAccess,
+            has_ai_access: hasAiAccess
+          })
+          .eq('user_id', user.id);
+
+        if (roleError) {
+          logStep("Error updating user role", { error: roleError });
+        } else {
+          logStep("User role updated successfully", { role, hasCrmAccess, hasAiAccess });
+        }
+      } else if (existingRole) {
+        logStep("Skipping role update - admin override detected", { 
+          customLeadLimit: existingRole.custom_lead_limit,
+          manualCrmAccess: existingRole.has_crm_access,
+          manualAiAccess: existingRole.has_ai_access 
+        });
+        // Use the manually set values for response
+        role = existingRole.role;
+        hasCrmAccess = existingRole.has_crm_access;
+        hasAiAccess = existingRole.has_ai_access;
+      }
     } else {
       logStep("No active subscription, setting role to free");
       
-      // Update user role to free if no subscription
-      const { error: roleError } = await supabaseClient
+      // Check for admin overrides
+      const { data: existingRole } = await supabaseClient
         .from('user_roles')
-        .update({ 
-          role: 'free',
-          has_crm_access: false,
-          has_ai_access: false
-        })
-        .eq('user_id', user.id);
+        .select('custom_lead_limit, has_crm_access, has_ai_access, role')
+        .eq('user_id', user.id)
+        .single();
 
-      if (roleError) {
-        logStep("Error updating user role to free", { error: roleError });
+      const hasCustomOverride = existingRole?.custom_lead_limit !== null;
+      
+      if (!hasCustomOverride) {
+        // Update user role to free if no subscription and no admin override
+        const { error: roleError } = await supabaseClient
+          .from('user_roles')
+          .update({ 
+            role: 'free',
+            has_crm_access: false,
+            has_ai_access: false
+          })
+          .eq('user_id', user.id);
+
+        if (roleError) {
+          logStep("Error updating user role to free", { error: roleError });
+        }
+      } else if (existingRole) {
+        logStep("Skipping role update - admin override detected for free tier", {
+          customLeadLimit: existingRole.custom_lead_limit,
+          manualCrmAccess: existingRole.has_crm_access,
+          manualAiAccess: existingRole.has_ai_access
+        });
+        // Use the manually set values
+        role = existingRole.role;
+        hasCrmAccess = existingRole.has_crm_access;
+        hasAiAccess = existingRole.has_ai_access;
       }
     }
 
