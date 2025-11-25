@@ -37,6 +37,7 @@ interface KanbanBoardProps {
   leads: any[];
   onStatusChange: (leadId: string, status: string) => void;
   onRefresh: () => void;
+  onLeadUpdate?: (leadId: string, updates: any) => void;
   statusFilter?: string | null;
   onClearFilter?: () => void;
 }
@@ -49,7 +50,7 @@ const columns = [
   { id: "active_partner", label: "Active Partner", color: "bg-green-50 dark:bg-green-950" },
 ];
 
-export const KanbanBoard = ({ leads, onStatusChange, onRefresh, statusFilter, onClearFilter }: KanbanBoardProps) => {
+export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, statusFilter, onClearFilter }: KanbanBoardProps) => {
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
   const [analyzingLeads, setAnalyzingLeads] = useState<Set<string>>(new Set());
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
@@ -107,16 +108,16 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, statusFilter, on
         throw error;
       }
 
-      // Fetch updated lead to get AI scores without full refresh
+      // Fetch updated lead to get AI scores
       const { data: updatedLead, error: fetchError } = await supabase
         .from('leads')
         .select('*')
         .eq('id', leadId)
         .single();
 
-      if (!fetchError && updatedLead) {
-        // Update the lead in the parent component without full refresh
-        onRefresh();
+      if (!fetchError && updatedLead && onLeadUpdate) {
+        // Update just this one lead in parent state without full refresh
+        onLeadUpdate(leadId, updatedLead);
       }
 
       // Auto-tag after analysis
