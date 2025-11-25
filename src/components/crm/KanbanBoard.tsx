@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,10 @@ import {
 } from "@/components/ui/tooltip";
 import { ContactCard } from "./ContactCard";
 import { BatchActionsBar } from "./BatchActionsBar";
+import { KanbanFilters } from "./KanbanFilters";
+import { ColumnSummaryCard } from "./ColumnSummaryCard";
+import { LeadCardEnhanced } from "./LeadCardEnhanced";
+import { StageManager } from "./StageManager";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { applyAutoTags } from "@/lib/autoTagging";
@@ -57,15 +61,59 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
   const [batchMode, setBatchMode] = useState(false);
   const [showAnalyzeDialog, setShowAnalyzeDialog] = useState(false);
   const [pendingAnalysisCount, setPendingAnalysisCount] = useState(0);
+  const [filters, setFilters] = useState<any>({});
+  const [customColumns, setCustomColumns] = useState(columns);
+
+  // Extract available tags and locations from leads
+  const availableTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    leads.forEach(lead => {
+      lead.tags?.forEach((tag: string) => tagSet.add(tag));
+    });
+    return Array.from(tagSet).sort();
+  }, [leads]);
+
+  const availableLocations = useMemo(() => {
+    const locationSet = new Set<string>();
+    leads.forEach(lead => {
+      if (lead.city) locationSet.add(lead.city);
+    });
+    return Array.from(locationSet).sort();
+  }, [leads]);
+
+  // Apply filters to leads
+  const filteredLeads = useMemo(() => {
+    let filtered = leads;
+
+    if (filters.rating) {
+      filtered = filtered.filter(l => l.rating && l.rating >= filters.rating);
+    }
+    if (filters.sentiment) {
+      filtered = filtered.filter(l => l.sentiment === filters.sentiment);
+    }
+    if (filters.hasAnalysis === false) {
+      filtered = filtered.filter(l => !l.ai_quality_score);
+    }
+    if (filters.tags && filters.tags.length > 0) {
+      filtered = filtered.filter(l => 
+        filters.tags.some((tag: string) => l.tags?.includes(tag))
+      );
+    }
+    if (filters.location) {
+      filtered = filtered.filter(l => l.city === filters.location);
+    }
+
+    return filtered;
+  }, [leads, filters]);
 
   const getLeadsForColumn = (columnId: string) => {
-    return leads.filter(lead => lead.contact_status === columnId);
+    return filteredLeads.filter(lead => lead.contact_status === columnId);
   };
 
   // Filter columns based on statusFilter
   const visibleColumns = statusFilter 
-    ? columns.filter(col => col.id === statusFilter)
-    : columns;
+    ? customColumns.filter(col => col.id === statusFilter)
+    : customColumns;
 
   const getSentimentColor = (sentiment: string | null) => {
     switch (sentiment) {
@@ -306,10 +354,10 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
         <div className="mb-4 flex items-center justify-between bg-primary/10 rounded-lg p-3 border border-primary/20">
           <div className="flex items-center gap-2">
             <Badge variant="default" className="text-sm">
-              Filtered: {columns.find(c => c.id === statusFilter)?.label}
+              Filtered: {customColumns.find(c => c.id === statusFilter)?.label}
             </Badge>
             <span className="text-sm text-muted-foreground">
-              Showing only {columns.find(c => c.id === statusFilter)?.label} contacts
+              Showing only {customColumns.find(c => c.id === statusFilter)?.label} contacts
             </span>
           </div>
           <Button 
@@ -322,6 +370,14 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
           </Button>
         </div>
       )}
+
+      {/* Quick Filters */}
+      <KanbanFilters
+        activeFilters={filters}
+        onFilterChange={setFilters}
+        availableTags={availableTags}
+        availableLocations={availableLocations}
+      />
       
       <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
@@ -352,16 +408,23 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
           )}
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={requestAnalyzeAllNewLeads}
-          className="gap-2"
-          disabled={analyzingLeads.size > 0}
-        >
-          <Sparkles className="h-4 w-4" />
-          Auto-Analyze All New
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={requestAnalyzeAllNewLeads}
+            className="gap-2"
+            disabled={analyzingLeads.size > 0}
+          >
+            <Sparkles className="h-4 w-4" />
+            Auto-Analyze All New
+          </Button>
+
+          <StageManager
+            stages={customColumns}
+            onStagesUpdate={setCustomColumns}
+          />
+        </div>
       </div>
 
       <div className="overflow-x-auto pb-4">
@@ -377,178 +440,25 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
                     <Badge variant="secondary">{columnLeads.length}</Badge>
                   </div>
 
+                  {/* Column Summary Card */}
+                  <ColumnSummaryCard leads={columnLeads} columnLabel={column.label} />
+
                   <div className="space-y-3">
                     {columnLeads.map((lead) => (
                       <TooltipProvider key={lead.id}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Card
-                              className={cn(
-                                "p-3 cursor-pointer hover:shadow-md transition-shadow relative",
-                                getSentimentColor(lead.sentiment),
-                                selectedLeads.has(lead.id) && "ring-2 ring-primary"
-                              )}
-                              onClick={() => !batchMode && setSelectedLead(lead)}
-                            >
-                              {batchMode && (
-                                <div className="absolute top-2 left-2 z-10">
-                                  <Checkbox
-                                    checked={selectedLeads.has(lead.id)}
-                                    onCheckedChange={() => toggleLeadSelection(lead.id)}
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                </div>
-                              )}
-
-                              <div className={cn("flex items-start gap-2 mb-2", batchMode && "ml-6")}>
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-medium line-clamp-1 text-sm">
-                                    {lead.business_name}
-                                  </h4>
-                                </div>
-                                <div className="flex items-center gap-1 flex-shrink-0">
-                                  {getSentimentIcon(lead.sentiment)}
-                                  {lead.ai_quality_score !== null && (
-                                    <Badge 
-                                      variant="outline" 
-                                      className={cn("text-xs", getScoreColor(lead.ai_quality_score))}
-                                    >
-                                      {lead.ai_quality_score}
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div className="space-y-1 text-xs text-muted-foreground mb-2">
-                                {lead.phone && (
-                                  <div className="flex items-center gap-1">
-                                    <Phone className="h-3 w-3" />
-                                    <span className="truncate">{lead.phone}</span>
-                                  </div>
-                                )}
-                                {lead.rating && (
-                                  <div className="flex items-center gap-1">
-                                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                    <span>{lead.rating} ({lead.review_count || 0})</span>
-                                  </div>
-                                )}
-                              </div>
-
-                              <div className="flex gap-1 items-center mb-2 flex-wrap">
-                                <Badge variant="outline" className="text-xs">
-                                  {lead.niche}
-                                </Badge>
-                                {lead.closing_probability !== null && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    {lead.closing_probability}%
-                                  </Badge>
-                                )}
-                              </div>
-
-                              {/* Auto Tags */}
-                              {lead.tags && lead.tags.length > 0 && (
-                                <div className="flex gap-1 flex-wrap mb-2">
-                                  {lead.tags.slice(0, 3).map((tag: string) => (
-                                    <Badge key={tag} variant="secondary" className="text-xs">
-                                      {tag}
-                                    </Badge>
-                                  ))}
-                                  {lead.tags.length > 3 && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      +{lead.tags.length - 3}
-                                    </Badge>
-                                  )}
-                                </div>
-                              )}
-
-                              {/* Quick Actions */}
-                              {!batchMode && (
-                                <div className="flex gap-1 mb-2">
-                                  {lead.email && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 px-2"
-                                      onClick={(e) => handleQuickEmail(lead, e)}
-                                      title="Send email"
-                                    >
-                                      <Mail className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                  {lead.phone && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 px-2"
-                                      onClick={(e) => handleQuickCall(lead, e)}
-                                      title="Call"
-                                    >
-                                      <PhoneCall className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                  {(!lead.tags || lead.tags.length === 0) && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 px-2"
-                                      onClick={(e) => handleAutoTag(lead.id, e)}
-                                      title="Auto-tag"
-                                    >
-                                      <Tag className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                </div>
-                              )}
-
-                              {!lead.ai_quality_score && !batchMode && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="w-full mb-2 gap-1 h-7 text-xs"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    analyzeLeadWithAI(lead.id);
-                                  }}
-                                  disabled={analyzingLeads.has(lead.id)}
-                                >
-                                  <Sparkles className="h-3 w-3" />
-                                  {analyzingLeads.has(lead.id) ? 'Analyzing...' : 'AI Analyze'}
-                                </Button>
-                              )}
-
-                              {column.id !== "active_partner" && !batchMode && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="w-full gap-1 h-7 text-xs"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const nextColumn = columns[columns.findIndex(c => c.id === column.id) + 1];
-                                    if (nextColumn) {
-                                      onStatusChange(lead.id, nextColumn.id);
-                                    }
-                                  }}
-                                >
-                                  Move to {columns[columns.findIndex(c => c.id === column.id) + 1]?.label}
-                                  <ChevronRight className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </Card>
-                          </TooltipTrigger>
-                          {lead.recommended_action && !batchMode && (
-                            <TooltipContent side="right" className="max-w-xs">
-                              <div className="space-y-1">
-                                <p className="font-semibold text-xs">Recommended Action:</p>
-                                <p className="text-xs">{lead.recommended_action}</p>
-                                {lead.sentiment && (
-                                  <p className="text-xs text-muted-foreground capitalize">
-                                    Status: {lead.sentiment}
-                                  </p>
-                                )}
-                              </div>
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
+                        <LeadCardEnhanced
+                          lead={lead}
+                          batchMode={batchMode}
+                          isSelected={selectedLeads.has(lead.id)}
+                          isAnalyzing={analyzingLeads.has(lead.id)}
+                          onSelect={() => toggleLeadSelection(lead.id)}
+                          onClick={() => !batchMode && setSelectedLead(lead)}
+                          onAnalyze={() => analyzeLeadWithAI(lead.id)}
+                          onQuickEmail={(e) => handleQuickEmail(lead, e)}
+                          onQuickCall={(e) => handleQuickCall(lead, e)}
+                          onAutoTag={(e) => handleAutoTag(lead.id, e)}
+                          onUpdate={onLeadUpdate || (() => {})}
+                        />
                       </TooltipProvider>
                     ))}
 
