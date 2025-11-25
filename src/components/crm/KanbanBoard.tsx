@@ -27,6 +27,8 @@ interface KanbanBoardProps {
   leads: any[];
   onStatusChange: (leadId: string, status: string) => void;
   onRefresh: () => void;
+  statusFilter?: string | null;
+  onClearFilter?: () => void;
 }
 
 const columns = [
@@ -37,7 +39,7 @@ const columns = [
   { id: "active_partner", label: "Active Partner", color: "bg-green-50 dark:bg-green-950" },
 ];
 
-export const KanbanBoard = ({ leads, onStatusChange, onRefresh }: KanbanBoardProps) => {
+export const KanbanBoard = ({ leads, onStatusChange, onRefresh, statusFilter, onClearFilter }: KanbanBoardProps) => {
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
   const [analyzingLeads, setAnalyzingLeads] = useState<Set<string>>(new Set());
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
@@ -46,6 +48,11 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh }: KanbanBoardPro
   const getLeadsForColumn = (columnId: string) => {
     return leads.filter(lead => lead.contact_status === columnId);
   };
+
+  // Filter columns based on statusFilter
+  const visibleColumns = statusFilter 
+    ? columns.filter(col => col.id === statusFilter)
+    : columns;
 
   const getSentimentColor = (sentiment: string | null) => {
     switch (sentiment) {
@@ -149,6 +156,27 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh }: KanbanBoardPro
 
   return (
     <>
+      {statusFilter && (
+        <div className="mb-4 flex items-center justify-between bg-primary/10 rounded-lg p-3 border border-primary/20">
+          <div className="flex items-center gap-2">
+            <Badge variant="default" className="text-sm">
+              Filtered: {columns.find(c => c.id === statusFilter)?.label}
+            </Badge>
+            <span className="text-sm text-muted-foreground">
+              Showing only {columns.find(c => c.id === statusFilter)?.label} contacts
+            </span>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={onClearFilter}
+            className="text-xs"
+          >
+            Clear Filter
+          </Button>
+        </div>
+      )}
+      
       <div className="mb-4 flex items-center justify-between">
         <Button
           variant={batchMode ? "default" : "outline"}
@@ -166,7 +194,7 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh }: KanbanBoardPro
 
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-4 min-w-max">
-          {columns.map((column) => {
+          {visibleColumns.map((column) => {
             const columnLeads = getLeadsForColumn(column.id);
             
             return (
