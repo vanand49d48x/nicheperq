@@ -19,28 +19,47 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader) {
-      throw new Error('Missing authorization header');
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      { 
+        global: { 
+          headers: { Authorization: authHeader } 
+        } 
+      }
     );
 
+    // Try to get the user from the JWT token
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     
-    if (userError) {
-      console.error('Auth error:', userError);
-      throw new Error('Authentication failed: ' + userError.message);
-    }
+    console.log('User lookup result:', { hasUser: !!user, error: userError });
     
-    if (!user) {
-      throw new Error('No user found');
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Authentication failed',
+          details: userError?.message || 'No user found'
+        }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    console.log('User authenticated:', user.id);
+    console.log('Authenticated user:', user.id);
 
     const body = await req.json();
     const { provider, from_name, from_email, smtp_host, smtp_port, smtp_username, smtp_password } = body;
