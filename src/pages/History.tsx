@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -65,6 +67,10 @@ const History = () => {
   const [leadsNicheFilter, setLeadsNicheFilter] = useState("");
   const [leadsCityFilter, setLeadsCityFilter] = useState("");
   const [leadsSearchText, setLeadsSearchText] = useState("");
+  
+  // Collapsible states
+  const [leadsFiltersOpen, setLeadsFiltersOpen] = useState(false);
+  const [searchesFiltersOpen, setSearchesFiltersOpen] = useState(false);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -292,24 +298,33 @@ const History = () => {
 
           <TabsContent value="leads" className="space-y-6">
             {/* Filters for All Leads */}
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-5 w-5 text-muted-foreground" />
-                  <h3 className="font-semibold">Filters</h3>
-                  {activeLeadsFiltersCount > 0 && (
-                    <Badge variant="secondary">{activeLeadsFiltersCount} active</Badge>
-                  )}
+            <Collapsible open={leadsFiltersOpen} onOpenChange={setLeadsFiltersOpen}>
+              <Card className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="font-semibold">Filters</h3>
+                    {activeLeadsFiltersCount > 0 && (
+                      <Badge variant="secondary">{activeLeadsFiltersCount} active</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {activeLeadsFiltersCount > 0 && (
+                      <Button variant="ghost" size="sm" onClick={clearLeadsFilters} className="gap-2">
+                        <X className="h-4 w-4" />
+                        Clear All
+                      </Button>
+                    )}
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <ChevronDown className={`h-4 w-4 transition-transform ${leadsFiltersOpen ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
                 </div>
-                {activeLeadsFiltersCount > 0 && (
-                  <Button variant="ghost" size="sm" onClick={clearLeadsFilters} className="gap-2">
-                    <X className="h-4 w-4" />
-                    Clear All
-                  </Button>
-                )}
-              </div>
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <CollapsibleContent>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">From Date</label>
                   <Input
@@ -372,7 +387,9 @@ const History = () => {
                   </div>
                 </div>
               </div>
-            </Card>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
             {/* Active Filter Badges */}
             {activeLeadsFiltersCount > 0 && (
@@ -538,12 +555,12 @@ const History = () => {
                                                 📞 {lead.phone}
                                               </div>
                                             )}
-                                            <div className="text-xs text-muted-foreground pt-1">
-                                              {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
-                                            </div>
-                                          </div>
-                                        </Card>
-                                      ))}
+                                             <div className="text-xs text-muted-foreground pt-1">
+                                               {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
+                                             </div>
+                                           </div>
+                                         </Card>
+                                       ))}
                                   </div>
                                 </div>
                               ))}
@@ -559,24 +576,33 @@ const History = () => {
 
           <TabsContent value="searches" className="space-y-6">
             {/* Filters */}
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-5 w-5 text-muted-foreground" />
-                  <h3 className="font-semibold">Filters</h3>
-                  {activeFiltersCount > 0 && (
-                    <Badge variant="secondary">{activeFiltersCount} active</Badge>
-                  )}
+            <Collapsible open={searchesFiltersOpen} onOpenChange={setSearchesFiltersOpen}>
+              <Card className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="font-semibold">Filters</h3>
+                    {activeFiltersCount > 0 && (
+                      <Badge variant="secondary">{activeFiltersCount} active</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {activeFiltersCount > 0 && (
+                      <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-2">
+                        <X className="h-4 w-4" />
+                        Clear All
+                      </Button>
+                    )}
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <ChevronDown className={`h-4 w-4 transition-transform ${searchesFiltersOpen ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
                 </div>
-                {activeFiltersCount > 0 && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-2">
-                    <X className="h-4 w-4" />
-                    Clear All
-                  </Button>
-                )}
-              </div>
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <CollapsibleContent>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
                 {/* Date From */}
                 <div>
                   <label className="text-sm font-medium mb-2 block">From Date</label>
@@ -642,9 +668,11 @@ const History = () => {
                       className="pl-10"
                     />
                   </div>
+                  </div>
                 </div>
-              </div>
+              </CollapsibleContent>
             </Card>
+          </Collapsible>
 
             {/* Active Filter Badges */}
             {activeFiltersCount > 0 && (
