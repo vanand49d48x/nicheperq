@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useUserRole } from "@/contexts/UserRoleContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,9 @@ const CRM = () => {
   const [editingWorkflowId, setEditingWorkflowId] = useState<string | undefined>();
   const [workflowRefreshTrigger, setWorkflowRefreshTrigger] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [hasAiAccess, setHasAiAccess] = useState(false);
+  
+  // Use centralized user role context
+  const { hasAiAccess } = useUserRole();
   
   // Cache AI tab data to prevent refetching on navigation
   const [automationData, setAutomationData] = useState<any>(null);
@@ -65,7 +68,6 @@ const CRM = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    checkAiAccess();
     fetchLeads();
   }, []);
 
@@ -81,25 +83,6 @@ const CRM = () => {
       fetchWorkflowsData();
     }
   }, [view, hasAiAccess, automationData, workflowsData]);
-
-  const checkAiAccess = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('has_ai_access, role')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (roleData) {
-        setHasAiAccess(roleData.role === 'admin' || roleData.has_ai_access);
-      }
-    } catch (error) {
-      console.error('Error checking AI access:', error);
-    }
-  };
 
   const fetchAutomationData = async () => {
     try {
