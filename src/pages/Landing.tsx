@@ -83,7 +83,7 @@ const Landing = () => {
             Find Verified Referral Partners in Seconds
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Discover high-quality business leads in any niche—powered by real-time data. Built for realtors and professionals who value their time.
+            Discover high-quality business leads in any niche—powered by real-time data. Built for professionals who value their time.
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Link to="/auth">
