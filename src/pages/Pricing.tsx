@@ -1,10 +1,21 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Zap, ArrowRight, X, Lock } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Check, Zap, ArrowRight, X, Lock, Home } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Pricing = () => {
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+  }, []);
+
   const plans = [
     {
       name: "FREE",
@@ -110,12 +121,26 @@ const Pricing = () => {
             </div>
           </Link>
           <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost">Home</Button>
-            </Link>
-            <Link to="/auth">
-              <Button>Get Started <ArrowRight className="ml-2 h-4 w-4" /></Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+                  <Home className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+                <Button onClick={() => navigate('/settings')}>
+                  View Plans
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/">
+                  <Button variant="ghost">Home</Button>
+                </Link>
+                <Link to="/auth">
+                  <Button>Get Started <ArrowRight className="ml-2 h-4 w-4" /></Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
