@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,17 +38,18 @@ interface AnalyticsData {
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))', 'hsl(var(--chart-1))', 'hsl(var(--chart-2))'];
 
-export default function PipelineAnalytics() {
+interface PipelineAnalyticsProps {
+  onLoadingChange?: (isLoading: boolean) => void;
+}
+
+export default function PipelineAnalytics({ onLoadingChange }: PipelineAnalyticsProps) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, []);
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true);
+      onLoadingChange?.(true);
       
       // Get current session token
       const { data: { session } } = await supabase.auth.getSession();
@@ -68,8 +69,13 @@ export default function PipelineAnalytics() {
       console.error('Failed to fetch analytics:', error);
     } finally {
       setLoading(false);
+      onLoadingChange?.(false);
     }
-  };
+  }, [onLoadingChange]);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
 
   if (loading) {
     return (
