@@ -91,7 +91,7 @@ const CRM = () => {
         .from('user_roles')
         .select('has_ai_access, role')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (roleData) {
         setHasAiAccess(roleData.role === 'admin' || roleData.has_ai_access);
