@@ -42,39 +42,61 @@ export const AIAutomationPanel = () => {
         return;
       }
 
-      // Fetch recent logs
-      const { data: logsData } = await supabase
-        .from('ai_automation_logs')
-        .select(`
-          *,
-          leads (
-            business_name
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
+      // Fetch recent logs and stats in parallel
+      const [
+        { data: logsData },
+        ...statsResults
+      ] = await Promise.all([
+        supabase
+          .from('ai_automation_logs')
+          .select(`
+            *,
+            leads (
+              business_name
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10),
+        // Stats queries
+        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'email_drafted').gte('created_at', (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString(); })()),
+        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'email_sent').gte('created_at', (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString(); })()),
+        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'status_changed').gte('created_at', (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString(); })()),
+        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'workflow_executed').gte('created_at', (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString(); })())
+      ]);
 
       setLogs(logsData || []);
 
-      // Calculate stats
+      setStats({
+        emails_drafted: statsResults[0].count || 0,
+        emails_sent: statsResults[1].count || 0,
+        status_changes: statsResults[2].count || 0,
+        workflows_executed: statsResults[3].count || 0
+      });
+
+      // Calculate stats using aggregated counts
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-      const { data: allLogs } = await supabase
-        .from('ai_automation_logs')
-        .select('action_type')
-        .eq('user_id', user.id)
-        .gte('created_at', oneWeekAgo.toISOString());
+      // Fetch stats in parallel with separate optimized queries
+      const [
+        { count: emailsDrafted },
+        { count: emailsSent },
+        { count: statusChanges },
+        { count: workflowsExecuted }
+      ] = await Promise.all([
+        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'email_drafted').gte('created_at', oneWeekAgo.toISOString()),
+        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'email_sent').gte('created_at', oneWeekAgo.toISOString()),
+        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'status_changed').gte('created_at', oneWeekAgo.toISOString()),
+        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'workflow_executed').gte('created_at', oneWeekAgo.toISOString())
+      ]);
 
-      const stats = {
-        emails_drafted: allLogs?.filter(l => l.action_type === 'email_drafted').length || 0,
-        emails_sent: allLogs?.filter(l => l.action_type === 'email_sent').length || 0,
-        status_changes: allLogs?.filter(l => l.action_type === 'status_changed').length || 0,
-        workflows_executed: allLogs?.filter(l => l.action_type === 'workflow_executed').length || 0
-      };
-
-      setStats(stats);
+      setStats({
+        emails_drafted: emailsDrafted || 0,
+        emails_sent: emailsSent || 0,
+        status_changes: statusChanges || 0,
+        workflows_executed: workflowsExecuted || 0
+      });
     } catch (error) {
       console.error('Error fetching automation data:', error);
     } finally {
