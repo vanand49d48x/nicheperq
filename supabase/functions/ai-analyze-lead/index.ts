@@ -75,6 +75,14 @@ serve(async (req) => {
       .order('created_at', { ascending: false })
       .limit(5);
 
+    // Fetch recent reviews
+    const { data: reviews } = await supabaseClient
+      .from('lead_reviews')
+      .select('review_text, rating, author_name, review_date')
+      .eq('lead_id', lead_id)
+      .order('review_date', { ascending: false })
+      .limit(10);
+
     // Build context for AI
     const context = `
 Lead Information:
@@ -92,13 +100,16 @@ ${notes?.map(n => `- ${n.note_text} (${new Date(n.created_at).toLocaleDateString
 
 Email History (${emails?.length || 0}):
 ${emails?.map(e => `- ${e.subject} - ${e.status} (${new Date(e.created_at).toLocaleDateString()})`).join('\n') || 'No emails sent'}
+
+Customer Reviews (${reviews?.length || 0}):
+${reviews?.map(r => `- ${r.rating ? `${r.rating}★` : 'No rating'} by ${r.author_name || 'Anonymous'}: "${r.review_text}" ${r.review_date ? `(${new Date(r.review_date).toLocaleDateString()})` : ''}`).join('\n') || 'No reviews available'}
 `;
 
     const systemPrompt = `You are an AI sales intelligence assistant analyzing B2B leads for a CRM system.
 
 Analyze the lead information and provide scores from 0-100 for each metric:
 
-1. Quality Score (0-100): Overall lead quality based on business data, rating, reviews
+1. Quality Score (0-100): Overall lead quality based on business data, rating, reviews, and customer feedback
 2. Intent Score (0-100): Likelihood they're interested based on status, activity, responses
 3. Closing Probability (0-100): Likelihood of successfully closing this lead
 4. Risk Score (0-100): Risk of losing this lead (100 = very high risk)
@@ -111,10 +122,13 @@ Also provide:
 
 Consider:
 - High ratings (4.5+) and many reviews = higher quality
+- Review sentiment and content = insight into customer satisfaction and pain points
 - Recent activity = higher intent
 - Long time since contact = higher risk
 - Status "new" or "attempted" with no follow-up = needs action
-- Status "warm" or "qualified" = high potential`;
+- Status "warm" or "qualified" = high potential
+- Negative review patterns = potential concerns to address
+- Positive review themes = strengths to emphasize in outreach`;
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {

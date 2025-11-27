@@ -564,6 +564,47 @@ export type Database = {
           },
         ]
       }
+      lead_reviews: {
+        Row: {
+          author_name: string | null
+          created_at: string | null
+          id: string
+          lead_id: string
+          rating: number | null
+          review_date: string | null
+          review_text: string
+          user_id: string
+        }
+        Insert: {
+          author_name?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id: string
+          rating?: number | null
+          review_date?: string | null
+          review_text: string
+          user_id: string
+        }
+        Update: {
+          author_name?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string
+          rating?: number | null
+          review_date?: string | null
+          review_text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_reviews_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           address: string | null
