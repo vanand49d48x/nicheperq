@@ -43,7 +43,10 @@ export function AppSidebar() {
   const [userEmail, setUserEmail] = useState<string>("");
   const [userInitials, setUserInitials] = useState<string>("U");
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [userRole, setUserRole] = useState<string>("free");
+  const [userRole, setUserRole] = useState<string>(() => {
+    // Load cached role from sessionStorage to prevent flicker
+    return sessionStorage.getItem('userRole') || "free";
+  });
   const [newLeadsCount, setNewLeadsCount] = useState<number>(0);
   const collapsed = state === "collapsed";
 
@@ -56,8 +59,12 @@ export function AppSidebar() {
         
         // Check if user is admin and get role
         const { data: roleData } = await supabase.rpc('get_user_role', { user_id: user.id });
+        const role = roleData || 'free';
         setIsAdmin(roleData === 'admin');
-        setUserRole(roleData || 'free');
+        setUserRole(role);
+        
+        // Cache role in sessionStorage to prevent flicker on navigation
+        sessionStorage.setItem('userRole', role);
 
         // Fetch count of new leads
         const { count } = await supabase
