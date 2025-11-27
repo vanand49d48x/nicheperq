@@ -356,78 +356,50 @@ const CRM = () => {
             onClearFilter={() => setStatusFilter(null)}
           />
         ) : view === "automation" ? (
-          hasAiAccess ? (
-            <AIAutomationPanel />
-          ) : (
-            <FeatureGate feature="ai"><div /></FeatureGate>
-          )
+          <AIAutomationPanel />
         ) : view === "workflows" ? (
-          hasAiAccess ? (
-            <WorkflowManager
-              onCreateNew={() => {
-                setEditingWorkflowId(undefined);
-                updateView('workflow-editor');
-              }}
-              onEditWorkflow={(id) => {
-                setEditingWorkflowId(id);
-                updateView('workflow-editor');
-              }}
-              refreshTrigger={workflowRefreshTrigger}
-            />
-          ) : (
-            <FeatureGate feature="ai"><div /></FeatureGate>
-          )
+          <WorkflowManager
+            onCreateNew={() => {
+              setEditingWorkflowId(undefined);
+              updateView('workflow-editor');
+            }}
+            onEditWorkflow={(id) => {
+              setEditingWorkflowId(id);
+              updateView('workflow-editor');
+            }}
+            refreshTrigger={workflowRefreshTrigger}
+          />
         ) : view === "insights" ? (
-          hasAiAccess ? (
-            <AIInsights />
-          ) : (
-            <FeatureGate feature="ai"><div /></FeatureGate>
-          )
+          <AIInsights />
         ) : view === "analytics" ? (
-          hasAiAccess ? (
-            <PipelineAnalytics />
-          ) : (
-            <FeatureGate feature="ai"><div /></FeatureGate>
-          )
+          <PipelineAnalytics />
         ) : view === "orchestration" ? (
-          hasAiAccess ? (
-            <OrchestrationSettings />
-          ) : (
-            <FeatureGate feature="ai"><div /></FeatureGate>
-          )
+          <OrchestrationSettings />
         ) : view === "visual-workflows" ? (
-          hasAiAccess ? (
-            <WorkflowManager
-              onCreateNew={() => {
-                setEditingWorkflowId(undefined);
-                updateView('workflow-editor');
-              }}
-              onEditWorkflow={(id) => {
-                setEditingWorkflowId(id);
-                updateView('workflow-editor');
-              }}
-              refreshTrigger={workflowRefreshTrigger}
-            />
-          ) : (
-            <FeatureGate feature="ai"><div /></FeatureGate>
-          )
+          <WorkflowManager
+            onCreateNew={() => {
+              setEditingWorkflowId(undefined);
+              updateView('workflow-editor');
+            }}
+            onEditWorkflow={(id) => {
+              setEditingWorkflowId(id);
+              updateView('workflow-editor');
+            }}
+            refreshTrigger={workflowRefreshTrigger}
+          />
         ) : view === "workflow-editor" ? (
-          hasAiAccess ? (
-            <VisualWorkflowBuilder
-              workflowId={editingWorkflowId}
-              onBack={() => {
-                setEditingWorkflowId(undefined);
-                updateView('visual-workflows');
-              }}
-              onSaved={() => {
-                setWorkflowRefreshTrigger(prev => prev + 1);
-                setEditingWorkflowId(undefined);
-                updateView('visual-workflows');
-              }}
-            />
-          ) : (
-            <FeatureGate feature="ai"><div /></FeatureGate>
-          )
+          <VisualWorkflowBuilder
+            workflowId={editingWorkflowId}
+            onBack={() => {
+              setEditingWorkflowId(undefined);
+              updateView('workflows');
+            }}
+            onSaved={() => {
+              setWorkflowRefreshTrigger(prev => prev + 1);
+              setEditingWorkflowId(undefined);
+              updateView('workflows');
+            }}
+          />
         ) : (
           <div className="grid gap-4">
             {leads.map(lead => (
