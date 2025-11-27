@@ -40,8 +40,12 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
-  const [userEmail, setUserEmail] = useState<string>("");
-  const [userInitials, setUserInitials] = useState<string>("U");
+  const [userEmail, setUserEmail] = useState<string>(() => {
+    return sessionStorage.getItem('userEmail') || "";
+  });
+  const [userInitials, setUserInitials] = useState<string>(() => {
+    return sessionStorage.getItem('userInitials') || "U";
+  });
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<string>(() => {
     // Load cached role from sessionStorage to prevent flicker
@@ -54,8 +58,14 @@ export function AppSidebar() {
     const loadUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
+        const initials = user.email.charAt(0).toUpperCase();
+        
         setUserEmail(user.email);
-        setUserInitials(user.email.charAt(0).toUpperCase());
+        setUserInitials(initials);
+        
+        // Cache email and initials to prevent flicker on navigation
+        sessionStorage.setItem('userEmail', user.email);
+        sessionStorage.setItem('userInitials', initials);
         
         // Check if user is admin and get role
         const { data: roleData } = await supabase.rpc('get_user_role', { user_id: user.id });
