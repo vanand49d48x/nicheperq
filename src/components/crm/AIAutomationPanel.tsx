@@ -35,8 +35,27 @@ export const AIAutomationPanel = ({ cachedData, onRefresh }: AIAutomationPanelPr
   });
   const [isLoading, setIsLoading] = useState(!cachedData);
 
+  // Component mount/unmount tracking
   useEffect(() => {
+    console.log('[AIAutomationPanel] Component mounted', {
+      hasCachedData: !!cachedData,
+      timestamp: new Date().toISOString()
+    });
+    return () => {
+      console.log('[AIAutomationPanel] Component unmounting');
+    };
+  }, []);
+
+  // Track prop changes
+  useEffect(() => {
+    console.log('[AIAutomationPanel] cachedData prop changed', {
+      hasCachedData: !!cachedData,
+      logsCount: cachedData?.logs?.length || 0,
+      timestamp: new Date().toISOString()
+    });
+    
     if (cachedData) {
+      console.log('[AIAutomationPanel] Setting state from cachedData');
       setLogs(cachedData.logs);
       setStats(cachedData.stats);
       setIsLoading(false);
