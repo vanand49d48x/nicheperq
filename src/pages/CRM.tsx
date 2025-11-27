@@ -108,33 +108,44 @@ const CRM = () => {
         return;
       }
 
-      console.log('[CRM] Executing 5 parallel queries for automation data');
+      console.log('[CRM] Executing parallel queries for automation data');
       
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Query timeout after 10 seconds')), 10000)
-      );
-      
-      const queriesPromise = Promise.all([
-        supabase.from('ai_automation_logs').select('*, leads(business_name)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
-        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'email_drafted').gte('created_at', weekAgo),
-        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'email_sent').gte('created_at', weekAgo),
-        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'status_changed').gte('created_at', weekAgo),
-        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'workflow_executed').gte('created_at', weekAgo)
+      // Simplified queries without expensive joins
+      const results = await Promise.all([
+        // Get recent logs without join - faster
+        supabase.from('ai_automation_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(10),
+        // Count stats - these are fast head requests
+        supabase.from('ai_automation_logs')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('action_type', 'email_drafted')
+          .gte('created_at', weekAgo),
+        supabase.from('ai_automation_logs')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('action_type', 'email_sent')
+          .gte('created_at', weekAgo),
+        supabase.from('ai_automation_logs')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('action_type', 'status_changed')
+          .gte('created_at', weekAgo),
+        supabase.from('ai_automation_logs')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('action_type', 'workflow_executed')
+          .gte('created_at', weekAgo)
       ]);
       
-      const results = await Promise.race([queriesPromise, timeoutPromise]) as any[];
-      
       console.log('[CRM] All queries returned', { 
-        results: results.map((r: any, i: number) => ({ 
-          index: i, 
-          hasError: !!r.error, 
-          error: r.error?.message,
-          dataLength: Array.isArray(r.data) ? r.data.length : 'N/A',
-          count: r.count 
-        }))
+        logsCount: results[0].data?.length || 0,
+        hasErrors: results.some(r => !!r.error)
       });
       
       const [{ data: logsData, error: logsError }, ...statsResults] = results;
