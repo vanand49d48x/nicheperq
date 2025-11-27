@@ -16,7 +16,19 @@ interface Insight {
 }
 
 export const AIInsights = () => {
-  const [insights, setInsights] = useState<Insight[]>([]);
+  // Load insights from cache immediately for instant display
+  const [insights, setInsights] = useState<Insight[]>(() => {
+    const cached = localStorage.getItem('ai_insights');
+    if (cached) {
+      try {
+        const { insights: cachedInsights } = JSON.parse(cached);
+        return cachedInsights || [];
+      } catch (e) {
+        console.error('Error parsing cached insights:', e);
+      }
+    }
+    return [];
+  });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -30,10 +42,12 @@ export const AIInsights = () => {
     };
   }, []);
 
-  // Load persisted insights on mount
+  // Check if we need to refresh insights in background
   useEffect(() => {
     console.log('[AIInsights] Loading insights on mount');
     loadInsights();
+    // Only run on mount - loadInsights reads from localStorage
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadInsights = async () => {
@@ -49,17 +63,17 @@ export const AIInsights = () => {
           isValid: age < 3600000
         });
         
-        // Cache valid for 1 hour
+        // If cache is valid (< 1 hour), don't regenerate
         if (age < 3600000) {
           console.log('[AIInsights] Using cached insights');
-          setInsights(cachedInsights);
+          // Insights already loaded from initial state
           return;
         }
-        console.log('[AIInsights] Cache expired, generating new insights');
+        console.log('[AIInsights] Cache expired, generating new insights in background');
       } else {
         console.log('[AIInsights] No cached insights, generating new');
       }
-      // Auto-generate if no valid cache
+      // Auto-generate if no valid cache (but don't block UI)
       await generateInsights();
     } catch (error) {
       console.error('[AIInsights] Error loading insights:', error);

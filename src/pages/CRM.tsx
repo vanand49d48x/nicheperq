@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useUserRole } from "@/contexts/UserRoleContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -48,8 +48,23 @@ interface Lead {
 }
 
 const CRM = () => {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Load leads from sessionStorage for instant display
+  const [leads, setLeads] = useState<Lead[]>(() => {
+    const cached = sessionStorage.getItem('crm_leads_data');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {
+        console.error('Error parsing cached leads:', e);
+      }
+    }
+    return [];
+  });
+  // Only show loading if we don't have cached leads
+  const [isLoading, setIsLoading] = useState(() => {
+    const cached = sessionStorage.getItem('crm_leads_data');
+    return !cached;
+  });
   const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState<"kanban" | "list" | "automation" | "workflows" | "insights" | "analytics" | "orchestration" | "visual-workflows" | "workflow-editor">(
     (searchParams.get('view') as any) || "kanban"
@@ -58,19 +73,22 @@ const CRM = () => {
   const [workflowRefreshTrigger, setWorkflowRefreshTrigger] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   
+  // Track if initial data fetch has occurred
+  const hasFetchedRef = useRef(false);
+  
   // Use centralized user role context
   const { hasAiAccess } = useUserRole();
   
   // Cache AI tab data with localStorage persistence
+  // Load ANY cached data immediately for instant display (even if stale), then refresh in background
   const [automationData, setAutomationData] = useState<any>(() => {
     const cached = localStorage.getItem('crm_automation_data');
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        // Check if cache is less than 5 minutes old
-        if (Date.now() - parsed.timestamp < 5 * 60 * 1000) {
-          return parsed.data;
-        }
+        // Return cached data regardless of age for instant display
+        // Background refresh will update if needed
+        return parsed.data;
       } catch (e) {
         console.error('Error parsing cached automation data:', e);
       }
@@ -83,10 +101,8 @@ const CRM = () => {
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        // Check if cache is less than 5 minutes old
-        if (Date.now() - parsed.timestamp < 5 * 60 * 1000) {
-          return parsed.data;
-        }
+        // Return cached data regardless of age for instant display
+        return parsed.data;
       } catch (e) {
         console.error('Error parsing cached workflows data:', e);
       }
@@ -96,35 +112,65 @@ const CRM = () => {
   
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchLeads();
-  }, []);
+  // Helper to check if cache is stale (older than 2 minutes)
+  const isCacheStale = (cacheKey: string): boolean => {
+    const cached = localStorage.getItem(cacheKey);
+    if (!cached) return true;
+    try {
+      const parsed = JSON.parse(cached);
+      return Date.now() - parsed.timestamp > 2 * 60 * 1000;
+    } catch { return true; }
+  };
 
-  // Prefetch AI data when switching to AI tabs
+  // Prefetch ALL data on mount - leads + AI data in parallel for faster tab switching
   useEffect(() => {
-    console.log('[CRM] AI tab data prefetch effect triggered', {
-      view,
-      hasAiAccess,
-      hasAutomationData: !!automationData,
-      hasWorkflowsData: !!workflowsData,
-      timestamp: new Date().toISOString()
-    });
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
     
-    if (!hasAiAccess) {
-      console.log('[CRM] No AI access, skipping data fetch');
-      return;
-    }
+    const prefetchAllData = async () => {
+      console.log('[CRM] Prefetching all data on mount', { hasAiAccess, timestamp: new Date().toISOString() });
+      
+      // Start all fetches in parallel
+      const fetchPromises: Promise<void>[] = [fetchLeads()];
+      
+      // Prefetch AI data if user has access (even if not on those tabs yet)
+      if (hasAiAccess) {
+        // Fetch if no cached data OR if cache is stale
+        if (!automationData || isCacheStale('crm_automation_data')) {
+          fetchPromises.push(fetchAutomationData());
+        }
+        if (!workflowsData || isCacheStale('crm_workflows_data')) {
+          fetchPromises.push(fetchWorkflowsData());
+        }
+      }
+      
+      // Wait for all fetches to complete
+      await Promise.allSettled(fetchPromises);
+      console.log('[CRM] All prefetch complete');
+    };
+    
+    prefetchAllData();
+    // Intentionally only depend on hasAiAccess - fetch functions read from closure
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasAiAccess]);
 
-    if (view === "automation" && !automationData) {
-      console.log('[CRM] Fetching automation data for automation tab');
+  // Background refresh when switching to AI tabs (if data is stale)
+  useEffect(() => {
+    if (!hasAiAccess) return;
+
+    // Background refresh when viewing these tabs
+    if (view === "automation" && automationData && isCacheStale('crm_automation_data')) {
+      console.log('[CRM] Background refreshing automation data');
       fetchAutomationData();
     }
 
-    if ((view === "workflows" || view === "visual-workflows") && !workflowsData) {
-      console.log('[CRM] Fetching workflows data for workflows tab');
+    if ((view === "workflows" || view === "visual-workflows") && workflowsData && isCacheStale('crm_workflows_data')) {
+      console.log('[CRM] Background refreshing workflows data');
       fetchWorkflowsData();
     }
-  }, [view, hasAiAccess, automationData, workflowsData]);
+    // Intentionally only depend on view and hasAiAccess - fetch functions read from closure
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, hasAiAccess]);
 
   const fetchAutomationData = async () => {
     console.log('[CRM] fetchAutomationData START', { timestamp: new Date().toISOString() });
@@ -330,6 +376,8 @@ const CRM = () => {
 
       if (error) throw error;
       setLeads(data || []);
+      // Cache leads in sessionStorage for instant display on navigation
+      sessionStorage.setItem('crm_leads_data', JSON.stringify(data || []));
     } catch (error) {
       console.error('Error fetching leads:', error);
       toast({
