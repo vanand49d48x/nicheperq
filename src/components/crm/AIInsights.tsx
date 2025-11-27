@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, TrendingUp, Clock, AlertCircle } from "lucide-react";
 
@@ -129,9 +130,19 @@ export const AIInsights = () => {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <Sparkles className="h-12 w-12 mx-auto mb-2 opacity-20 animate-pulse" />
-          <p>Analyzing your pipeline with AI...</p>
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-start gap-3 p-3 rounded-lg border">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-24" />
+                </div>
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-full" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : insights.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
