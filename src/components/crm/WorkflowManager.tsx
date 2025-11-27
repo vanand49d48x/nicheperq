@@ -46,15 +46,17 @@ interface Workflow {
 }
 
 interface WorkflowManagerProps {
+  cachedData?: Workflow[] | null;
+  onRefresh: () => void;
   onCreateNew: () => void;
   onEditWorkflow: (workflowId: string) => void;
   refreshTrigger?: number;
 }
 
-export default function WorkflowManager({ onCreateNew, onEditWorkflow, refreshTrigger }: WorkflowManagerProps) {
+export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, onEditWorkflow, refreshTrigger }: WorkflowManagerProps) {
   const { toast } = useToast();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cachedData);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workflowToDelete, setWorkflowToDelete] = useState<string | null>(null);
   const [testDialogOpen, setTestDialogOpen] = useState(false);

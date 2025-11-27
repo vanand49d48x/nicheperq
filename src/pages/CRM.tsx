@@ -57,11 +57,29 @@ const CRM = () => {
   const [workflowRefreshTrigger, setWorkflowRefreshTrigger] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [hasAiAccess, setHasAiAccess] = useState(false);
+  
+  // Cache AI tab data to prevent refetching on navigation
+  const [automationData, setAutomationData] = useState<any>(null);
+  const [workflowsData, setWorkflowsData] = useState<any>(null);
+  
   const { toast } = useToast();
 
   useEffect(() => {
     checkAiAccess();
+    fetchLeads();
   }, []);
+
+  // Prefetch AI data when switching to AI tabs
+  useEffect(() => {
+    if (hasAiAccess) {
+      if (view === 'automation' && !automationData) {
+        fetchAutomationData();
+      }
+      if ((view === 'workflows' || view === 'visual-workflows' || view === 'workflow-editor')) {
+        fetchWorkflowsData();
+      }
+    }
+  }, [view, hasAiAccess]);
 
   const checkAiAccess = async () => {
     try {
@@ -79,6 +97,50 @@ const CRM = () => {
       }
     } catch (error) {
       console.error('Error checking AI access:', error);
+    }
+  };
+
+  const fetchAutomationData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const [{ data: logsData }, ...statsResults] = await Promise.all([
+        supabase.from('ai_automation_logs').select('*, leads(business_name)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
+        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'email_drafted').gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'email_sent').gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'status_changed').gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'workflow_executed').gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      ]);
+
+      setAutomationData({
+        logs: logsData || [],
+        stats: {
+          emails_drafted: statsResults[0].count || 0,
+          emails_sent: statsResults[1].count || 0,
+          status_changes: statsResults[2].count || 0,
+          workflows_executed: statsResults[3].count || 0
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching automation data:', error);
+    }
+  };
+
+  const fetchWorkflowsData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('ai_workflows')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      setWorkflowsData(data || []);
+    } catch (error) {
+      console.error('Error fetching workflows:', error);
     }
   };
 
@@ -101,9 +163,6 @@ const CRM = () => {
     do_not_contact: leads.filter(l => l.contact_status === 'do_not_contact').length,
   };
 
-  useEffect(() => {
-    fetchLeads();
-  }, []);
 
   const highlightedLeadId = searchParams.get('lead');
 

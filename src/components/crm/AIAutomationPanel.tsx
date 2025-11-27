@@ -34,7 +34,12 @@ interface AutomationLog {
   };
 }
 
-export const AIAutomationPanel = () => {
+interface AIAutomationPanelProps {
+  cachedData?: { logs: AutomationLog[]; stats: any } | null;
+  onRefresh: () => void;
+}
+
+export const AIAutomationPanel = ({ cachedData, onRefresh }: AIAutomationPanelProps) => {
   const [logs, setLogs] = useState<AutomationLog[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [stats, setStats] = useState({
@@ -43,7 +48,7 @@ export const AIAutomationPanel = () => {
     status_changes: 0,
     workflows_executed: 0
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!cachedData);
 
   useEffect(() => {
     let mounted = true;
@@ -136,7 +141,8 @@ export const AIAutomationPanel = () => {
         setIsLoading(false);
       }
     }
-  };
+  }, [cachedData]);
+
 
   const getActionIcon = (actionType: string) => {
     switch (actionType) {
@@ -242,7 +248,7 @@ export const AIAutomationPanel = () => {
               <Settings className="h-4 w-4" />
               Settings
             </Button>
-            <Button variant="outline" size="sm" onClick={fetchAutomationData}>
+            <Button variant="outline" size="sm" onClick={onRefresh}>
               Refresh
             </Button>
           </div>
