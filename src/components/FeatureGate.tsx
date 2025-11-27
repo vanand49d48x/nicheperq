@@ -49,7 +49,7 @@ export const FeatureGate = ({ feature, children, fallback }: FeatureGateProps) =
         .from('user_roles')
         .select('role, has_crm_access, has_ai_access')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching user role:', error);
