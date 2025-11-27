@@ -123,6 +123,14 @@ const CRM = () => {
     } catch { return true; }
   };
 
+  // Sync view state with URL parameters
+  useEffect(() => {
+    const viewParam = searchParams.get('view');
+    if (viewParam && viewParam !== view) {
+      setView(viewParam as any);
+    }
+  }, [searchParams, view]);
+
   // Prefetch ALL data on mount - leads + AI data in parallel for faster tab switching
   useEffect(() => {
     if (hasFetchedRef.current) return;
