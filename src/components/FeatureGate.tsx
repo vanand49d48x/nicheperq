@@ -1,20 +1,10 @@
-import { ReactNode, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { ReactNode } from "react";
+import { useUserRole } from "@/contexts/UserRoleContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Lock, Zap, Crown } from "lucide-react";
 import { Link } from "react-router-dom";
-
-type RoleAccess = {
-  userId: string;
-  role: string;
-  has_crm_access: boolean;
-  has_ai_access: boolean;
-};
-
-let cachedRoleAccess: RoleAccess | null = null;
-let roleAccessPromise: Promise<RoleAccess | null> | null = null;
 
 interface FeatureGateProps {
   feature: "crm" | "ai";
@@ -23,87 +13,9 @@ interface FeatureGateProps {
 }
 
 export const FeatureGate = ({ feature, children, fallback }: FeatureGateProps) => {
-  const [hasAccess, setHasAccess] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [userRole, setUserRole] = useState<string>("free");
+  const { role, hasAiAccess, hasCrmAccess, isLoading } = useUserRole();
 
-  useEffect(() => {
-    checkAccess();
-  }, [feature]);
-
-  const getCachedRoleAccess = async (): Promise<RoleAccess | null> => {
-    if (cachedRoleAccess) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user && cachedRoleAccess.userId === user.id) {
-        return cachedRoleAccess;
-      }
-    }
-
-    if (roleAccessPromise) return roleAccessPromise;
-
-    roleAccessPromise = (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-
-      const { data: roleData, error } = await supabase
-        .from('user_roles')
-        .select('role, has_crm_access, has_ai_access')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching user role:', error);
-        return null;
-      }
-
-      if (!roleData) return null;
-
-      cachedRoleAccess = {
-        userId: user.id,
-        role: roleData.role,
-        has_crm_access: roleData.has_crm_access || false,
-        has_ai_access: roleData.has_ai_access || false
-      };
-
-      return cachedRoleAccess;
-    })();
-
-    try {
-      return await roleAccessPromise;
-    } finally {
-      roleAccessPromise = null;
-    }
-  };
-
-  const checkAccess = async () => {
-    try {
-      setIsLoading(true);
-      const roleData = await getCachedRoleAccess();
-
-      if (!roleData) {
-        setHasAccess(false);
-        return;
-      }
-
-      setUserRole(roleData.role);
-
-      if (roleData.role === 'admin') {
-        setHasAccess(true);
-        return;
-      }
-
-      if (feature === "crm") {
-        setHasAccess(roleData.has_crm_access);
-      } else if (feature === "ai") {
-        setHasAccess(roleData.has_ai_access);
-      }
-    } catch (error) {
-      console.error('Error checking feature access:', error);
-      setHasAccess(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const hasAccess = feature === 'crm' ? hasCrmAccess : hasAiAccess;
 
   if (isLoading) {
     return (
@@ -223,7 +135,7 @@ export const FeatureGate = ({ feature, children, fallback }: FeatureGateProps) =
           </div>
 
           <p className="text-xs text-center text-muted-foreground">
-            Your current plan: <Badge variant="secondary" className="ml-1">{userRole.toUpperCase()}</Badge>
+            Your current plan: <Badge variant="secondary" className="ml-1">{role.toUpperCase()}</Badge>
           </p>
         </CardContent>
       </Card>
