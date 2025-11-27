@@ -71,11 +71,13 @@ const CRM = () => {
 
   // Prefetch AI data when switching to AI tabs
   useEffect(() => {
-    if (hasAiAccess && view === 'automation' && !automationData) {
-      fetchAutomationData();
-    }
-    if (hasAiAccess && (view === 'workflows' || view === 'visual-workflows' || view === 'workflow-editor') && !workflowsData) {
-      fetchWorkflowsData();
+    if (hasAiAccess) {
+      if (view === 'automation' && !automationData) {
+        fetchAutomationData();
+      }
+      if ((view === 'workflows' || view === 'visual-workflows' || view === 'workflow-editor')) {
+        fetchWorkflowsData();
+      }
     }
   }, [view, hasAiAccess]);
 

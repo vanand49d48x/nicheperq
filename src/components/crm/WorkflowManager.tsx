@@ -56,10 +56,9 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
 
   useEffect(() => {
     if (cachedData) {
+      console.log('Using cached workflows:', cachedData.length);
       setWorkflows(cachedData);
       setLoading(false);
-    } else {
-      loadWorkflows();
     }
   }, [cachedData, refreshTrigger]);
 
@@ -82,7 +81,6 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
       
       console.log('Loaded workflows:', data?.length || 0);
       setWorkflows(data || []);
-      onRefresh();
     } catch (error) {
       console.error('Error loading workflows:', error);
       toast({
