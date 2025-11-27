@@ -126,6 +126,19 @@ async function autoEnrollNewLeads(supabase: any) {
         console.error(`Failed to enroll lead ${lead.id}:`, enrollError);
       } else {
         enrolledCount++;
+        
+        // Log the automation action
+        await supabase.from('ai_automation_logs').insert({
+          user_id: lead.user_id,
+          lead_id: lead.id,
+          action_type: 'workflow_enrolled',
+          ai_decision: {
+            workflow_name: matchingWorkflow.name,
+            workflow_id: matchingWorkflow.id,
+            trigger_type: matchingWorkflow.trigger.type
+          },
+          success: true
+        });
       }
     }
   }
@@ -168,6 +181,19 @@ async function processEmailReplies(supabase: any) {
           last_contacted_at: new Date().toISOString()
         })
         .eq('id', leadId);
+        
+      // Log the status change
+      await supabase.from('ai_automation_logs').insert({
+        user_id: userId,
+        lead_id: leadId,
+        action_type: 'status_changed',
+        ai_decision: {
+          old_status: lead.contact_status,
+          new_status: 'in_conversation',
+          reason: 'email_reply_received'
+        },
+        success: true
+      });
     }
 
     // Log interaction
@@ -337,7 +363,7 @@ async function autoAnalyzeLeads(supabase: any) {
   for (const lead of leadsToAnalyze) {
     try {
       // Call AI analysis function
-      await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/ai-analyze-lead`, {
+      const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/ai-analyze-lead`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
@@ -345,8 +371,31 @@ async function autoAnalyzeLeads(supabase: any) {
         },
         body: JSON.stringify({ leadId: lead.id, userId: lead.user_id }),
       });
+      
+      const success = response.ok;
+      
+      // Log the AI analysis action
+      await supabase.from('ai_automation_logs').insert({
+        user_id: lead.user_id,
+        lead_id: lead.id,
+        action_type: 'lead_analyzed',
+        ai_decision: {
+          business_name: lead.business_name,
+          niche: lead.niche
+        },
+        success
+      });
     } catch (error) {
       console.error(`Failed to analyze lead ${lead.id}:`, error);
+      
+      // Log the failure
+      await supabase.from('ai_automation_logs').insert({
+        user_id: lead.user_id,
+        lead_id: lead.id,
+        action_type: 'lead_analyzed',
+        ai_decision: { error: error instanceof Error ? error.message : 'Unknown error' },
+        success: false
+      });
     }
   }
 }
