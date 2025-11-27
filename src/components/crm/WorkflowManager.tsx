@@ -56,16 +56,14 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow, refreshTr
     loadWorkflows();
   }, [refreshTrigger]);
 
-  // Reload workflows when component becomes visible
-  useEffect(() => {
-    loadWorkflows();
-  }, []);
-
   const loadWorkflows = async () => {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('ai_workflows')
