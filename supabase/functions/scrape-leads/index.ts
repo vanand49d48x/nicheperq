@@ -168,8 +168,8 @@ serve(async (req) => {
     // Build the search query for Outscraper
     const query = `${niche} in ${city}`;
     
-    // Call Outscraper Google Maps API
-    const outscraperUrl = `https://api.app.outscraper.com/maps/search-v3?query=${encodeURIComponent(query)}&limit=50&language=en&region=us&async=false`;
+    // Call Outscraper Google Maps API with reviews enabled
+    const outscraperUrl = `https://api.app.outscraper.com/maps/search-v3?query=${encodeURIComponent(query)}&limit=50&language=en&region=us&reviewsLimit=5&async=false`;
     
     console.log('Calling Outscraper API:', outscraperUrl);
     
@@ -233,6 +233,16 @@ serve(async (req) => {
       results = outscraperData.results;
     }
 
+    // Array to store reviews for batch insert
+    const reviewsToSave: Array<{
+      lead_id: string;
+      user_id: string;
+      review_text: string;
+      rating: number | null;
+      author_name: string | null;
+      review_date: string | null;
+    }> = [];
+
     for (const business of results) {
       const fullAddress: string | undefined = business.full_address || business.address;
       const addressParts = fullAddress ? String(fullAddress).split(',') : [];
@@ -252,7 +262,7 @@ serve(async (req) => {
       const latitude = business.latitude ?? business.lat ?? null;
       const longitude = business.longitude ?? business.lng ?? business.lon ?? null;
 
-      leads.push({
+      const leadData = {
         niche,
         business_name: String(name),
         address: business.street || fullAddress || null,
@@ -267,7 +277,27 @@ serve(async (req) => {
         longitude: longitude != null ? parseFloat(String(longitude)) : null,
         user_id: userId,
         search_id: search_id || null,
-      });
+      };
+
+      leads.push(leadData);
+
+      // Extract reviews if available (typically in business.reviews_data or business.reviews_list)
+      const reviewsList = business.reviews_data || business.reviews_list || business.review_details || [];
+      if (Array.isArray(reviewsList) && reviewsList.length > 0) {
+        // Take top 5 reviews for each business
+        const topReviews = reviewsList.slice(0, 5);
+        for (const review of topReviews) {
+          // We'll store these temporarily and associate them after leads are inserted
+          reviewsToSave.push({
+            lead_id: '', // Will be filled after lead insertion
+            user_id: userId,
+            review_text: review.text || review.review_text || review.comment || '',
+            rating: review.rating ? parseFloat(String(review.rating)) : null,
+            author_name: review.author_name || review.author || review.reviewer_name || null,
+            review_date: review.review_datetime || review.date || review.review_date || null,
+          });
+        }
+      }
     }
 
     console.log(`Processed ${leads.length} leads`);
@@ -322,6 +352,56 @@ serve(async (req) => {
     }
 
     console.log(`Successfully saved ${savedLeads?.length || 0} leads to database`);
+    
+    // Save reviews for the leads (only if not free tier preview)
+    if (!isFreeUser && reviewsToSave.length > 0 && savedLeads) {
+      // Create a mapping of business names to lead IDs
+      const leadIdMap = new Map<string, string>();
+      savedLeads.forEach(lead => {
+        leadIdMap.set(lead.business_name, lead.id);
+      });
+
+      // Associate reviews with their lead IDs
+      const reviewsWithLeadIds = [];
+      let reviewIndex = 0;
+      for (const lead of leads) {
+        const leadId = leadIdMap.get(lead.business_name);
+        if (leadId) {
+          // Get reviews for this lead
+          const reviewsList = results[leads.indexOf(lead)]?.reviews_data || 
+                            results[leads.indexOf(lead)]?.reviews_list || 
+                            results[leads.indexOf(lead)]?.review_details || [];
+          const topReviews = Array.isArray(reviewsList) ? reviewsList.slice(0, 5) : [];
+          
+          for (const review of topReviews) {
+            if (review.text || review.review_text || review.comment) {
+              reviewsWithLeadIds.push({
+                lead_id: leadId,
+                user_id: userId,
+                review_text: review.text || review.review_text || review.comment || '',
+                rating: review.rating ? parseFloat(String(review.rating)) : null,
+                author_name: review.author_name || review.author || review.reviewer_name || null,
+                review_date: review.review_datetime || review.date || review.review_date || null,
+              });
+            }
+          }
+        }
+      }
+
+      // Batch insert reviews
+      if (reviewsWithLeadIds.length > 0) {
+        const { error: reviewsError } = await supabaseService
+          .from('lead_reviews')
+          .insert(reviewsWithLeadIds);
+        
+        if (reviewsError) {
+          console.error('Failed to save reviews:', reviewsError);
+          // Don't fail the request if reviews fail to save
+        } else {
+          console.log(`Successfully saved ${reviewsWithLeadIds.length} reviews to database`);
+        }
+      }
+    }
     
     // FREE TIER: Mask sensitive data in response
     let responseLeads = savedLeads;

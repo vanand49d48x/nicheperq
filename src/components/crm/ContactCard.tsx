@@ -56,10 +56,17 @@ export const ContactCard = ({ lead: initialLead, onStatusChange, onRefresh, isHi
   const [showEmailComposer, setShowEmailComposer] = useState(false);
   const [lead, setLead] = useState(initialLead);
 
-  // Sync with parent lead updates
+  // Sync with parent lead updates AND fetch fresh data when expanded
   useEffect(() => {
     setLead(initialLead);
   }, [initialLead]);
+
+  // Fetch fresh lead data when card is expanded
+  useEffect(() => {
+    if (isExpanded) {
+      handleLocalRefresh();
+    }
+  }, [isExpanded]);
 
   const handleLocalRefresh = async () => {
     // Fetch just this lead's updated data without triggering parent refresh
