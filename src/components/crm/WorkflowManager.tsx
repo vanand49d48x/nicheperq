@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Play, Pause, Edit, Trash2, Plus, Sparkles, TestTube } from "lucide-react";
@@ -323,11 +324,70 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <p className="text-center text-muted-foreground">Loading workflows...</p>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        {/* Info card skeleton */}
+        <Card className="bg-accent/30 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <Skeleton className="h-5 w-5 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-3 w-3/4" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Templates skeleton */}
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="border rounded-lg p-4">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                  <Skeleton className="h-9 w-24" />
+                </div>
+                <Skeleton className="h-3 w-32" />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Your workflows skeleton */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-9 w-32" />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {[1, 2].map((i) => (
+              <div key={i} className="border rounded-lg p-4 flex items-center justify-between">
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-5 w-16" />
+                  </div>
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-6 w-12" />
+                  <Skeleton className="h-8 w-8 rounded" />
+                  <Skeleton className="h-8 w-8 rounded" />
+                  <Skeleton className="h-8 w-8 rounded" />
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
