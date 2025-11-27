@@ -356,11 +356,13 @@ const CRM = () => {
             onClearFilter={() => setStatusFilter(null)}
           />
         ) : view === "automation" ? (
-          <FeatureGate feature="ai">
+          hasAiAccess ? (
             <AIAutomationPanel />
-          </FeatureGate>
+          ) : (
+            <FeatureGate feature="ai"><div /></FeatureGate>
+          )
         ) : view === "workflows" ? (
-          <FeatureGate feature="ai">
+          hasAiAccess ? (
             <WorkflowManager
               onCreateNew={() => {
                 setEditingWorkflowId(undefined);
@@ -372,21 +374,29 @@ const CRM = () => {
               }}
               refreshTrigger={workflowRefreshTrigger}
             />
-          </FeatureGate>
+          ) : (
+            <FeatureGate feature="ai"><div /></FeatureGate>
+          )
         ) : view === "insights" ? (
-          <FeatureGate feature="ai">
+          hasAiAccess ? (
             <AIInsights />
-          </FeatureGate>
+          ) : (
+            <FeatureGate feature="ai"><div /></FeatureGate>
+          )
         ) : view === "analytics" ? (
-          <FeatureGate feature="ai">
+          hasAiAccess ? (
             <PipelineAnalytics />
-          </FeatureGate>
+          ) : (
+            <FeatureGate feature="ai"><div /></FeatureGate>
+          )
         ) : view === "orchestration" ? (
-          <FeatureGate feature="ai">
+          hasAiAccess ? (
             <OrchestrationSettings />
-          </FeatureGate>
+          ) : (
+            <FeatureGate feature="ai"><div /></FeatureGate>
+          )
         ) : view === "visual-workflows" ? (
-          <FeatureGate feature="ai">
+          hasAiAccess ? (
             <WorkflowManager
               onCreateNew={() => {
                 setEditingWorkflowId(undefined);
@@ -398,9 +408,11 @@ const CRM = () => {
               }}
               refreshTrigger={workflowRefreshTrigger}
             />
-          </FeatureGate>
+          ) : (
+            <FeatureGate feature="ai"><div /></FeatureGate>
+          )
         ) : view === "workflow-editor" ? (
-          <FeatureGate feature="ai">
+          hasAiAccess ? (
             <VisualWorkflowBuilder
               workflowId={editingWorkflowId}
               onBack={() => {
@@ -413,7 +425,9 @@ const CRM = () => {
                 updateView('visual-workflows');
               }}
             />
-          </FeatureGate>
+          ) : (
+            <FeatureGate feature="ai"><div /></FeatureGate>
+          )
         ) : (
           <div className="grid gap-4">
             {leads.map(lead => (
