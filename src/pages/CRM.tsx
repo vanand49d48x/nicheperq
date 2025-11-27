@@ -415,9 +415,11 @@ const CRM = () => {
             onClearFilter={() => setStatusFilter(null)}
           />
         ) : view === "automation" ? (
-          <AIAutomationPanel onRefresh={fetchAutomationData} />
+          <AIAutomationPanel cachedData={automationData} onRefresh={fetchAutomationData} />
         ) : view === "workflows" ? (
           <WorkflowManager
+            cachedData={workflowsData}
+            onRefresh={fetchWorkflowsData}
             onCreateNew={() => {
               setEditingWorkflowId(undefined);
               updateView('workflow-editor');
@@ -427,7 +429,6 @@ const CRM = () => {
               updateView('workflow-editor');
             }}
             refreshTrigger={workflowRefreshTrigger}
-            onRefresh={fetchWorkflowsData}
           />
         ) : view === "insights" ? (
           <AIInsights />
@@ -437,6 +438,8 @@ const CRM = () => {
           <OrchestrationSettings />
         ) : view === "visual-workflows" ? (
           <WorkflowManager
+            cachedData={workflowsData}
+            onRefresh={fetchWorkflowsData}
             onCreateNew={() => {
               setEditingWorkflowId(undefined);
               updateView('workflow-editor');
@@ -446,7 +449,6 @@ const CRM = () => {
               updateView('workflow-editor');
             }}
             refreshTrigger={workflowRefreshTrigger}
-            onRefresh={fetchWorkflowsData}
           />
         ) : view === "workflow-editor" ? (
           <VisualWorkflowBuilder

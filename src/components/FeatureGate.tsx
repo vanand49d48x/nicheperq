@@ -33,7 +33,10 @@ export const FeatureGate = ({ feature, children, fallback }: FeatureGateProps) =
 
   const getCachedRoleAccess = async (): Promise<RoleAccess | null> => {
     if (cachedRoleAccess) {
-      return cachedRoleAccess;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && cachedRoleAccess.userId === user.id) {
+        return cachedRoleAccess;
+      }
     }
 
     if (roleAccessPromise) return roleAccessPromise;
@@ -72,29 +75,8 @@ export const FeatureGate = ({ feature, children, fallback }: FeatureGateProps) =
     }
   };
 
-  const applyAccess = (roleData: RoleAccess) => {
-    setUserRole(roleData.role);
-
-    if (roleData.role === 'admin') {
-      setHasAccess(true);
-      return;
-    }
-
-    if (feature === "crm") {
-      setHasAccess(roleData.has_crm_access);
-    } else if (feature === "ai") {
-      setHasAccess(roleData.has_ai_access);
-    }
-  };
-
   const checkAccess = async () => {
     try {
-      if (cachedRoleAccess) {
-        applyAccess(cachedRoleAccess);
-        setIsLoading(false);
-        return;
-      }
-
       setIsLoading(true);
       const roleData = await getCachedRoleAccess();
 
@@ -103,7 +85,18 @@ export const FeatureGate = ({ feature, children, fallback }: FeatureGateProps) =
         return;
       }
 
-      applyAccess(roleData);
+      setUserRole(roleData.role);
+
+      if (roleData.role === 'admin') {
+        setHasAccess(true);
+        return;
+      }
+
+      if (feature === "crm") {
+        setHasAccess(roleData.has_crm_access);
+      } else if (feature === "ai") {
+        setHasAccess(roleData.has_ai_access);
+      }
     } catch (error) {
       console.error('Error checking feature access:', error);
       setHasAccess(false);
@@ -150,7 +143,7 @@ export const FeatureGate = ({ feature, children, fallback }: FeatureGateProps) =
             {feature === "crm" ? "CRM Features Locked" : "AI Features Locked"}
           </CardTitle>
           <CardDescription className="text-base mt-2">
-            {feature === "crm"
+            {feature === "crm" 
               ? "Upgrade to ADVANCED or PRO to unlock the full CRM suite"
               : "Upgrade to PRO to unlock AI-powered automation and insights"}
           </CardDescription>
@@ -165,57 +158,73 @@ export const FeatureGate = ({ feature, children, fallback }: FeatureGateProps) =
                 <>
                   <li className="flex items-start gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                    <span className="text-muted-foreground">Advanced pipeline management</span>
+                    <span className="text-sm">Unlimited contacts in CRM</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                    <span className="text-muted-foreground">Team collaboration features</span>
+                    <span className="text-sm">Kanban pipeline view with drag & drop</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                    <span className="text-muted-foreground">Unlimited contacts and notes</span>
+                    <span className="text-sm">Status tracking and follow-up reminders</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
+                    <span className="text-sm">Contact notes and activity timeline</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
+                    <span className="text-sm">Team collaboration (1 member)</span>
                   </li>
                 </>
               ) : (
                 <>
                   <li className="flex items-start gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                    <span className="text-muted-foreground">AI-powered automation</span>
+                    <span className="text-sm">AI lead scoring (hot/warm/cold)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                    <span className="text-muted-foreground">Smart insights and analytics</span>
+                    <span className="text-sm">AI email generator for outreach</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
-                    <span className="text-muted-foreground">Workflow automation tools</span>
+                    <span className="text-sm">AI follow-up templates</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
+                    <span className="text-sm">AI partnership pitch generator</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
+                    <span className="text-sm">Smart alerts for high-quality prospects</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2" />
+                    <span className="text-sm">Auto-enrich missing contact data</span>
                   </li>
                 </>
               )}
             </ul>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 border rounded-lg bg-muted/30">
-              <h5 className="font-semibold mb-2">Current Plan: {userRole?.toUpperCase()}</h5>
-              <p className="text-muted-foreground text-sm">Your current access level</p>
-            </div>
-            <div className="p-4 border rounded-lg bg-primary/5">
-              <h5 className="font-semibold mb-2">Upgrade to Unlock</h5>
-              <p className="text-muted-foreground text-sm">
-                {feature === "crm"
-                  ? "Access advanced CRM automation and team features"
-                  : "Unlock AI-powered automations and insights"}
-              </p>
-            </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link to="/settings" className="flex-1">
+              <Button size="lg" className="w-full gap-2">
+                {feature === "crm" ? <Crown className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
+                Upgrade to {feature === "crm" ? "ADVANCED" : "PRO"}
+              </Button>
+            </Link>
+            <Link to="/pricing" className="flex-1">
+              <Button size="lg" variant="outline" className="w-full">
+                View All Plans
+              </Button>
+            </Link>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button asChild size="lg" className="min-w-[200px]">
-              <Link to="/pricing">Upgrade Plan</Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="min-w-[200px]">
-              <Link to="/contact">Talk to Sales</Link>
-            </Button>
-          </div>
+
+          <p className="text-xs text-center text-muted-foreground">
+            Your current plan: <Badge variant="secondary" className="ml-1">{userRole.toUpperCase()}</Badge>
+          </p>
         </CardContent>
       </Card>
     </div>
