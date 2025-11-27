@@ -18,7 +18,12 @@ interface AutomationLog {
   };
 }
 
-export const AIAutomationPanel = () => {
+interface AIAutomationPanelProps {
+  cachedData?: { logs: AutomationLog[]; stats: any } | null;
+  onRefresh: () => void;
+}
+
+export const AIAutomationPanel = ({ cachedData, onRefresh }: AIAutomationPanelProps) => {
   const [logs, setLogs] = useState<AutomationLog[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [stats, setStats] = useState({
@@ -27,62 +32,16 @@ export const AIAutomationPanel = () => {
     status_changes: 0,
     workflows_executed: 0
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!cachedData);
 
   useEffect(() => {
-    let mounted = true;
-    fetchAutomationData().then(() => {
-      if (!mounted) return;
-    });
-    return () => { mounted = false; };
-  }, []);
-
-  const fetchAutomationData = async () => {
-    try {
-      setIsLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
-
-      // Fetch recent logs and stats in parallel
-      const [
-        { data: logsData },
-        ...statsResults
-      ] = await Promise.all([
-        supabase
-          .from('ai_automation_logs')
-          .select(`
-            *,
-            leads (
-              business_name
-            )
-          `)
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(10),
-        // Stats queries
-        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'email_drafted').gte('created_at', (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString(); })()),
-        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'email_sent').gte('created_at', (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString(); })()),
-        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'status_changed').gte('created_at', (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString(); })()),
-        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'workflow_executed').gte('created_at', (() => { const d = new Date(); d.setDate(d.getDate() - 7); return d.toISOString(); })())
-      ]);
-
-      setLogs(logsData || []);
-
-      setStats({
-        emails_drafted: statsResults[0].count || 0,
-        emails_sent: statsResults[1].count || 0,
-        status_changes: statsResults[2].count || 0,
-        workflows_executed: statsResults[3].count || 0
-      });
-    } catch (error) {
-      console.error('Error fetching automation data:', error);
-    } finally {
+    if (cachedData) {
+      setLogs(cachedData.logs);
+      setStats(cachedData.stats);
       setIsLoading(false);
     }
-  };
+  }, [cachedData]);
+
 
   const getActionIcon = (actionType: string) => {
     switch (actionType) {
@@ -188,7 +147,7 @@ export const AIAutomationPanel = () => {
               <Settings className="h-4 w-4" />
               Settings
             </Button>
-            <Button variant="outline" size="sm" onClick={fetchAutomationData}>
+            <Button variant="outline" size="sm" onClick={onRefresh}>
               Refresh
             </Button>
           </div>

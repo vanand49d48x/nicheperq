@@ -36,15 +36,17 @@ interface Workflow {
 }
 
 interface WorkflowManagerProps {
+  cachedData?: Workflow[] | null;
+  onRefresh: () => void;
   onCreateNew: () => void;
   onEditWorkflow: (workflowId: string) => void;
   refreshTrigger?: number;
 }
 
-export default function WorkflowManager({ onCreateNew, onEditWorkflow, refreshTrigger }: WorkflowManagerProps) {
+export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, onEditWorkflow, refreshTrigger }: WorkflowManagerProps) {
   const { toast } = useToast();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cachedData);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workflowToDelete, setWorkflowToDelete] = useState<string | null>(null);
   const [testDialogOpen, setTestDialogOpen] = useState(false);
@@ -53,12 +55,13 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow, refreshTr
   const [testingWorkflow, setTestingWorkflow] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-    loadWorkflows().then(() => {
-      if (!mounted) return;
-    });
-    return () => { mounted = false; };
-  }, [refreshTrigger]);
+    if (cachedData) {
+      setWorkflows(cachedData);
+      setLoading(false);
+    } else {
+      loadWorkflows();
+    }
+  }, [cachedData, refreshTrigger]);
 
   const loadWorkflows = async () => {
     try {
@@ -79,6 +82,7 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow, refreshTr
       
       console.log('Loaded workflows:', data?.length || 0);
       setWorkflows(data || []);
+      onRefresh();
     } catch (error) {
       console.error('Error loading workflows:', error);
       toast({
