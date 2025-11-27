@@ -73,22 +73,40 @@ const CRM = () => {
 
   // Prefetch AI data when switching to AI tabs
   useEffect(() => {
-    if (!hasAiAccess) return;
+    console.log('[CRM] AI tab data prefetch effect triggered', {
+      view,
+      hasAiAccess,
+      hasAutomationData: !!automationData,
+      hasWorkflowsData: !!workflowsData,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (!hasAiAccess) {
+      console.log('[CRM] No AI access, skipping data fetch');
+      return;
+    }
 
     if (view === "automation" && !automationData) {
+      console.log('[CRM] Fetching automation data for automation tab');
       fetchAutomationData();
     }
 
     if ((view === "workflows" || view === "visual-workflows") && !workflowsData) {
+      console.log('[CRM] Fetching workflows data for workflows tab');
       fetchWorkflowsData();
     }
   }, [view, hasAiAccess, automationData, workflowsData]);
 
   const fetchAutomationData = async () => {
+    console.log('[CRM] fetchAutomationData START', { timestamp: new Date().toISOString() });
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('[CRM] No user found, aborting fetchAutomationData');
+        return;
+      }
 
+      console.log('[CRM] Executing 5 parallel queries for automation data');
       const [{ data: logsData }, ...statsResults] = await Promise.all([
         supabase.from('ai_automation_logs').select('*, leads(business_name)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(10),
         supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'email_drafted').gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
@@ -96,6 +114,16 @@ const CRM = () => {
         supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'status_changed').gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
         supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'workflow_executed').gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
       ]);
+
+      console.log('[CRM] Automation data fetched successfully', {
+        logsCount: logsData?.length || 0,
+        stats: {
+          emails_drafted: statsResults[0].count || 0,
+          emails_sent: statsResults[1].count || 0,
+          status_changes: statsResults[2].count || 0,
+          workflows_executed: statsResults[3].count || 0
+        }
+      });
 
       setAutomationData({
         logs: logsData || [],
@@ -106,25 +134,35 @@ const CRM = () => {
           workflows_executed: statsResults[3].count || 0
         }
       });
+      console.log('[CRM] fetchAutomationData COMPLETE');
     } catch (error) {
-      console.error('Error fetching automation data:', error);
+      console.error('[CRM] Error fetching automation data:', error);
     }
   };
 
   const fetchWorkflowsData = async () => {
+    console.log('[CRM] fetchWorkflowsData START', { timestamp: new Date().toISOString() });
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log('[CRM] No user found, aborting fetchWorkflowsData');
+        return;
+      }
 
+      console.log('[CRM] Querying ai_workflows table');
       const { data } = await supabase
         .from('ai_workflows')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
+      console.log('[CRM] Workflows data fetched successfully', {
+        workflowCount: data?.length || 0
+      });
       setWorkflowsData(data || []);
+      console.log('[CRM] fetchWorkflowsData COMPLETE');
     } catch (error) {
-      console.error('Error fetching workflows:', error);
+      console.error('[CRM] Error fetching workflows:', error);
     }
   };
 

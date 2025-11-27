@@ -55,9 +55,29 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
   const [testPreview, setTestPreview] = useState<any>(null);
   const [testingWorkflow, setTestingWorkflow] = useState(false);
 
+  // Component mount/unmount tracking
   useEffect(() => {
+    console.log('[WorkflowManager] Component mounted', {
+      hasCachedData: !!cachedData,
+      workflowCount: cachedData?.length || 0,
+      timestamp: new Date().toISOString()
+    });
+    return () => {
+      console.log('[WorkflowManager] Component unmounting');
+    };
+  }, []);
+
+  // Track prop changes
+  useEffect(() => {
+    console.log('[WorkflowManager] Props changed', {
+      hasCachedData: !!cachedData,
+      workflowCount: cachedData?.length || 0,
+      refreshTrigger,
+      timestamp: new Date().toISOString()
+    });
+    
     if (cachedData) {
-      console.log('Using cached workflows:', cachedData.length);
+      console.log('[WorkflowManager] Setting workflows from cachedData');
       setWorkflows(cachedData);
       setLoading(false);
     }

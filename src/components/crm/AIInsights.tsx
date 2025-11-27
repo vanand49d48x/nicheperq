@@ -20,32 +20,57 @@ export const AIInsights = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Component mount/unmount tracking
+  useEffect(() => {
+    console.log('[AIInsights] Component mounted', {
+      timestamp: new Date().toISOString()
+    });
+    return () => {
+      console.log('[AIInsights] Component unmounting');
+    };
+  }, []);
+
   // Load persisted insights on mount
   useEffect(() => {
+    console.log('[AIInsights] Loading insights on mount');
     loadInsights();
   }, []);
 
   const loadInsights = async () => {
+    console.log('[AIInsights] loadInsights called');
     try {
       const cached = localStorage.getItem('ai_insights');
       if (cached) {
         const { insights: cachedInsights, timestamp } = JSON.parse(cached);
+        const age = Date.now() - timestamp;
+        console.log('[AIInsights] Found cached insights', {
+          count: cachedInsights.length,
+          ageMs: age,
+          isValid: age < 3600000
+        });
+        
         // Cache valid for 1 hour
-        if (Date.now() - timestamp < 3600000) {
+        if (age < 3600000) {
+          console.log('[AIInsights] Using cached insights');
           setInsights(cachedInsights);
           return;
         }
+        console.log('[AIInsights] Cache expired, generating new insights');
+      } else {
+        console.log('[AIInsights] No cached insights, generating new');
       }
       // Auto-generate if no valid cache
       await generateInsights();
     } catch (error) {
-      console.error('Error loading insights:', error);
+      console.error('[AIInsights] Error loading insights:', error);
     }
   };
 
   const generateInsights = async () => {
+    console.log('[AIInsights] generateInsights called');
     try {
       setIsLoading(true);
+      console.log('[AIInsights] Fetching session token');
       
       // Get current session token
       const { data: { session } } = await supabase.auth.getSession();
@@ -53,6 +78,7 @@ export const AIInsights = () => {
         throw new Error('No active session');
       }
 
+      console.log('[AIInsights] Invoking ai-generate-insights edge function');
       const { data, error } = await supabase.functions.invoke('ai-generate-insights', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -62,6 +88,10 @@ export const AIInsights = () => {
       if (error) throw error;
       
       const newInsights = data.insights || [];
+      console.log('[AIInsights] Received insights', {
+        count: newInsights.length,
+        timestamp: new Date().toISOString()
+      });
       setInsights(newInsights);
       
       // Persist to localStorage with timestamp
@@ -69,8 +99,9 @@ export const AIInsights = () => {
         insights: newInsights,
         timestamp: Date.now()
       }));
+      console.log('[AIInsights] Insights cached to localStorage');
     } catch (error) {
-      console.error('Error generating insights:', error);
+      console.error('[AIInsights] Error generating insights:', error);
     } finally {
       setIsLoading(false);
     }
