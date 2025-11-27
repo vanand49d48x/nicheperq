@@ -73,30 +73,6 @@ export const AIAutomationPanel = () => {
         status_changes: statsResults[2].count || 0,
         workflows_executed: statsResults[3].count || 0
       });
-
-      // Calculate stats using aggregated counts
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-      // Fetch stats in parallel with separate optimized queries
-      const [
-        { count: emailsDrafted },
-        { count: emailsSent },
-        { count: statusChanges },
-        { count: workflowsExecuted }
-      ] = await Promise.all([
-        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'email_drafted').gte('created_at', oneWeekAgo.toISOString()),
-        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'email_sent').gte('created_at', oneWeekAgo.toISOString()),
-        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'status_changed').gte('created_at', oneWeekAgo.toISOString()),
-        supabase.from('ai_automation_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('action_type', 'workflow_executed').gte('created_at', oneWeekAgo.toISOString())
-      ]);
-
-      setStats({
-        emails_drafted: emailsDrafted || 0,
-        emails_sent: emailsSent || 0,
-        status_changes: statusChanges || 0,
-        workflows_executed: workflowsExecuted || 0
-      });
     } catch (error) {
       console.error('Error fetching automation data:', error);
     } finally {
