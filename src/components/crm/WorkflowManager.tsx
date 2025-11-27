@@ -53,7 +53,11 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow, refreshTr
   const [testingWorkflow, setTestingWorkflow] = useState(false);
 
   useEffect(() => {
-    loadWorkflows();
+    let mounted = true;
+    loadWorkflows().then(() => {
+      if (!mounted) return;
+    });
+    return () => { mounted = false; };
   }, [refreshTrigger]);
 
   const loadWorkflows = async () => {
