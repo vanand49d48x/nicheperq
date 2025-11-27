@@ -428,10 +428,35 @@ To unsubscribe, reply with "unsubscribe".
 
         console.log(`📧 Sent email to ${lead.business_name} (${recipientEmail})`);
         emailSent = true;
+        
+        // Log the automation action
+        await supabase.from('ai_automation_logs').insert({
+          user_id: enrollment.user_id,
+          lead_id: lead.id,
+          action_type: 'email_sent',
+          ai_decision: {
+            workflow_name: workflow.name,
+            email_type: step.email_type,
+            subject: emailData.subject,
+            recipient: recipientEmail
+          },
+          success: true
+        });
 
       } catch (error) {
         console.error(`❌ Failed to send email for lead ${lead.id}:`, error);
-        // Don't throw - continue with other actions
+        
+        // Log the failed attempt
+        await supabase.from('ai_automation_logs').insert({
+          user_id: enrollment.user_id,
+          lead_id: lead.id,
+          action_type: 'email_sent',
+          ai_decision: {
+            workflow_name: workflow.name,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          },
+          success: false
+        });
       }
       break;
     }
