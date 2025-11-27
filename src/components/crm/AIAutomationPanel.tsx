@@ -141,7 +141,7 @@ export const AIAutomationPanel = ({ cachedData, onRefresh }: AIAutomationPanelPr
         setIsLoading(false);
       }
     }
-  }, [cachedData]);
+  };
 
 
   const getActionIcon = (actionType: string) => {
