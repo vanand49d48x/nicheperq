@@ -195,23 +195,47 @@ const CRM = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         console.log('[CRM] No user found, aborting fetchWorkflowsData');
+        setWorkflowsData([]);
         return;
       }
 
       console.log('[CRM] Querying ai_workflows table');
-      const { data } = await supabase
+      const startTime = Date.now();
+      const { data, error } = await supabase
         .from('ai_workflows')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      console.log('[CRM] Workflows data fetched successfully', {
-        workflowCount: data?.length || 0
+      const queryTime = Date.now() - startTime;
+      console.log('[CRM] Workflows query returned', {
+        workflowCount: data?.length || 0,
+        hasError: !!error,
+        error: error?.message,
+        queryTimeMs: queryTime
       });
+
+      if (error) {
+        console.error('[CRM] Error fetching workflows:', error);
+        setWorkflowsData([]);
+        toast({
+          title: "Error loading workflows",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
       setWorkflowsData(data || []);
       console.log('[CRM] fetchWorkflowsData COMPLETE');
     } catch (error) {
       console.error('[CRM] Error fetching workflows:', error);
+      setWorkflowsData([]);
+      toast({
+        title: "Error loading workflows",
+        description: error instanceof Error ? error.message : "Failed to load workflows",
+        variant: "destructive"
+      });
     }
   };
 
