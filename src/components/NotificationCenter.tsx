@@ -49,7 +49,7 @@ export function NotificationCenter() {
   useEffect(() => {
     fetchActivities();
 
-    // Set up realtime subscriptions
+    // Set up realtime subscriptions with error handling
     const leadChannel = supabase
       .channel('lead-activities')
       .on(
@@ -59,7 +59,13 @@ export function NotificationCenter() {
           schema: 'public',
           table: 'leads',
         },
-        () => fetchActivities()
+        () => {
+          try {
+            fetchActivities();
+          } catch (error) {
+            console.error('Error in realtime leads callback:', error);
+          }
+        }
       )
       .subscribe();
 
@@ -72,7 +78,13 @@ export function NotificationCenter() {
           schema: 'public',
           table: 'ai_email_drafts',
         },
-        () => fetchActivities()
+        () => {
+          try {
+            fetchActivities();
+          } catch (error) {
+            console.error('Error in realtime emails callback:', error);
+          }
+        }
       )
       .subscribe();
 
@@ -85,14 +97,24 @@ export function NotificationCenter() {
           schema: 'public',
           table: 'workflow_enrollments',
         },
-        () => fetchActivities()
+        () => {
+          try {
+            fetchActivities();
+          } catch (error) {
+            console.error('Error in realtime workflows callback:', error);
+          }
+        }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(leadChannel);
-      supabase.removeChannel(emailChannel);
-      supabase.removeChannel(workflowChannel);
+      try {
+        supabase.removeChannel(leadChannel);
+        supabase.removeChannel(emailChannel);
+        supabase.removeChannel(workflowChannel);
+      } catch (error) {
+        console.error('Error removing realtime channels:', error);
+      }
     };
   }, []);
 

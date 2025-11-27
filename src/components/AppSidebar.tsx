@@ -100,13 +100,25 @@ export function AppSidebar() {
           filter: `contact_status=eq.new`,
         },
         () => {
-          loadUserData();
+          try {
+            loadUserData();
+          } catch (error) {
+            console.error('Error in realtime leads callback:', error);
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Realtime leads subscription active');
+        }
+      });
 
     return () => {
-      supabase.removeChannel(channel);
+      try {
+        supabase.removeChannel(channel);
+      } catch (error) {
+        console.error('Error removing realtime channel:', error);
+      }
     };
   }, []);
 
