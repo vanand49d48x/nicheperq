@@ -7,6 +7,22 @@ import { Sparkles, Mail, TrendingUp, Activity, Calendar, Settings } from "lucide
 import { format } from "date-fns";
 import { AIAutomationSettings } from "./AIAutomationSettings";
 
+const AUTOMATION_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
+type AutomationCache = {
+  userId: string;
+  logs: AutomationLog[];
+  stats: {
+    emails_drafted: number;
+    emails_sent: number;
+    status_changes: number;
+    workflows_executed: number;
+  };
+  timestamp: number;
+};
+
+let automationCache: AutomationCache | null = null;
+
 interface AutomationLog {
   id: string;
   action_type: string;
@@ -31,15 +47,39 @@ export const AIAutomationPanel = () => {
 
   useEffect(() => {
     let mounted = true;
-    fetchAutomationData().then(() => {
-      if (!mounted) return;
-    });
+    const loadData = async () => {
+      const cached = await getCachedAutomation();
+
+      if (mounted && cached) {
+        setLogs(cached.logs);
+        setStats(cached.stats);
+        setIsLoading(false);
+      }
+
+      fetchAutomationData(mounted, !cached);
+    };
+
+    loadData();
     return () => { mounted = false; };
   }, []);
 
-  const fetchAutomationData = async () => {
+  const getCachedAutomation = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !automationCache) return null;
+
+    const isFresh = Date.now() - automationCache.timestamp < AUTOMATION_CACHE_TTL;
+    if (automationCache.userId === user.id && isFresh) {
+      return automationCache;
+    }
+
+    return null;
+  };
+
+  const fetchAutomationData = async (mounted = true, showLoading = true) => {
     try {
-      setIsLoading(true);
+      if (showLoading) {
+        setIsLoading(true);
+      }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setIsLoading(false);
@@ -77,10 +117,24 @@ export const AIAutomationPanel = () => {
         status_changes: statsResults[2].count || 0,
         workflows_executed: statsResults[3].count || 0
       });
+
+      automationCache = {
+        userId: user.id,
+        logs: logsData || [],
+        stats: {
+          emails_drafted: statsResults[0].count || 0,
+          emails_sent: statsResults[1].count || 0,
+          status_changes: statsResults[2].count || 0,
+          workflows_executed: statsResults[3].count || 0
+        },
+        timestamp: Date.now()
+      };
     } catch (error) {
       console.error('Error fetching automation data:', error);
     } finally {
-      setIsLoading(false);
+      if (mounted) {
+        setIsLoading(false);
+      }
     }
   };
 
