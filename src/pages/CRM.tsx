@@ -71,15 +71,16 @@ const CRM = () => {
 
   // Prefetch AI data when switching to AI tabs
   useEffect(() => {
-    if (hasAiAccess) {
-      if (view === 'automation' && !automationData) {
-        fetchAutomationData();
-      }
-      if ((view === 'workflows' || view === 'visual-workflows' || view === 'workflow-editor')) {
-        fetchWorkflowsData();
-      }
+    if (!hasAiAccess) return;
+
+    if (view === "automation" && !automationData) {
+      fetchAutomationData();
     }
-  }, [view, hasAiAccess]);
+
+    if ((view === "workflows" || view === "visual-workflows") && !workflowsData) {
+      fetchWorkflowsData();
+    }
+  }, [view, hasAiAccess, automationData, workflowsData]);
 
   const checkAiAccess = async () => {
     try {
@@ -415,21 +416,33 @@ const CRM = () => {
             onClearFilter={() => setStatusFilter(null)}
           />
         ) : view === "automation" ? (
-          <AIAutomationPanel cachedData={automationData} onRefresh={fetchAutomationData} />
+          !automationData ? (
+            <div className="py-12 text-center text-muted-foreground">
+              Loading AI activity...
+            </div>
+          ) : (
+            <AIAutomationPanel cachedData={automationData} onRefresh={fetchAutomationData} />
+          )
         ) : view === "workflows" ? (
-          <WorkflowManager
-            cachedData={workflowsData}
-            onRefresh={fetchWorkflowsData}
-            onCreateNew={() => {
-              setEditingWorkflowId(undefined);
-              updateView('workflow-editor');
-            }}
-            onEditWorkflow={(id) => {
-              setEditingWorkflowId(id);
-              updateView('workflow-editor');
-            }}
-            refreshTrigger={workflowRefreshTrigger}
-          />
+          !workflowsData ? (
+            <div className="py-12 text-center text-muted-foreground">
+              Loading workflows...
+            </div>
+          ) : (
+            <WorkflowManager
+              cachedData={workflowsData}
+              onRefresh={fetchWorkflowsData}
+              onCreateNew={() => {
+                setEditingWorkflowId(undefined);
+                updateView('workflow-editor');
+              }}
+              onEditWorkflow={(id) => {
+                setEditingWorkflowId(id);
+                updateView('workflow-editor');
+              }}
+              refreshTrigger={workflowRefreshTrigger}
+            />
+          )
         ) : view === "insights" ? (
           <AIInsights />
         ) : view === "analytics" ? (
@@ -437,19 +450,25 @@ const CRM = () => {
         ) : view === "orchestration" ? (
           <OrchestrationSettings />
         ) : view === "visual-workflows" ? (
-          <WorkflowManager
-            cachedData={workflowsData}
-            onRefresh={fetchWorkflowsData}
-            onCreateNew={() => {
-              setEditingWorkflowId(undefined);
-              updateView('workflow-editor');
-            }}
-            onEditWorkflow={(id) => {
-              setEditingWorkflowId(id);
-              updateView('workflow-editor');
-            }}
-            refreshTrigger={workflowRefreshTrigger}
-          />
+          !workflowsData ? (
+            <div className="py-12 text-center text-muted-foreground">
+              Loading workflows...
+            </div>
+          ) : (
+            <WorkflowManager
+              cachedData={workflowsData}
+              onRefresh={fetchWorkflowsData}
+              onCreateNew={() => {
+                setEditingWorkflowId(undefined);
+                updateView('workflow-editor');
+              }}
+              onEditWorkflow={(id) => {
+                setEditingWorkflowId(id);
+                updateView('workflow-editor');
+              }}
+              refreshTrigger={workflowRefreshTrigger}
+            />
+          )
         ) : view === "workflow-editor" ? (
           <VisualWorkflowBuilder
             workflowId={editingWorkflowId}
