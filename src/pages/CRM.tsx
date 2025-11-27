@@ -77,7 +77,22 @@ const CRM = () => {
     }
     return null;
   });
-  const [workflowsData, setWorkflowsData] = useState<any>(null);
+  
+  const [workflowsData, setWorkflowsData] = useState<any>(() => {
+    const cached = localStorage.getItem('crm_workflows_data');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        // Check if cache is less than 5 minutes old
+        if (Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+          return parsed.data;
+        }
+      } catch (e) {
+        console.error('Error parsing cached workflows data:', e);
+      }
+    }
+    return null;
+  });
   
   const { toast } = useToast();
 
@@ -249,7 +264,15 @@ const CRM = () => {
         return;
       }
 
-      setWorkflowsData(data || []);
+      const workflowsResult = data || [];
+      setWorkflowsData(workflowsResult);
+      
+      // Cache to localStorage with timestamp
+      localStorage.setItem('crm_workflows_data', JSON.stringify({
+        data: workflowsResult,
+        timestamp: Date.now()
+      }));
+      
       console.log('[CRM] fetchWorkflowsData COMPLETE');
     } catch (error) {
       console.error('[CRM] Error fetching workflows:', error);
