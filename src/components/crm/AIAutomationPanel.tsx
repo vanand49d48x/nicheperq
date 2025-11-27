@@ -31,7 +31,7 @@ export const AIAutomationPanel = () => {
 
   useEffect(() => {
     fetchAutomationData();
-  }, []);
+  }, []); // Runs on mount - component remounts when tab switches via key prop
 
   const fetchAutomationData = async () => {
     try {
