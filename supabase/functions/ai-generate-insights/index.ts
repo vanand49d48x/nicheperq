@@ -47,6 +47,8 @@ serve(async (req) => {
     }
 
     // Fetch user's leads with relevant data
+    console.log('[Insights] Fetching leads data...');
+    const leadsStartTime = Date.now();
     const { data: leads, error: leadsError } = await supabase
       .from('leads')
       .select('*')
@@ -54,9 +56,18 @@ serve(async (req) => {
       .order('updated_at', { ascending: false })
       .limit(50);
 
+    const leadsQueryTime = Date.now() - leadsStartTime;
+    console.log('[Insights] Leads query complete', {
+      count: leads?.length || 0,
+      hasError: !!leadsError,
+      queryTimeMs: leadsQueryTime
+    });
+
     if (leadsError) throw leadsError;
 
     // Fetch recent workflow activity
+    console.log('[Insights] Fetching workflow enrollments...');
+    const enrollmentsStartTime = Date.now();
     const { data: enrollments } = await supabase
       .from('workflow_enrollments')
       .select('*, ai_workflows(name)')
@@ -64,13 +75,27 @@ serve(async (req) => {
       .order('created_at', { ascending: false })
       .limit(10);
 
+    const enrollmentsQueryTime = Date.now() - enrollmentsStartTime;
+    console.log('[Insights] Enrollments query complete', {
+      count: enrollments?.length || 0,
+      queryTimeMs: enrollmentsQueryTime
+    });
+
     // Fetch recent email activity
+    console.log('[Insights] Fetching email drafts...');
+    const emailsStartTime = Date.now();
     const { data: emails } = await supabase
       .from('ai_email_drafts')
       .select('status, opened_at, replied_at, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(20);
+
+    const emailsQueryTime = Date.now() - emailsStartTime;
+    console.log('[Insights] Emails query complete', {
+      count: emails?.length || 0,
+      queryTimeMs: emailsQueryTime
+    });
 
     // Calculate stats
     const totalLeads = leads?.length || 0;
