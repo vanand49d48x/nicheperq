@@ -65,12 +65,20 @@ export const FreeSearchCounter = () => {
     const channel = supabase
       .channel('search-counter-refresh')
       .on('broadcast', { event: 'search-completed' }, () => {
-        fetchSearchCount();
+        try {
+          fetchSearchCount();
+        } catch (error) {
+          console.error('Error in search counter callback:', error);
+        }
       })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      try {
+        supabase.removeChannel(channel);
+      } catch (error) {
+        console.error('Error removing search counter channel:', error);
+      }
     };
   }, []);
 
