@@ -357,12 +357,11 @@ const CRM = () => {
           />
         ) : view === "automation" ? (
           <FeatureGate feature="ai">
-            <AIAutomationPanel key="automation-panel" />
+            <AIAutomationPanel />
           </FeatureGate>
         ) : view === "workflows" ? (
           <FeatureGate feature="ai">
             <WorkflowManager
-              key="workflow-manager"
               onCreateNew={() => {
                 setEditingWorkflowId(undefined);
                 updateView('workflow-editor');
@@ -376,7 +375,7 @@ const CRM = () => {
           </FeatureGate>
         ) : view === "insights" ? (
           <FeatureGate feature="ai">
-            <AIInsights key="ai-insights" />
+            <AIInsights />
           </FeatureGate>
         ) : view === "analytics" ? (
           <FeatureGate feature="ai">
