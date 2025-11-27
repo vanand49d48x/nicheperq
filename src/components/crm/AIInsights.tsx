@@ -19,7 +19,28 @@ export const AIInsights = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Don't auto-generate on mount - user triggers manually
+  // Load persisted insights on mount
+  useEffect(() => {
+    loadInsights();
+  }, []);
+
+  const loadInsights = async () => {
+    try {
+      const cached = localStorage.getItem('ai_insights');
+      if (cached) {
+        const { insights: cachedInsights, timestamp } = JSON.parse(cached);
+        // Cache valid for 1 hour
+        if (Date.now() - timestamp < 3600000) {
+          setInsights(cachedInsights);
+          return;
+        }
+      }
+      // Auto-generate if no valid cache
+      await generateInsights();
+    } catch (error) {
+      console.error('Error loading insights:', error);
+    }
+  };
 
   const generateInsights = async () => {
     try {
@@ -39,7 +60,14 @@ export const AIInsights = () => {
       
       if (error) throw error;
       
-      setInsights(data.insights || []);
+      const newInsights = data.insights || [];
+      setInsights(newInsights);
+      
+      // Persist to localStorage with timestamp
+      localStorage.setItem('ai_insights', JSON.stringify({
+        insights: newInsights,
+        timestamp: Date.now()
+      }));
     } catch (error) {
       console.error('Error generating insights:', error);
     } finally {
@@ -116,10 +144,16 @@ export const AIInsights = () => {
           {insights.map((insight, index) => (
             <div
               key={index}
-              className={`flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors ${
-                insight.leadId ? 'cursor-pointer' : ''
+              className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                insight.leadId 
+                  ? 'cursor-pointer hover:bg-muted/50 hover:border-primary/50 hover:shadow-sm' 
+                  : 'hover:bg-muted/30'
               }`}
-              onClick={() => insight.leadId && navigate(`/crm?lead=${insight.leadId}`)}
+              onClick={() => {
+                if (insight.leadId) {
+                  navigate(`/crm?view=list&lead=${insight.leadId}`);
+                }
+              }}
             >
               <div className={`p-2 rounded-full bg-${insight.type === 'opportunity' ? 'primary' : insight.type === 'priority' ? 'destructive' : 'secondary'}/10`}>
                 {getInsightIcon(insight.type)}
