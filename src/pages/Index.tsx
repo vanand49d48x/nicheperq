@@ -501,7 +501,7 @@ const Index = () => {
                   {POPULAR_NICHES.map((popularNiche) => (
                     <Button
                       key={popularNiche}
-                      variant="outline"
+                      variant={niche === popularNiche ? "default" : "outline"}
                       size="sm"
                       onClick={() => setNiche(popularNiche)}
                       className="h-7 text-xs hover:bg-primary hover:text-primary-foreground transition-colors"

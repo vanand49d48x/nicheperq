@@ -56,6 +56,11 @@ export default function WorkflowManager({ onCreateNew, onEditWorkflow, refreshTr
     loadWorkflows();
   }, [refreshTrigger]);
 
+  // Reload workflows when component becomes visible
+  useEffect(() => {
+    loadWorkflows();
+  }, []);
+
   const loadWorkflows = async () => {
     try {
       setLoading(true);
