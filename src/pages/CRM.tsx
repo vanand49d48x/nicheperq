@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { LayoutGrid, List, Plus, Sparkles, Zap, Bot } from "lucide-react";
+import { LayoutGrid, List, Plus, Sparkles, Zap, Bot, Loader2 } from "lucide-react";
 import { ContactCard } from "@/components/crm/ContactCard";
 import { KanbanBoard } from "@/components/crm/KanbanBoard";
 import { AIAutomationPanel } from "@/components/crm/AIAutomationPanel";
@@ -72,6 +72,7 @@ const CRM = () => {
   const [editingWorkflowId, setEditingWorkflowId] = useState<string | undefined>();
   const [workflowRefreshTrigger, setWorkflowRefreshTrigger] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   
   // Track if initial data fetch has occurred
   const hasFetchedRef = useRef(false);
@@ -574,8 +575,16 @@ const CRM = () => {
                 variant={view === "analytics" ? "default" : "outline"}
                 onClick={() => updateView("analytics")}
                 size="sm"
+                disabled={analyticsLoading}
               >
-                📊 Full Analytics
+                {analyticsLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Loading Analytics...
+                  </>
+                ) : (
+                  <>📊 Full Analytics</>
+                )}
               </Button>
             </div>
           )}
@@ -634,7 +643,7 @@ const CRM = () => {
         ) : view === "insights" ? (
           <AIInsights />
         ) : view === "analytics" ? (
-          <PipelineAnalytics />
+          <PipelineAnalytics onLoadingChange={setAnalyticsLoading} />
         ) : view === "orchestration" ? (
           <OrchestrationSettings />
         ) : view === "visual-workflows" ? (
