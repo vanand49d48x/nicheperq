@@ -61,8 +61,22 @@ const CRM = () => {
   // Use centralized user role context
   const { hasAiAccess } = useUserRole();
   
-  // Cache AI tab data to prevent refetching on navigation
-  const [automationData, setAutomationData] = useState<any>(null);
+  // Cache AI tab data with localStorage persistence
+  const [automationData, setAutomationData] = useState<any>(() => {
+    const cached = localStorage.getItem('crm_automation_data');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        // Check if cache is less than 5 minutes old
+        if (Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+          return parsed.data;
+        }
+      } catch (e) {
+        console.error('Error parsing cached automation data:', e);
+      }
+    }
+    return null;
+  });
   const [workflowsData, setWorkflowsData] = useState<any>(null);
   
   const { toast } = useToast();
@@ -164,7 +178,7 @@ const CRM = () => {
         }
       });
 
-      setAutomationData({
+      const newData = {
         logs: logsData || [],
         stats: {
           emails_drafted: statsResults[0].count || 0,
@@ -172,7 +186,16 @@ const CRM = () => {
           status_changes: statsResults[2].count || 0,
           workflows_executed: statsResults[3].count || 0
         }
-      });
+      };
+      
+      setAutomationData(newData);
+      
+      // Cache to localStorage with timestamp
+      localStorage.setItem('crm_automation_data', JSON.stringify({
+        data: newData,
+        timestamp: Date.now()
+      }));
+      
       console.log('[CRM] fetchAutomationData COMPLETE');
     } catch (error) {
       console.error('[CRM] Error fetching automation data:', error);
