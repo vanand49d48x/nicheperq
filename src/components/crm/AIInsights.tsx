@@ -147,6 +147,28 @@ export const AIInsights = () => {
     }
   };
 
+  const handleInsightClick = (insight: Insight) => {
+    // If there's a specific lead, navigate to it
+    if (insight.leadId) {
+      navigate(`/crm?view=list&lead=${insight.leadId}`);
+      return;
+    }
+
+    // Otherwise, navigate based on insight type and content
+    const lowerTitle = insight.title.toLowerCase();
+    const lowerDesc = insight.description.toLowerCase();
+
+    // Workflow-related insights
+    if (lowerTitle.includes('workflow') || lowerDesc.includes('workflow') || 
+        lowerTitle.includes('automat') || lowerDesc.includes('automat')) {
+      navigate('/crm?view=workflows');
+      return;
+    }
+
+    // Default to list view for lead management
+    navigate('/crm?view=list');
+  };
+
   return (
     <Card className="p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -200,16 +222,8 @@ export const AIInsights = () => {
           {insights.map((insight, index) => (
             <div
               key={index}
-              className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
-                insight.leadId 
-                  ? 'cursor-pointer hover:bg-muted/50 hover:border-primary/50 hover:shadow-sm' 
-                  : 'hover:bg-muted/30'
-              }`}
-              onClick={() => {
-                if (insight.leadId) {
-                  navigate(`/crm?view=list&lead=${insight.leadId}`);
-                }
-              }}
+              className="flex items-start gap-3 p-3 rounded-lg border transition-all cursor-pointer hover:bg-muted/50 hover:border-primary/50 hover:shadow-sm"
+              onClick={() => handleInsightClick(insight)}
             >
               <div className={`p-2 rounded-full bg-${insight.type === 'opportunity' ? 'primary' : insight.type === 'priority' ? 'destructive' : 'secondary'}/10`}>
                 {getInsightIcon(insight.type)}
