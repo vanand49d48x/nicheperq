@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useUserRole } from "@/contexts/UserRoleContext";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -112,6 +112,16 @@ const CRM = () => {
   
   const { toast } = useToast();
 
+  // Helper to check if cache is stale (older than 2 minutes)
+  const isCacheStale = (cacheKey: string): boolean => {
+    const cached = localStorage.getItem(cacheKey);
+    if (!cached) return true;
+    try {
+      const parsed = JSON.parse(cached);
+      return Date.now() - parsed.timestamp > 2 * 60 * 1000;
+    } catch { return true; }
+  };
+
   // Prefetch ALL data on mount - leads + AI data in parallel for faster tab switching
   useEffect(() => {
     if (hasFetchedRef.current) return;
@@ -125,11 +135,11 @@ const CRM = () => {
       
       // Prefetch AI data if user has access (even if not on those tabs yet)
       if (hasAiAccess) {
-        // Only fetch if we don't have valid cached data
-        if (!automationData) {
+        // Fetch if no cached data OR if cache is stale
+        if (!automationData || isCacheStale('crm_automation_data')) {
           fetchPromises.push(fetchAutomationData());
         }
-        if (!workflowsData) {
+        if (!workflowsData || isCacheStale('crm_workflows_data')) {
           fetchPromises.push(fetchWorkflowsData());
         }
       }
@@ -147,33 +157,14 @@ const CRM = () => {
   // Background refresh when switching to AI tabs (if data is stale)
   useEffect(() => {
     if (!hasAiAccess) return;
-    
-    // Check if we should refresh data in background (cache older than 2 minutes)
-    const shouldRefreshAutomation = () => {
-      const cached = localStorage.getItem('crm_automation_data');
-      if (!cached) return true;
-      try {
-        const parsed = JSON.parse(cached);
-        return Date.now() - parsed.timestamp > 2 * 60 * 1000;
-      } catch { return true; }
-    };
-    
-    const shouldRefreshWorkflows = () => {
-      const cached = localStorage.getItem('crm_workflows_data');
-      if (!cached) return true;
-      try {
-        const parsed = JSON.parse(cached);
-        return Date.now() - parsed.timestamp > 2 * 60 * 1000;
-      } catch { return true; }
-    };
 
     // Background refresh when viewing these tabs
-    if (view === "automation" && automationData && shouldRefreshAutomation()) {
+    if (view === "automation" && automationData && isCacheStale('crm_automation_data')) {
       console.log('[CRM] Background refreshing automation data');
       fetchAutomationData();
     }
 
-    if ((view === "workflows" || view === "visual-workflows") && workflowsData && shouldRefreshWorkflows()) {
+    if ((view === "workflows" || view === "visual-workflows") && workflowsData && isCacheStale('crm_workflows_data')) {
       console.log('[CRM] Background refreshing workflows data');
       fetchWorkflowsData();
     }
