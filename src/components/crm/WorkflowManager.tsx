@@ -25,6 +25,16 @@ import {
 } from "@/components/ui/dialog";
 import WorkflowTemplates from "./WorkflowTemplates";
 
+const WORKFLOW_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
+type WorkflowCache = {
+  userId: string;
+  workflows: Workflow[];
+  timestamp: number;
+};
+
+let workflowsCache: WorkflowCache | null = null;
+
 interface Workflow {
   id: string;
   name: string;
@@ -55,16 +65,40 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
   const [testingWorkflow, setTestingWorkflow] = useState(false);
 
   useEffect(() => {
-    if (cachedData) {
-      console.log('Using cached workflows:', cachedData.length);
-      setWorkflows(cachedData);
-      setLoading(false);
-    }
-  }, [cachedData, refreshTrigger]);
+    let mounted = true;
+    const load = async () => {
+      const cached = await getCachedWorkflows();
 
-  const loadWorkflows = async () => {
+      if (mounted && cached) {
+        setWorkflows(cached.workflows);
+        setLoading(false);
+      }
+
+      loadWorkflows(mounted, !cached);
+    };
+
+    load();
+    return () => { mounted = false; };
+  }, [refreshTrigger]);
+
+  const getCachedWorkflows = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !workflowsCache) return null;
+
+    const isFresh = Date.now() - workflowsCache.timestamp < WORKFLOW_CACHE_TTL;
+
+    if (workflowsCache.userId === user.id && isFresh) {
+      return workflowsCache;
+    }
+
+    return null;
+  };
+
+  const loadWorkflows = async (mounted = true, showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setLoading(false);
@@ -81,6 +115,12 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
       
       console.log('Loaded workflows:', data?.length || 0);
       setWorkflows(data || []);
+
+      workflowsCache = {
+        userId: user.id,
+        workflows: data || [],
+        timestamp: Date.now()
+      };
     } catch (error) {
       console.error('Error loading workflows:', error);
       toast({
@@ -89,7 +129,9 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (mounted) {
+        setLoading(false);
+      }
     }
   };
 
