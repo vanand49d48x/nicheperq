@@ -35,8 +35,12 @@ export const AIAutomationPanel = () => {
 
   const fetchAutomationData = async () => {
     try {
+      setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
 
       // Fetch recent logs
       const { data: logsData } = await supabase

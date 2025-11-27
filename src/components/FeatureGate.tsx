@@ -23,17 +23,26 @@ export const FeatureGate = ({ feature, children, fallback }: FeatureGateProps) =
 
   const checkAccess = async () => {
     try {
+      setIsLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setIsLoading(false);
+        setHasAccess(false);
         return;
       }
 
-      const { data: roleData } = await supabase
+      const { data: roleData, error } = await supabase
         .from('user_roles')
         .select('role, has_crm_access, has_ai_access')
         .eq('user_id', user.id)
         .single();
+
+      if (error) {
+        console.error('Error fetching user role:', error);
+        setIsLoading(false);
+        setHasAccess(false);
+        return;
+      }
 
       if (roleData) {
         setUserRole(roleData.role);
@@ -49,9 +58,12 @@ export const FeatureGate = ({ feature, children, fallback }: FeatureGateProps) =
             setHasAccess(roleData.has_ai_access || false);
           }
         }
+      } else {
+        setHasAccess(false);
       }
     } catch (error) {
       console.error('Error checking feature access:', error);
+      setHasAccess(false);
     } finally {
       setIsLoading(false);
     }
