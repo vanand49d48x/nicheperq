@@ -86,6 +86,18 @@ const CRM = () => {
     }
     return null;
   });
+  const [analyticsLastUpdated, setAnalyticsLastUpdated] = useState<number | undefined>(() => {
+    const cached = localStorage.getItem('crm_analytics_data');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        return parsed.timestamp;
+      } catch (e) {
+        console.error('Error parsing cached analytics timestamp:', e);
+      }
+    }
+    return undefined;
+  });
   
   // Track if initial data fetch has occurred
   const hasFetchedRef = useRef(false);
@@ -377,12 +389,14 @@ const CRM = () => {
       });
       
       if (error) throw error;
+      const timestamp = Date.now();
       setAnalyticsData(data);
+      setAnalyticsLastUpdated(timestamp);
       
       // Cache to localStorage with timestamp
       localStorage.setItem('crm_analytics_data', JSON.stringify({
         data,
-        timestamp: Date.now()
+        timestamp
       }));
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
@@ -692,7 +706,11 @@ const CRM = () => {
         ) : view === "insights" ? (
           <AIInsights />
         ) : view === "analytics" ? (
-          <PipelineAnalytics cachedData={analyticsData} />
+          <PipelineAnalytics 
+            cachedData={analyticsData} 
+            lastUpdated={analyticsLastUpdated}
+            onRefresh={fetchAnalyticsData}
+          />
         ) : view === "orchestration" ? (
           <OrchestrationSettings />
         ) : view === "visual-workflows" ? (
