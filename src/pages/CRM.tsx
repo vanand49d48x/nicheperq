@@ -72,7 +72,7 @@ const CRM = () => {
   const [editingWorkflowId, setEditingWorkflowId] = useState<string | undefined>();
   const [workflowRefreshTrigger, setWorkflowRefreshTrigger] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
   
   // Track if initial data fetch has occurred
   const hasFetchedRef = useRef(false);
@@ -176,6 +176,12 @@ const CRM = () => {
     if ((view === "workflows" || view === "visual-workflows") && workflowsData && isCacheStale('crm_workflows_data')) {
       console.log('[CRM] Background refreshing workflows data');
       fetchWorkflowsData();
+    }
+    
+    // Fetch analytics when switching to analytics tab
+    if (view === 'analytics' && !analyticsData) {
+      console.log('[CRM] Fetching analytics data');
+      fetchAnalyticsData();
     }
     // Intentionally only depend on view and hasAiAccess - fetch functions read from closure
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -337,6 +343,25 @@ const CRM = () => {
         description: error instanceof Error ? error.message : "Failed to load workflows",
         variant: "destructive"
       });
+    }
+  };
+
+  // Fetch analytics data
+  const fetchAnalyticsData = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke('get-pipeline-analytics', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      
+      if (error) throw error;
+      setAnalyticsData(data);
+    } catch (error) {
+      console.error('Failed to fetch analytics:', error);
     }
   };
 
@@ -583,16 +608,8 @@ const CRM = () => {
                 variant={view === "analytics" ? "default" : "outline"}
                 onClick={() => updateView("analytics")}
                 size="sm"
-                disabled={analyticsLoading}
               >
-                {analyticsLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Loading Analytics...
-                  </>
-                ) : (
-                  <>📊 Full Analytics</>
-                )}
+                📊 Full Analytics
               </Button>
             </div>
           )}
@@ -651,7 +668,7 @@ const CRM = () => {
         ) : view === "insights" ? (
           <AIInsights />
         ) : view === "analytics" ? (
-          <PipelineAnalytics onLoadingChange={setAnalyticsLoading} />
+          <PipelineAnalytics cachedData={analyticsData} />
         ) : view === "orchestration" ? (
           <OrchestrationSettings />
         ) : view === "visual-workflows" ? (

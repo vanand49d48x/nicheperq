@@ -39,43 +39,19 @@ interface AnalyticsData {
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))', 'hsl(var(--chart-1))', 'hsl(var(--chart-2))'];
 
 interface PipelineAnalyticsProps {
-  onLoadingChange?: (isLoading: boolean) => void;
+  cachedData?: AnalyticsData | null;
 }
 
-export default function PipelineAnalytics({ onLoadingChange }: PipelineAnalyticsProps) {
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchAnalytics = useCallback(async () => {
-    try {
-      setLoading(true);
-      onLoadingChange?.(true);
-      
-      // Get current session token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('No active session');
-      }
-
-      const { data, error } = await supabase.functions.invoke('get-pipeline-analytics', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-      
-      if (error) throw error;
-      setAnalytics(data);
-    } catch (error) {
-      console.error('Failed to fetch analytics:', error);
-    } finally {
-      setLoading(false);
-      onLoadingChange?.(false);
-    }
-  }, [onLoadingChange]);
+export default function PipelineAnalytics({ cachedData }: PipelineAnalyticsProps) {
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(cachedData || null);
+  const [loading, setLoading] = useState(!cachedData);
 
   useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
+    if (cachedData) {
+      setAnalytics(cachedData);
+      setLoading(false);
+    }
+  }, [cachedData]);
 
   if (loading) {
     return (
