@@ -87,7 +87,7 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
     useSensor(KeyboardSensor)
   );
 
-  // Extract available tags and locations from leads
+  // Extract available tags, locations, and niches from leads
   const availableTags = useMemo(() => {
     const tagSet = new Set<string>();
     leads.forEach(lead => {
@@ -102,6 +102,14 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
       if (lead.city) locationSet.add(lead.city);
     });
     return Array.from(locationSet).sort();
+  }, [leads]);
+
+  const availableNiches = useMemo(() => {
+    const nicheSet = new Set<string>();
+    leads.forEach(lead => {
+      if (lead.niche) nicheSet.add(lead.niche);
+    });
+    return Array.from(nicheSet).sort();
   }, [leads]);
 
   // Apply filters to leads
@@ -124,6 +132,39 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
     }
     if (filters.location) {
       filtered = filtered.filter(l => l.city === filters.location);
+    }
+    if (filters.name) {
+      const nameQuery = filters.name.toLowerCase();
+      filtered = filtered.filter(l => 
+        l.business_name?.toLowerCase().includes(nameQuery)
+      );
+    }
+    if (filters.niche) {
+      filtered = filtered.filter(l => l.niche === filters.niche);
+    }
+    if (filters.dateFrom) {
+      filtered = filtered.filter(l => 
+        new Date(l.created_at) >= new Date(filters.dateFrom)
+      );
+    }
+    if (filters.dateTo) {
+      const endOfDay = new Date(filters.dateTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(l => 
+        new Date(l.created_at) <= endOfDay
+      );
+    }
+    if (filters.lexicalSearch) {
+      const query = filters.lexicalSearch.toLowerCase();
+      filtered = filtered.filter(l => 
+        l.business_name?.toLowerCase().includes(query) ||
+        l.address?.toLowerCase().includes(query) ||
+        l.city?.toLowerCase().includes(query) ||
+        l.niche?.toLowerCase().includes(query) ||
+        l.notes?.toLowerCase().includes(query) ||
+        l.phone?.toLowerCase().includes(query) ||
+        l.website?.toLowerCase().includes(query)
+      );
     }
 
     return filtered;
@@ -440,6 +481,7 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
         onFilterChange={setFilters}
         availableTags={availableTags}
         availableLocations={availableLocations}
+        availableNiches={availableNiches}
       />
       
       <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
