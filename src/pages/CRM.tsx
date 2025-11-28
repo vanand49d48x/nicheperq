@@ -72,7 +72,20 @@ const CRM = () => {
   const [editingWorkflowId, setEditingWorkflowId] = useState<string | undefined>();
   const [workflowRefreshTrigger, setWorkflowRefreshTrigger] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [analyticsData, setAnalyticsData] = useState<any>(() => {
+    const cached = localStorage.getItem('crm_analytics_data');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        // Return cached data regardless of age for instant display
+        // Background refresh will update if needed
+        return parsed.data;
+      } catch (e) {
+        console.error('Error parsing cached analytics data:', e);
+      }
+    }
+    return null;
+  });
   
   // Track if initial data fetch has occurred
   const hasFetchedRef = useRef(false);
@@ -178,10 +191,15 @@ const CRM = () => {
       fetchWorkflowsData();
     }
     
-    // Fetch analytics when switching to analytics tab
-    if (view === 'analytics' && !analyticsData) {
-      console.log('[CRM] Fetching analytics data');
-      fetchAnalyticsData();
+    // Fetch or refresh analytics when switching to analytics tab
+    if (view === 'analytics') {
+      if (!analyticsData) {
+        console.log('[CRM] Fetching analytics data (no cache)');
+        fetchAnalyticsData();
+      } else if (isCacheStale('crm_analytics_data')) {
+        console.log('[CRM] Background refreshing analytics data (stale cache)');
+        fetchAnalyticsData();
+      }
     }
     // Intentionally only depend on view and hasAiAccess - fetch functions read from closure
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -360,6 +378,12 @@ const CRM = () => {
       
       if (error) throw error;
       setAnalyticsData(data);
+      
+      // Cache to localStorage with timestamp
+      localStorage.setItem('crm_analytics_data', JSON.stringify({
+        data,
+        timestamp: Date.now()
+      }));
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
     }
