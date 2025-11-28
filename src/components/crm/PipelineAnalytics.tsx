@@ -3,7 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, TrendingDown, Target, Mail, Clock, Zap, Lightbulb } from "lucide-react";
+import { TrendingUp, TrendingDown, Target, Mail, Clock, Zap, Lightbulb, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { formatDistanceToNow } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -40,9 +42,11 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accen
 
 interface PipelineAnalyticsProps {
   cachedData?: AnalyticsData | null;
+  lastUpdated?: number;
+  onRefresh?: () => void;
 }
 
-export default function PipelineAnalytics({ cachedData }: PipelineAnalyticsProps) {
+export default function PipelineAnalytics({ cachedData, lastUpdated, onRefresh }: PipelineAnalyticsProps) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(cachedData || null);
   const [loading, setLoading] = useState(!cachedData);
 
@@ -81,6 +85,27 @@ export default function PipelineAnalytics({ cachedData }: PipelineAnalyticsProps
 
   return (
     <div className="space-y-6">
+      {/* Header with Last Updated and Refresh */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Clock className="h-4 w-4" />
+          <span>
+            Last updated: {lastUpdated ? formatDistanceToNow(lastUpdated, { addSuffix: true }) : 'Never'}
+          </span>
+        </div>
+        {onRefresh && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            className="gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
+        )}
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
