@@ -102,6 +102,10 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
       
       console.log('Loaded workflows:', data?.length || 0);
       setWorkflows(data || []);
+      
+      // Invalidate cache and trigger parent refresh
+      localStorage.removeItem('crm_workflows_data');
+      onRefresh();
     } catch (error) {
       console.error('Error loading workflows:', error);
       toast({
@@ -236,6 +240,10 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
         w.id === workflowId ? { ...w, is_active: !currentState } : w
       ));
 
+      // Invalidate cache and trigger refresh
+      localStorage.removeItem('crm_workflows_data');
+      onRefresh();
+
       if (currentState) {
         toast({
           title: "Workflow Paused",
@@ -276,6 +284,11 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
       if (error) throw error;
 
       setWorkflows(workflows.filter(w => w.id !== workflowToDelete));
+      
+      // Invalidate cache and trigger refresh
+      localStorage.removeItem('crm_workflows_data');
+      onRefresh();
+      
       toast({
         title: "Workflow Deleted",
         description: "Workflow has been removed",
