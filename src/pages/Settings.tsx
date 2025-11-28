@@ -56,7 +56,15 @@ export default function Settings() {
   const checkSubscription = async () => {
     setCheckingSubscription(true);
     try {
-      const { data, error } = await supabase.functions.invoke('check-subscription');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error('No active session');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('check-subscription', {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
       if (error) throw error;
       
       if (data) {
