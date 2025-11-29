@@ -3,12 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Database, Loader2 } from "lucide-react";
+import { Download, Database, Loader2, BookOpen } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 
 const DatabaseExport = () => {
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const exportDatabase = async () => {
     setIsExporting(true);
@@ -129,11 +131,21 @@ const DatabaseExport = () => {
                 <Database className="h-12 w-12 text-primary" />
               </div>
               
-              <div className="space-y-2">
-                <h1 className="text-3xl font-bold">Database Export</h1>
-                <p className="text-muted-foreground">
-                  Export all your database tables and data as a SQL dump file.
-                </p>
+              <div>
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-bold">Quick Database Export</h1>
+                  <p className="text-muted-foreground">
+                    Export all your database tables and data as a SQL dump file.
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate("/database-cli-guide")}
+                  className="mt-4"
+                >
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Complete Backup Guide
+                </Button>
               </div>
 
               <div className="bg-muted/50 rounded-lg p-4 w-full space-y-2 text-sm text-left">
