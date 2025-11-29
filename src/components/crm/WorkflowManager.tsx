@@ -62,8 +62,18 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
       workflowCount: cachedData?.length || 0,
       timestamp: new Date().toISOString()
     });
+    
+    // Listen for workflow creation events
+    const handleWorkflowCreated = () => {
+      console.log('[WorkflowManager] Workflow created event received');
+      loadWorkflows();
+    };
+    
+    window.addEventListener('workflow-created', handleWorkflowCreated);
+    
     return () => {
       console.log('[WorkflowManager] Component unmounting');
+      window.removeEventListener('workflow-created', handleWorkflowCreated);
     };
   }, []);
 
