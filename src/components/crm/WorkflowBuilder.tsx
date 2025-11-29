@@ -76,9 +76,12 @@ export const WorkflowBuilder = () => {
 
       if (error) throw error;
 
+      // Invalidate workflow cache to force refresh
+      localStorage.removeItem('crm_workflows_data');
+      
       toast({
         title: "Workflow Created!",
-        description: "Your automation workflow has been created. Go to 'Your Workflows' to activate it.",
+        description: "Your automation workflow has been created. Refreshing workflow list...",
       });
 
       // Reset form
@@ -86,8 +89,8 @@ export const WorkflowBuilder = () => {
       setDescription('');
       setSteps([{ action: 'send_email', delay_days: 0, email_type: 'initial', tone: 'professional' }]);
       
-      // Reload page to show the new workflow
-      setTimeout(() => window.location.reload(), 1500);
+      // Trigger immediate refresh by dispatching a custom event
+      window.dispatchEvent(new CustomEvent('workflow-created'));
     } catch (error: any) {
       console.error('Error saving workflow:', error);
       toast({
