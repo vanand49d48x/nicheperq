@@ -161,9 +161,14 @@ export default function WorkflowPreview({
 
   const handleOpen = (isOpen: boolean) => {
     console.log('[WorkflowPreview] Dialog open state changed:', { isOpen, hasPreview: !!preview });
-    if (isOpen && !preview) {
+    if (isOpen) {
+      // Always generate fresh preview when opening
       console.log('[WorkflowPreview] Triggering preview generation...');
       generatePreview();
+    } else {
+      // Reset preview when closing
+      console.log('[WorkflowPreview] Resetting preview state');
+      setPreview(null);
     }
     onOpenChange(isOpen);
   };
