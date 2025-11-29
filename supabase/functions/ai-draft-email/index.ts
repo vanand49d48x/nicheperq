@@ -151,7 +151,7 @@ ${email_type === 'meeting_request' ? '- Request a brief meeting/call to discuss 
         user_id: user.id,
         lead_id,
         action_type: 'email_drafted',
-        ai_decision: { email_type, tone, model: 'google/gemini-2.5-flash' },
+        ai_decision: { email_type, tone, model: 'gpt-4o-mini' },
         success: true
       });
 
