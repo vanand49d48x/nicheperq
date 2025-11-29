@@ -13,9 +13,9 @@ const DatabaseCLIGuide = () => {
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Complete Database Backup Guide</h1>
+              <h1 className="text-3xl font-bold mb-2">Database Backup Options</h1>
               <p className="text-muted-foreground">
-                Use Supabase CLI to create a full backup including schema, functions, and auth data
+                Understanding backup methods for Lovable Cloud projects
               </p>
             </div>
             <Button variant="outline" onClick={() => navigate("/database-export")}>
@@ -24,15 +24,46 @@ const DatabaseCLIGuide = () => {
             </Button>
           </div>
 
+          <Card className="p-6 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-blue-500 rounded-lg">
+                <Database className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-xl font-semibold mb-2">You're on Lovable Cloud</h2>
+                <p className="text-muted-foreground mb-4">
+                  Lovable Cloud uses Supabase under the hood but is fully managed by Lovable. You don't have direct CLI access to the underlying Supabase project.
+                </p>
+                <div className="space-y-2">
+                  <p className="font-medium">For Lovable Cloud users, use these export methods:</p>
+                  <ul className="space-y-2 ml-4">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>Quick Export</strong> (above) - exports all table data as SQL INSERT statements</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>Cloud Tab Export</strong> - navigate to Cloud → Database → Tables, select a table, and click export</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span><strong>Migration Files</strong> - your schema changes are tracked in <code className="bg-background px-1 rounded">supabase/migrations/</code></span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </Card>
+
           <Card className="p-6">
             <div className="flex items-start gap-4 mb-4">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <Terminal className="h-6 w-6 text-primary" />
+              <div className="p-3 bg-amber-500/10 rounded-lg">
+                <Terminal className="h-6 w-6 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold mb-2">Why Use Supabase CLI?</h2>
+                <h2 className="text-xl font-semibold mb-2">Advanced: External Supabase Projects Only</h2>
                 <p className="text-muted-foreground">
-                  The Supabase CLI provides a complete database dump that includes everything needed to recreate your database exactly, including:
+                  The information below applies only if you've connected an external Supabase project (not Lovable Cloud). The Supabase CLI provides a complete database dump that includes:
                 </p>
               </div>
             </div>
@@ -123,23 +154,27 @@ const DatabaseCLIGuide = () => {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground text-sm font-bold">3</span>
+              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-600 text-white text-sm font-bold">3</span>
               Link to Your Project
             </h2>
             
             <div className="space-y-4 ml-10">
+              <p className="text-amber-900 dark:text-amber-200 font-medium">
+                ⚠️ This step does NOT work for Lovable Cloud projects
+              </p>
+              
               <p className="text-muted-foreground">
-                Connect to your NichePerQ project:
+                For external Supabase projects only, connect using:
               </p>
               
               <div className="bg-muted p-4 rounded-lg font-mono text-sm">
-                supabase link --project-ref nqfcdcfzxehpjhlmqudq
+                supabase link --project-ref YOUR_PROJECT_REF
               </div>
 
               <p className="text-sm text-muted-foreground">
-                You'll be prompted to enter your database password. This is the password you set when creating your Supabase project.
+                Lovable Cloud projects are fully managed and don't support direct CLI access. Use the Quick Export feature instead.
               </p>
             </div>
           </Card>
