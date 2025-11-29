@@ -379,6 +379,15 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
     });
   };
 
+  const selectAllFiltered = () => {
+    const filteredLeadIds = filteredLeads.map(l => l.id);
+    setSelectedLeads(new Set(filteredLeadIds));
+  };
+
+  const deselectAll = () => {
+    setSelectedLeads(new Set());
+  };
+
   const handleQuickEmail = (lead: any, e: React.MouseEvent) => {
     e.stopPropagation();
     if (lead.email) {
@@ -415,6 +424,15 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
   const handleDeleteLead = async (leadId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
+      // Optimistically remove from selected leads if it was selected
+      if (selectedLeads.has(leadId)) {
+        setSelectedLeads(prev => {
+          const next = new Set(prev);
+          next.delete(leadId);
+          return next;
+        });
+      }
+
       const { error } = await supabase
         .from('leads')
         .delete()
@@ -423,10 +441,12 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
       if (error) throw error;
 
       toast.success('Lead deleted');
+      // Immediately refresh to remove from UI
       onRefresh();
     } catch (error) {
       console.error('Error deleting lead:', error);
       toast.error('Failed to delete lead');
+      onRefresh(); // Refresh even on error to sync state
     }
   };
 
@@ -516,6 +536,27 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
             <Checkbox checked={batchMode} />
             Batch Mode {selectedLeads.size > 0 && `(${selectedLeads.size})`}
           </Button>
+
+          {batchMode && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={selectAllFiltered}
+                disabled={filteredLeads.length === 0}
+              >
+                Select All ({filteredLeads.length})
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={deselectAll}
+                disabled={selectedLeads.size === 0}
+              >
+                Deselect All
+              </Button>
+            </>
+          )}
 
           {batchMode && selectedLeads.size > 0 && (
             <Button

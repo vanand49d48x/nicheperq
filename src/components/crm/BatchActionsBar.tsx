@@ -106,12 +106,16 @@ export const BatchActionsBar = ({ selectedLeads, onClearSelection, onRefresh }: 
       if (error) throw error;
 
       toast.success(`Deleted ${leadIds.length} leads`);
-      onRefresh();
-      onClearSelection();
       setShowDeleteDialog(false);
+      onClearSelection();
+      // Refresh immediately to update UI
+      onRefresh();
     } catch (error) {
       console.error('Error deleting leads:', error);
       toast.error('Failed to delete leads');
+      setShowDeleteDialog(false);
+      // Refresh even on error to sync state
+      onRefresh();
     }
   };
 
