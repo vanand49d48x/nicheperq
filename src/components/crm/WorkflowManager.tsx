@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +56,9 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewWorkflow, setPreviewWorkflow] = useState<Workflow | null>(null);
   const [performanceWorkflowId, setPerformanceWorkflowId] = useState<string | null>(null);
+  const [batchMode, setBatchMode] = useState(false);
+  const [selectedWorkflows, setSelectedWorkflows] = useState<Set<string>>(new Set());
+  const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
 
   // Component mount/unmount tracking
   useEffect(() => {
@@ -322,6 +326,96 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
     setPreviewDialogOpen(true);
   };
 
+  const toggleWorkflowSelection = (workflowId: string) => {
+    setSelectedWorkflows(prev => {
+      const next = new Set(prev);
+      if (next.has(workflowId)) {
+        next.delete(workflowId);
+      } else {
+        next.add(workflowId);
+      }
+      return next;
+    });
+  };
+
+  const handleBatchDelete = async () => {
+    const workflowIds = Array.from(selectedWorkflows);
+    
+    try {
+      // Delete workflow steps first
+      await supabase
+        .from('workflow_steps')
+        .delete()
+        .in('workflow_id', workflowIds);
+
+      // Delete workflows
+      const { error } = await supabase
+        .from('ai_workflows')
+        .delete()
+        .in('id', workflowIds);
+
+      if (error) throw error;
+
+      setWorkflows(workflows.filter(w => !workflowIds.includes(w.id)));
+      setSelectedWorkflows(new Set());
+      setBatchMode(false);
+      
+      // Invalidate cache and trigger refresh
+      localStorage.removeItem('crm_workflows_data');
+      onRefresh();
+      
+      toast({
+        title: "Workflows Deleted",
+        description: `${workflowIds.length} workflows have been removed`,
+      });
+    } catch (error) {
+      console.error('Error deleting workflows:', error);
+      toast({
+        title: "Error",
+        description: "Could not delete workflows",
+        variant: "destructive",
+      });
+    } finally {
+      setBatchDeleteDialogOpen(false);
+    }
+  };
+
+  const handleBatchToggleActive = async (makeActive: boolean) => {
+    const workflowIds = Array.from(selectedWorkflows);
+    
+    try {
+      const { error } = await supabase
+        .from('ai_workflows')
+        .update({ is_active: makeActive })
+        .in('id', workflowIds);
+
+      if (error) throw error;
+
+      setWorkflows(workflows.map(w => 
+        workflowIds.includes(w.id) ? { ...w, is_active: makeActive } : w
+      ));
+      
+      setSelectedWorkflows(new Set());
+      setBatchMode(false);
+
+      // Invalidate cache and trigger refresh
+      localStorage.removeItem('crm_workflows_data');
+      onRefresh();
+
+      toast({
+        title: makeActive ? "Workflows Activated" : "Workflows Paused",
+        description: `${workflowIds.length} workflows have been ${makeActive ? 'activated' : 'paused'}`,
+      });
+    } catch (error) {
+      console.error('Error toggling workflows:', error);
+      toast({
+        title: "Error",
+        description: "Could not update workflows",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -416,10 +510,26 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle>Your Workflows</CardTitle>
-            <Button onClick={onCreateNew} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Custom
-            </Button>
+            <div className="flex items-center gap-2">
+              {workflows.length > 0 && (
+                <Button
+                  variant={batchMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setBatchMode(!batchMode);
+                    setSelectedWorkflows(new Set());
+                  }}
+                  className="gap-2"
+                >
+                  <Checkbox checked={batchMode} />
+                  Batch Mode {selectedWorkflows.size > 0 && `(${selectedWorkflows.size})`}
+                </Button>
+              )}
+              <Button onClick={onCreateNew} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Custom
+              </Button>
+            </div>
           </CardHeader>
         <CardContent>
           {workflows.length === 0 ? (
@@ -435,9 +545,19 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
               {workflows.map((workflow) => (
                 <div
                   key={workflow.id}
-                  className="border rounded-lg p-4 flex items-center justify-between hover:bg-accent/50 transition-colors"
+                  className="border rounded-lg p-4 flex items-center justify-between hover:bg-accent/50 transition-colors relative"
                 >
-                  <div className="flex-1">
+                  {batchMode && (
+                    <div className="absolute top-4 left-4 z-10">
+                      <Checkbox
+                        checked={selectedWorkflows.has(workflow.id)}
+                        onCheckedChange={() => toggleWorkflowSelection(workflow.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  )}
+
+                  <div className={batchMode ? "flex-1 ml-8" : "flex-1"}>
                     <div className="flex items-center gap-3 mb-2">
                       <h4 className="font-semibold">{workflow.name}</h4>
                       <Badge variant={workflow.is_active ? "default" : "secondary"}>
@@ -462,7 +582,8 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
                       </div>
                     )}
                     
-                    <div className="flex items-center gap-2">
+                    {!batchMode && (
+                      <div className="flex items-center gap-2">
                       <div className="flex items-center gap-2 mr-2">
                         <Switch
                           checked={workflow.is_active}
@@ -513,9 +634,60 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
+                    )}
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Batch Actions Bar */}
+          {batchMode && selectedWorkflows.size > 0 && (
+            <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+              <div className="flex items-center justify-between">
+                <Badge variant="secondary" className="text-base px-3 py-1">
+                  {selectedWorkflows.size} selected
+                </Badge>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBatchToggleActive(true)}
+                    className="gap-2"
+                  >
+                    <Play className="h-4 w-4" />
+                    Activate
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBatchToggleActive(false)}
+                    className="gap-2"
+                  >
+                    <Pause className="h-4 w-4" />
+                    Pause
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setBatchDeleteDialogOpen(true)}
+                    className="gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedWorkflows(new Set());
+                      setBatchMode(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
@@ -547,6 +719,23 @@ export default function WorkflowManager({ cachedData, onRefresh, onCreateNew, on
           workflowName={previewWorkflow.name}
         />
       )}
+
+      <AlertDialog open={batchDeleteDialogOpen} onOpenChange={setBatchDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedWorkflows.size} workflows?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the selected workflows and all associated steps.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBatchDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

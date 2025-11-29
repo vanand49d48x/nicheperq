@@ -15,6 +15,7 @@ interface DraggableLeadCardProps {
   onQuickCall: (e: React.MouseEvent) => void;
   onAutoTag: (e: React.MouseEvent) => void;
   onUpdate: (leadId: string, updates: any) => void;
+  onDelete?: (e: React.MouseEvent) => void;
 }
 
 export const DraggableLeadCard = (props: DraggableLeadCardProps) => {
