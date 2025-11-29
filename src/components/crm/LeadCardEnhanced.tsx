@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Phone, Globe, Star, Mail, PhoneCall, Tag, 
   Flame, TrendingUp, TrendingDown, Clock, Sparkles,
-  Loader2, Edit2, Check, X
+  Loader2, Edit2, Check, X, Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -31,6 +31,7 @@ interface LeadCardEnhancedProps {
   onQuickCall: (e: React.MouseEvent) => void;
   onAutoTag: (e: React.MouseEvent) => void;
   onUpdate: (leadId: string, updates: any) => void;
+  onDelete?: (e: React.MouseEvent) => void;
 }
 
 export const LeadCardEnhanced = ({
@@ -45,6 +46,7 @@ export const LeadCardEnhanced = ({
   onQuickCall,
   onAutoTag,
   onUpdate,
+  onDelete,
 }: LeadCardEnhancedProps) => {
   const [editingPhone, setEditingPhone] = useState(false);
   const [phoneValue, setPhoneValue] = useState(lead.phone || "");
@@ -369,6 +371,23 @@ export const LeadCardEnhanced = ({
                     <p className="font-medium">Auto-tag with AI</p>
                     {!hasAiAccess && <p className="text-xs text-muted-foreground">Upgrade to PRO</p>}
                   </div>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {onDelete && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-destructive hover:text-destructive"
+                    onClick={onDelete}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="font-medium">Delete Lead</p>
                 </TooltipContent>
               </Tooltip>
             )}

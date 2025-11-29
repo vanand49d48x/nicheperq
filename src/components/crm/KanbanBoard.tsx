@@ -412,6 +412,24 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
     }
   };
 
+  const handleDeleteLead = async (leadId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', leadId);
+
+      if (error) throw error;
+
+      toast.success('Lead deleted');
+      onRefresh();
+    } catch (error) {
+      console.error('Error deleting lead:', error);
+      toast.error('Failed to delete lead');
+    }
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
   };
@@ -567,6 +585,7 @@ export const KanbanBoard = ({ leads, onStatusChange, onRefresh, onLeadUpdate, st
                           onQuickCall={(e) => handleQuickCall(lead, e)}
                           onAutoTag={(e) => handleAutoTag(lead.id, e)}
                           onUpdate={onLeadUpdate || (() => {})}
+                          onDelete={(e) => handleDeleteLead(lead.id, e)}
                         />
                       ))}
 
