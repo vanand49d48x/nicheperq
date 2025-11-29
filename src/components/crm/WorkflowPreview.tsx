@@ -33,31 +33,43 @@ export default function WorkflowPreview({
 
   const generatePreview = async () => {
     try {
+      console.log('[WorkflowPreview] Starting preview generation for workflow:', workflowId);
       setLoading(true);
 
       // Fetch workflow steps
+      console.log('[WorkflowPreview] Fetching workflow steps...');
       const { data: steps, error: stepsError } = await supabase
         .from('workflow_steps')
         .select('*')
         .eq('workflow_id', workflowId)
         .order('step_order');
 
-      if (stepsError) throw stepsError;
+      console.log('[WorkflowPreview] Steps query result:', { steps, error: stepsError });
+
+      if (stepsError) {
+        console.error('[WorkflowPreview] Error fetching steps:', stepsError);
+        throw stepsError;
+      }
 
       if (!steps || steps.length === 0) {
+        console.warn('[WorkflowPreview] No steps found for workflow');
         toast({
           title: "No Steps Found",
           description: "This workflow has no steps to preview",
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
+
+      console.log('[WorkflowPreview] Found', steps.length, 'steps');
 
       // Get a sample lead (optional - workflow can still preview without one)
       const { data: { user } } = await supabase.auth.getUser();
       
       let sampleLead = null;
       if (user) {
+        console.log('[WorkflowPreview] Fetching sample lead...');
         const { data } = await supabase
           .from('leads')
           .select('*')
@@ -66,9 +78,11 @@ export default function WorkflowPreview({
           .maybeSingle();
         
         sampleLead = data;
+        console.log('[WorkflowPreview] Sample lead:', sampleLead ? 'Found' : 'Not found');
       }
 
       // Calculate workflow timeline
+      console.log('[WorkflowPreview] Building timeline...');
       let currentDay = 0;
       const timeline = steps.map((step, index) => {
         currentDay += step.delay_days || 0;
@@ -80,20 +94,24 @@ export default function WorkflowPreview({
         };
       });
 
-      setPreview({
+      const previewData = {
         steps,
         sampleLead,
         timeline,
         totalDays: currentDay,
-      });
+      };
+
+      console.log('[WorkflowPreview] Preview generated successfully:', previewData);
+      setPreview(previewData);
     } catch (error) {
-      console.error('Preview error:', error);
+      console.error('[WorkflowPreview] Preview generation failed:', error);
       toast({
         title: "Preview Failed",
-        description: "Could not generate workflow preview",
+        description: error instanceof Error ? error.message : "Could not generate workflow preview",
         variant: "destructive",
       });
     } finally {
+      console.log('[WorkflowPreview] Setting loading to false');
       setLoading(false);
     }
   };
@@ -142,7 +160,9 @@ export default function WorkflowPreview({
   };
 
   const handleOpen = (isOpen: boolean) => {
+    console.log('[WorkflowPreview] Dialog open state changed:', { isOpen, hasPreview: !!preview });
     if (isOpen && !preview) {
+      console.log('[WorkflowPreview] Triggering preview generation...');
       generatePreview();
     }
     onOpenChange(isOpen);
