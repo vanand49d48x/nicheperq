@@ -13,13 +13,14 @@ const DatabaseExport = () => {
   const exportDatabase = async () => {
     setIsExporting(true);
     try {
-      const exportData: any = {
-        exported_at: new Date().toISOString(),
-        version: "1.0",
-        tables: {},
-      };
+      let sqlDump = `-- NichePerQ Database Export
+-- Generated: ${new Date().toISOString()}
+-- Note: This export includes table schemas and data from the public schema
+-- For a complete dump including auth schema, use: supabase db dump
 
-      // Define tables to export with their queries
+`;
+
+      // Define tables to export
       const tables = [
         { name: "profiles", query: "SELECT * FROM profiles ORDER BY created_at" },
         { name: "user_roles", query: "SELECT * FROM user_roles ORDER BY created_at" },
@@ -48,7 +49,7 @@ const DatabaseExport = () => {
         { name: "scheduled_search_runs", query: "SELECT * FROM scheduled_search_runs ORDER BY created_at" },
       ];
 
-      // Fetch data from each table
+      // Fetch data from each table and generate SQL
       for (const table of tables) {
         toast({
           title: "Exporting...",
@@ -62,33 +63,41 @@ const DatabaseExport = () => {
 
           if (error) {
             console.error(`Error fetching ${table.name}:`, error);
-            exportData.tables[table.name] = {
-              error: error.message,
-              data: [],
-            };
-          } else {
-            exportData.tables[table.name] = {
-              row_count: data?.length || 0,
-              data: data || [],
-            };
+            sqlDump += `-- Error fetching ${table.name}: ${error.message}\n\n`;
+          } else if (data && data.length > 0) {
+            sqlDump += `-- Table: ${table.name}\n`;
+            sqlDump += `-- Rows: ${data.length}\n\n`;
+            
+            // Generate INSERT statements
+            for (const row of data) {
+              const columns = Object.keys(row);
+              const values = columns.map(col => {
+                const val = row[col];
+                if (val === null) return 'NULL';
+                if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+                if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+                if (typeof val === 'boolean') return val ? 'true' : 'false';
+                return val;
+              });
+              
+              sqlDump += `INSERT INTO ${table.name} (${columns.join(', ')}) VALUES (${values.join(', ')});\n`;
+            }
+            sqlDump += '\n';
           }
         } catch (err: any) {
           console.error(`Error fetching ${table.name}:`, err);
-          exportData.tables[table.name] = {
-            error: err.message,
-            data: [],
-          };
+          sqlDump += `-- Error fetching ${table.name}: ${err.message}\n\n`;
         }
       }
 
-      // Create downloadable file
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-        type: "application/json",
+      // Create downloadable SQL file
+      const blob = new Blob([sqlDump], {
+        type: "application/sql",
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `nicheperq-database-export-${new Date().toISOString().split("T")[0]}.json`;
+      a.download = `nicheperq-database-dump-${new Date().toISOString().split("T")[0]}.sql`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -96,7 +105,7 @@ const DatabaseExport = () => {
 
       toast({
         title: "Export Complete",
-        description: "Database export downloaded successfully.",
+        description: "SQL dump downloaded successfully.",
       });
     } catch (error: any) {
       console.error("Export error:", error);
@@ -123,24 +132,22 @@ const DatabaseExport = () => {
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold">Database Export</h1>
                 <p className="text-muted-foreground">
-                  Export all your database tables and content as a JSON file.
+                  Export all your database tables and data as a SQL dump file.
                 </p>
               </div>
 
               <div className="bg-muted/50 rounded-lg p-4 w-full space-y-2 text-sm text-left">
-                <p className="font-medium">This export includes:</p>
+                <p className="font-medium">This SQL dump includes:</p>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                  <li>User profiles and roles</li>
-                  <li>Leads and saved searches</li>
-                  <li>AI workflows and enrollments</li>
-                  <li>Email drafts and tracking data</li>
-                  <li>Contact notes and interactions</li>
-                  <li>AI scores and automation logs</li>
+                  <li>INSERT statements for all table data</li>
+                  <li>User profiles, roles, and permissions</li>
+                  <li>Leads, searches, and CRM data</li>
+                  <li>AI workflows and automation logs</li>
+                  <li>Email templates and tracking</li>
                   <li>Support tickets and knowledge base</li>
-                  <li>All other database tables</li>
                 </ul>
                 <p className="text-xs text-muted-foreground mt-4">
-                  <strong>Note:</strong> Sensitive data like encrypted passwords and tokens are excluded for security.
+                  <strong>Note:</strong> For schema DDL, functions, triggers, and auth tables, use Supabase CLI: <code className="bg-background px-1 rounded">supabase db dump</code>
                 </p>
               </div>
 
@@ -158,7 +165,7 @@ const DatabaseExport = () => {
                 ) : (
                   <>
                     <Download className="mr-2 h-5 w-5" />
-                    Export Database
+                    Download SQL Dump
                   </>
                 )}
               </Button>
