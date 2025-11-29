@@ -53,16 +53,20 @@ export default function WorkflowPreview({
         return;
       }
 
-      // Get a sample lead
+      // Get a sample lead (optional - workflow can still preview without one)
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: sampleLead } = await supabase
-        .from('leads')
-        .select('*')
-        .eq('user_id', user.id)
-        .limit(1)
-        .single();
+      
+      let sampleLead = null;
+      if (user) {
+        const { data } = await supabase
+          .from('leads')
+          .select('*')
+          .eq('user_id', user.id)
+          .limit(1)
+          .maybeSingle();
+        
+        sampleLead = data;
+      }
 
       // Calculate workflow timeline
       let currentDay = 0;
