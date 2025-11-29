@@ -26,8 +26,6 @@ import Profile from "./pages/Profile";
 import Support from "./pages/Support";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import EmailSettings from "./pages/EmailSettings";
-import DatabaseExport from "./pages/DatabaseExport";
-import DatabaseCLIGuide from "./pages/DatabaseCLIGuide";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -139,16 +137,6 @@ const App = () => (
           <Route path="/email-settings" element={
             <ProtectedRoute>
               <EmailSettings />
-            </ProtectedRoute>
-          } />
-          <Route path="/database-export" element={
-            <ProtectedRoute>
-              <DatabaseExport />
-            </ProtectedRoute>
-          } />
-          <Route path="/database-cli-guide" element={
-            <ProtectedRoute>
-              <DatabaseCLIGuide />
             </ProtectedRoute>
           } />
           <Route path="*" element={<NotFound />} />
