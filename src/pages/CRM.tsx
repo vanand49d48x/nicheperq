@@ -16,6 +16,7 @@ import { WorkflowBuilder } from "@/components/crm/WorkflowBuilder";
 import VisualWorkflowBuilder from "@/components/crm/VisualWorkflowBuilder";
 import WorkflowManager from "@/components/crm/WorkflowManager";
 import { AIInsights } from "@/components/crm/AIInsights";
+import WorkflowAnalytics from "@/components/crm/WorkflowAnalytics";
 import { FeatureGate } from "@/components/FeatureGate";
 import { AIChatbot } from "@/components/crm/AIChatbot";
 import { EmailAccountBanner } from "@/components/crm/EmailAccountBanner";
@@ -561,6 +562,13 @@ const CRM = () => {
                     Workflows
                   </Button>
                   <Button
+                    variant={view === "analytics" ? "default" : "outline"}
+                    onClick={() => updateView("analytics")}
+                    className="gap-2"
+                  >
+                    📊 Analytics
+                  </Button>
+                  <Button
                     variant={view === "insights" ? "default" : "outline"}
                     onClick={() => updateView("insights")}
                     className="gap-2"
@@ -635,19 +643,19 @@ const CRM = () => {
           {hasAiAccess && (view === "insights" || view === "analytics") && (
             <div className="mt-4 flex gap-2 justify-center">
               <Button
+                variant={view === "analytics" ? "default" : "outline"}
+                onClick={() => updateView("analytics")}
+                size="sm"
+              >
+                📊 Workflow Analytics
+              </Button>
+              <Button
                 variant={view === "insights" ? "default" : "outline"}
                 onClick={() => updateView("insights")}
                 size="sm"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 Quick Insights
-              </Button>
-              <Button
-                variant={view === "analytics" ? "default" : "outline"}
-                onClick={() => updateView("analytics")}
-                size="sm"
-              >
-                📊 Full Analytics
               </Button>
             </div>
           )}
@@ -706,11 +714,7 @@ const CRM = () => {
         ) : view === "insights" ? (
           <AIInsights />
         ) : view === "analytics" ? (
-          <PipelineAnalytics 
-            cachedData={analyticsData} 
-            lastUpdated={analyticsLastUpdated}
-            onRefresh={fetchAnalyticsData}
-          />
+          <WorkflowAnalytics />
         ) : view === "orchestration" ? (
           <OrchestrationSettings />
         ) : view === "visual-workflows" ? (
