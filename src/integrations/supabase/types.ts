@@ -164,31 +164,46 @@ export type Database = {
       }
       ai_workflows: {
         Row: {
+          business_hours_end: string | null
+          business_hours_start: string | null
           created_at: string
           description: string | null
           id: string
           is_active: boolean
           name: string
+          preferred_send_time: string | null
+          respect_business_hours: boolean | null
+          timezone: string | null
           trigger: Json
           updated_at: string
           user_id: string
         }
         Insert: {
+          business_hours_end?: string | null
+          business_hours_start?: string | null
           created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean
           name: string
+          preferred_send_time?: string | null
+          respect_business_hours?: boolean | null
+          timezone?: string | null
           trigger: Json
           updated_at?: string
           user_id: string
         }
         Update: {
+          business_hours_end?: string | null
+          business_hours_start?: string | null
           created_at?: string
           description?: string | null
           id?: string
           is_active?: boolean
           name?: string
+          preferred_send_time?: string | null
+          respect_business_hours?: boolean | null
+          timezone?: string | null
           trigger?: Json
           updated_at?: string
           user_id?: string
@@ -973,8 +988,14 @@ export type Database = {
       workflow_enrollments: {
         Row: {
           completed_at: string | null
+          conversion_date: string | null
+          converted: boolean | null
           created_at: string
           current_step_order: number
+          emails_clicked: number | null
+          emails_opened: number | null
+          emails_replied: number | null
+          emails_sent: number | null
           enrolled_at: string
           id: string
           lead_id: string
@@ -987,8 +1008,14 @@ export type Database = {
         }
         Insert: {
           completed_at?: string | null
+          conversion_date?: string | null
+          converted?: boolean | null
           created_at?: string
           current_step_order?: number
+          emails_clicked?: number | null
+          emails_opened?: number | null
+          emails_replied?: number | null
+          emails_sent?: number | null
           enrolled_at?: string
           id?: string
           lead_id: string
@@ -1001,8 +1028,14 @@ export type Database = {
         }
         Update: {
           completed_at?: string | null
+          conversion_date?: string | null
+          converted?: boolean | null
           created_at?: string
           current_step_order?: number
+          emails_clicked?: number | null
+          emails_opened?: number | null
+          emails_replied?: number | null
+          emails_sent?: number | null
           enrolled_at?: string
           id?: string
           lead_id?: string
@@ -1023,6 +1056,71 @@ export type Database = {
           },
           {
             foreignKeyName: "workflow_enrollments_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "ai_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_performance_metrics: {
+        Row: {
+          click_rate: number | null
+          conversion_rate: number | null
+          conversions: number | null
+          created_at: string | null
+          emails_clicked: number | null
+          emails_opened: number | null
+          emails_replied: number | null
+          emails_sent: number | null
+          id: string
+          open_rate: number | null
+          period_end: string
+          period_start: string
+          reply_rate: number | null
+          total_enrollments: number | null
+          updated_at: string | null
+          workflow_id: string
+        }
+        Insert: {
+          click_rate?: number | null
+          conversion_rate?: number | null
+          conversions?: number | null
+          created_at?: string | null
+          emails_clicked?: number | null
+          emails_opened?: number | null
+          emails_replied?: number | null
+          emails_sent?: number | null
+          id?: string
+          open_rate?: number | null
+          period_end: string
+          period_start: string
+          reply_rate?: number | null
+          total_enrollments?: number | null
+          updated_at?: string | null
+          workflow_id: string
+        }
+        Update: {
+          click_rate?: number | null
+          conversion_rate?: number | null
+          conversions?: number | null
+          created_at?: string | null
+          emails_clicked?: number | null
+          emails_opened?: number | null
+          emails_replied?: number | null
+          emails_sent?: number | null
+          id?: string
+          open_rate?: number | null
+          period_end?: string
+          period_start?: string
+          reply_rate?: number | null
+          total_enrollments?: number | null
+          updated_at?: string | null
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_performance_metrics_workflow_id_fkey"
             columns: ["workflow_id"]
             isOneToOne: false
             referencedRelation: "ai_workflows"

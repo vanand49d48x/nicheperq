@@ -35,7 +35,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Save, Mail, Clock, GitBranch, Play, Eye, Sparkles, ListOrdered } from "lucide-react";
+import { Plus, Save, Mail, Clock, GitBranch, Play, Eye, Sparkles, ListOrdered, Settings2 } from "lucide-react";
+import WorkflowScheduling from "./WorkflowScheduling";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { WorkflowStepEditor } from "./WorkflowStepEditor";
@@ -148,6 +149,12 @@ export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: V
   const [workflowDescription, setWorkflowDescription] = useState('');
   const [viewMode, setViewMode] = useState<'visual' | 'steps'>('steps');
   const [stepEditorSteps, setStepEditorSteps] = useState<any[]>([]);
+  const [preferredSendTime, setPreferredSendTime] = useState('09:00:00');
+  const [timezone, setTimezone] = useState('America/New_York');
+  const [respectBusinessHours, setRespectBusinessHours] = useState(true);
+  const [businessHoursStart, setBusinessHoursStart] = useState('09:00:00');
+  const [businessHoursEnd, setBusinessHoursEnd] = useState('17:00:00');
+  const [showScheduling, setShowScheduling] = useState(false);
 
   useEffect(() => {
     if (workflowId) {
@@ -183,6 +190,13 @@ export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: V
         setTriggerType(trigger.type || 'lead_status');
         setTriggerValue(trigger.value || 'new');
       }
+
+      // Load scheduling configuration
+      setPreferredSendTime(workflow.preferred_send_time || '09:00:00');
+      setTimezone(workflow.timezone || 'America/New_York');
+      setRespectBusinessHours(workflow.respect_business_hours ?? true);
+      setBusinessHoursStart(workflow.business_hours_start || '09:00:00');
+      setBusinessHoursEnd(workflow.business_hours_end || '17:00:00');
 
       // Load steps for step editor
       setStepEditorSteps(steps || []);
@@ -455,6 +469,11 @@ export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: V
             name: workflowName,
             description: workflowDescription || `Workflow with ${steps.length} steps`,
             trigger: trigger,
+            preferred_send_time: preferredSendTime,
+            timezone: timezone,
+            respect_business_hours: respectBusinessHours,
+            business_hours_start: businessHoursStart,
+            business_hours_end: businessHoursEnd,
             updated_at: new Date().toISOString(),
           })
           .eq('id', currentWorkflowId);
@@ -496,6 +515,11 @@ export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: V
             name: workflowName,
             description: workflowDescription || `Workflow with ${steps.length} steps`,
             trigger: trigger,
+            preferred_send_time: preferredSendTime,
+            timezone: timezone,
+            respect_business_hours: respectBusinessHours,
+            business_hours_start: businessHoursStart,
+            business_hours_end: businessHoursEnd,
             is_active: false,
           })
           .select()
@@ -657,6 +681,36 @@ export default function VisualWorkflowBuilder({ workflowId, onBack, onSaved }: V
               </p>
             )}
           </div>
+
+          <Separator />
+
+          <Button
+            variant="outline"
+            onClick={() => setShowScheduling(!showScheduling)}
+            className="w-full"
+          >
+            <Settings2 className="h-4 w-4 mr-2" />
+            Email Scheduling
+          </Button>
+
+          {showScheduling && (
+            <div className="mt-4">
+              <WorkflowScheduling
+                preferredSendTime={preferredSendTime}
+                timezone={timezone}
+                respectBusinessHours={respectBusinessHours}
+                businessHoursStart={businessHoursStart}
+                businessHoursEnd={businessHoursEnd}
+                onUpdate={(field, value) => {
+                  if (field === 'preferred_send_time') setPreferredSendTime(value);
+                  if (field === 'timezone') setTimezone(value);
+                  if (field === 'respect_business_hours') setRespectBusinessHours(value);
+                  if (field === 'business_hours_start') setBusinessHoursStart(value);
+                  if (field === 'business_hours_end') setBusinessHoursEnd(value);
+                }}
+              />
+            </div>
+          )}
 
           <Separator />
 

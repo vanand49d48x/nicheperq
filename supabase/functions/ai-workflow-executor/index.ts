@@ -41,10 +41,20 @@ serve(async (req) => {
 
     let actionsExecuted = 0;
     let emailsSent = 0;
+    let emailsSkipped = 0;
     const MAX_EMAILS_PER_RUN = 10;  // Rate limit: max 10 emails per execution
 
     for (const enrollment of enrollments || []) {
       try {
+        const workflow = enrollment.workflow;
+        
+        // Check if we should send emails based on scheduling constraints
+        const canSendEmail = shouldSendEmail(workflow);
+        if (!canSendEmail && enrollment.current_step_order === 1) {
+          console.log(`⏰ Skipping enrollment ${enrollment.id} - outside business hours/preferred time`);
+          emailsSkipped++;
+          continue;
+        }
         // Get current step
         const { data: currentStep, error: stepError } = await supabaseClient
           .from('workflow_steps')
@@ -93,7 +103,7 @@ serve(async (req) => {
             currentStep,
             enrollment.lead,
             enrollment.workflow,
-            emailsSent < MAX_EMAILS_PER_RUN
+            emailsSent < MAX_EMAILS_PER_RUN && canSendEmail
           );
           actionsExecuted++;
           if (emailSent) emailsSent++;
@@ -150,12 +160,13 @@ serve(async (req) => {
       }
     }
 
-    console.log(`✅ Execution complete. Executed ${actionsExecuted} actions, sent ${emailsSent} emails.`);
+    console.log(`✅ Execution complete. Executed ${actionsExecuted} actions, sent ${emailsSent} emails, skipped ${emailsSkipped} due to scheduling.`);
 
     return new Response(JSON.stringify({ 
       success: true, 
       actions_executed: actionsExecuted,
       emails_sent: emailsSent,
+      emails_skipped: emailsSkipped,
       enrollments_processed: enrollments?.length || 0
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -171,6 +182,44 @@ serve(async (req) => {
     });
   }
 });
+
+function shouldSendEmail(workflow: any): boolean {
+  if (!workflow.respect_business_hours) {
+    return true; // No restrictions
+  }
+
+  const now = new Date();
+  
+  // Convert workflow timezone to local time
+  const workflowTz = workflow.timezone || 'America/New_York';
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: workflowTz,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+  
+  const currentTimeInTz = formatter.format(now);
+  const [currentHour, currentMinute] = currentTimeInTz.split(':').map(Number);
+  const currentTimeDecimal = currentHour + (currentMinute / 60);
+  
+  // Parse business hours
+  const startTime = workflow.business_hours_start || '09:00:00';
+  const endTime = workflow.business_hours_end || '17:00:00';
+  
+  const [startHour, startMinute] = startTime.split(':').map(Number);
+  const [endHour, endMinute] = endTime.split(':').map(Number);
+  
+  const startDecimal = startHour + (startMinute / 60);
+  const endDecimal = endHour + (endMinute / 60);
+  
+  // Check if current time is within business hours
+  const withinBusinessHours = currentTimeDecimal >= startDecimal && currentTimeDecimal <= endDecimal;
+  
+  console.log(`⏰ Time check: ${currentTimeInTz} in ${workflowTz} - Business hours: ${startTime} to ${endTime} - Within: ${withinBusinessHours}`);
+  
+  return withinBusinessHours;
+}
 
 async function evaluateCondition(
   supabase: any,
