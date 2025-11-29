@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,17 @@ export default function WorkflowPreview({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<any>(null);
+
+  // Generate preview when dialog opens
+  useEffect(() => {
+    if (open) {
+      console.log('[WorkflowPreview] Dialog opened, generating preview...');
+      generatePreview();
+    } else {
+      console.log('[WorkflowPreview] Dialog closed, resetting preview');
+      setPreview(null);
+    }
+  }, [open, workflowId]);
 
   const generatePreview = async () => {
     try {
@@ -159,22 +170,9 @@ export default function WorkflowPreview({
     }
   };
 
-  const handleOpen = (isOpen: boolean) => {
-    console.log('[WorkflowPreview] Dialog open state changed:', { isOpen, hasPreview: !!preview });
-    if (isOpen) {
-      // Always generate fresh preview when opening
-      console.log('[WorkflowPreview] Triggering preview generation...');
-      generatePreview();
-    } else {
-      // Reset preview when closing
-      console.log('[WorkflowPreview] Resetting preview state');
-      setPreview(null);
-    }
-    onOpenChange(isOpen);
-  };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
