@@ -108,21 +108,21 @@ async function generateDigest(supabase: any, userId: string) {
     .limit(10);
 
   // Get AI recommendations
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
   let aiRecommendations = '';
 
-  if (LOVABLE_API_KEY && priorityLeads?.length) {
+  if (OPENAI_API_KEY && priorityLeads?.length) {
     const prompt = `Based on these ${priorityLeads.length} leads needing follow-up, provide 3 quick action recommendations for today:\n${priorityLeads.map((l: any) => `- ${l.business_name} (${l.niche}): ${l.contact_status}`).join('\n')}`;
 
     try {
-      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
+          model: 'gpt-4o-mini',
           messages: [
             { role: 'system', content: 'Provide 3 brief, actionable recommendations in bullet points.' },
             { role: 'user', content: prompt }
@@ -227,7 +227,7 @@ async function sendDigestEmail(email: string, name: string, digest: any) {
               </div>
             ` : ''}
 
-            <a href="${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app')}/crm" class="cta">
+            <a href="${Deno.env.get('APP_URL') || 'https://app.nicheperq.com'}/crm" class="cta">
               Open CRM Dashboard →
             </a>
           </div>

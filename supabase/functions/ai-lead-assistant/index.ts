@@ -128,9 +128,9 @@ AI Score Trend:
 ${aiScores?.map(s => `- Quality: ${s.quality_score}, Intent: ${s.intent_score}, Close: ${s.closing_probability}% (${new Date(s.created_at).toLocaleDateString()})`).join('\n') || 'No historical scores'}
 `;
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY not configured');
     }
 
     let systemPrompt = '';
@@ -163,15 +163,15 @@ ${aiScores?.map(s => `- Quality: ${s.quality_score}, Intent: ${s.intent_score}, 
         userPrompt = `${additional_context || 'Help me understand this lead.'}\n\nContext:\n${context}`;
     }
 
-    // Call AI
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Call OpenAI API
+    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }

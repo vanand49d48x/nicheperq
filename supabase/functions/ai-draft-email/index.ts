@@ -87,15 +87,15 @@ ${email_type === 'meeting_request' ? '- Request a brief meeting/call to discuss 
 
     const userPrompt = `Draft an email to ${lead.business_name}. Here's the context:\n\n${context}`;
 
-    // Call Lovable AI
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Call OpenAI API
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('LOVABLE_API_KEY')}`,
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -151,7 +151,7 @@ ${email_type === 'meeting_request' ? '- Request a brief meeting/call to discuss 
         user_id: user.id,
         lead_id,
         action_type: 'email_drafted',
-        ai_decision: { email_type, tone, model: 'google/gemini-2.5-flash' },
+        ai_decision: { email_type, tone, model: 'gpt-4o-mini' },
         success: true
       });
 
