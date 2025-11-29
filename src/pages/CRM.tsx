@@ -741,6 +741,9 @@ const CRM = () => {
               updateView('workflows');
             }}
             onSaved={() => {
+              // Invalidate cache and force refresh
+              localStorage.removeItem('crm_workflows_data');
+              fetchWorkflowsData();
               setWorkflowRefreshTrigger(prev => prev + 1);
               setEditingWorkflowId(undefined);
               updateView('workflows');
