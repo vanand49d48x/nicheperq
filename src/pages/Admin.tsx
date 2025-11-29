@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, Users, TrendingUp, Calendar, Settings2, Search, Filter } from "lucide-react";
 import { SupportTicketsTab } from "@/components/admin/SupportTicketsTab";
 import { KnowledgeBaseTab } from "@/components/admin/KnowledgeBaseTab";
+import { SystemHealthTab } from "@/components/admin/SystemHealthTab";
 
 type AppRole = 'admin' | 'advanced' | 'standard' | 'basic' | 'pro' | 'free';
 
@@ -521,6 +522,7 @@ export default function Admin() {
           <TabsList>
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="support">Support Tickets</TabsTrigger>
+            <TabsTrigger value="health">System Health</TabsTrigger>
             <TabsTrigger value="kb">Knowledge Base</TabsTrigger>
           </TabsList>
 
@@ -725,6 +727,10 @@ export default function Admin() {
 
           <TabsContent value="support">
             <SupportTicketsTab />
+          </TabsContent>
+
+          <TabsContent value="health">
+            <SystemHealthTab />
           </TabsContent>
 
           <TabsContent value="kb">
