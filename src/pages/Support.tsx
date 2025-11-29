@@ -15,6 +15,7 @@ import { Loader2, MessageSquare, Send, AlertCircle, BookOpen, ExternalLink } fro
 
 interface Ticket {
   id: string;
+  user_id: string;
   subject: string;
   description: string;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
@@ -22,6 +23,12 @@ interface Ticket {
   category: string;
   created_at: string;
   updated_at: string;
+  unreadReplies?: number;
+}
+
+interface UserProfile {
+  email: string;
+  full_name: string;
 }
 
 interface TicketReply {
@@ -49,6 +56,8 @@ export default function Support() {
   const [replyMessage, setReplyMessage] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [suggestedArticles, setSuggestedArticles] = useState<SuggestedArticle[]>([]);
+  const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
+  const [lastViewedReply, setLastViewedReply] = useState<Record<string, string>>({});
 
   // Form state
   const [subject, setSubject] = useState("");
@@ -58,7 +67,43 @@ export default function Support() {
 
   useEffect(() => {
     loadTickets();
+    
+    // Load last viewed reply timestamps from localStorage
+    const stored = localStorage.getItem('ticket_last_viewed');
+    if (stored) {
+      setLastViewedReply(JSON.parse(stored));
+    }
   }, []);
+
+  useEffect(() => {
+    // Subscribe to realtime updates for ticket replies
+    const channel = supabase
+      .channel('ticket-replies')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'ticket_replies',
+          filter: `is_admin_reply=eq.true`
+        },
+        (payload) => {
+          // Check if this reply is for one of the user's tickets
+          const reply = payload.new as TicketReply;
+          const ticket = tickets.find(t => t.id === reply.ticket_id);
+          
+          if (ticket) {
+            toast.success('New reply received on your support ticket!');
+            loadTickets(); // Reload to update unread count
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tickets]);
 
   useEffect(() => {
     // Search for relevant KB articles when subject or description changes
@@ -71,16 +116,65 @@ export default function Support() {
 
   const loadTickets = async () => {
     setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("support_tickets")
       .select("*")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error loading tickets:", error);
       toast.error("Failed to load support tickets");
     } else {
-      setTickets(data || []);
+      const ticketsWithUnread = await Promise.all(
+        (data || []).map(async (ticket) => {
+          // Get reply count
+          const { count } = await supabase
+            .from("ticket_replies")
+            .select("*", { count: 'exact', head: true })
+            .eq("ticket_id", ticket.id)
+            .eq("is_admin_reply", true);
+          
+          // Get last viewed timestamp
+          const lastViewed = lastViewedReply[ticket.id];
+          
+          // Count unread admin replies
+          if (lastViewed) {
+            const { count: unreadCount } = await supabase
+              .from("ticket_replies")
+              .select("*", { count: 'exact', head: true })
+              .eq("ticket_id", ticket.id)
+              .eq("is_admin_reply", true)
+              .gt("created_at", lastViewed);
+            
+            return { ...ticket, unreadReplies: unreadCount || 0 };
+          }
+          
+          return { ...ticket, unreadReplies: count || 0 };
+        })
+      );
+      
+      setTickets(ticketsWithUnread);
+
+      // Load user profiles
+      const userIds = [...new Set(ticketsWithUnread.map(t => t.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, email, full_name")
+        .in("id", userIds);
+
+      const profilesMap: Record<string, UserProfile> = {};
+      (profiles || []).forEach(p => {
+        profilesMap[p.id] = { email: p.email || "", full_name: p.full_name || "" };
+      });
+      setUserProfiles(profilesMap);
     }
     setLoading(false);
   };
@@ -194,6 +288,19 @@ export default function Support() {
   const handleViewTicket = async (ticket: Ticket) => {
     setSelectedTicket(ticket);
     await loadTicketReplies(ticket.id);
+    
+    // Mark as viewed
+    const newLastViewed = {
+      ...lastViewedReply,
+      [ticket.id]: new Date().toISOString()
+    };
+    setLastViewedReply(newLastViewed);
+    localStorage.setItem('ticket_last_viewed', JSON.stringify(newLastViewed));
+    
+    // Update unread count for this ticket
+    setTickets(tickets.map(t => 
+      t.id === ticket.id ? { ...t, unreadReplies: 0 } : t
+    ));
   };
 
   const handleSendReply = async () => {
@@ -451,6 +558,7 @@ export default function Support() {
                       <TableHead>Subject</TableHead>
                       <TableHead>Priority</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Submitted By</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -461,9 +569,28 @@ export default function Support() {
                         <TableCell className="font-mono text-sm">
                           {ticket.id.slice(0, 8)}
                         </TableCell>
-                        <TableCell className="font-medium">{ticket.subject}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{ticket.subject}</span>
+                            {(ticket.unreadReplies || 0) > 0 && (
+                              <Badge variant="destructive" className="text-xs">
+                                {ticket.unreadReplies} new
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
                         <TableCell>{getStatusBadge(ticket.status)}</TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <div className="font-medium">
+                              {userProfiles[ticket.user_id]?.full_name || 'You'}
+                            </div>
+                            <div className="text-muted-foreground text-xs">
+                              {userProfiles[ticket.user_id]?.email}
+                            </div>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           {new Date(ticket.created_at).toLocaleDateString()}
                         </TableCell>
