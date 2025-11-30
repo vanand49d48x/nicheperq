@@ -20,6 +20,9 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [hasResetToken, setHasResetToken] = useState(false); // Track if user came from email link
 
   useEffect(() => {
     // Set up auth state listener to detect OAuth callbacks
@@ -72,16 +75,6 @@ export default function Auth() {
       toast.error(error.message);
       setLoading(false);
       return;
-    }
-
-    // Send branded signup confirmation email
-    try {
-      await supabase.functions.invoke('send-signup-confirmation', {
-        body: { email, name: fullName }
-      });
-    } catch (emailError) {
-      console.error('Failed to send branded confirmation email:', emailError);
-      // Don't fail signup if branded email fails - Supabase still sends default
     }
 
     toast.success("Account created! Please check your email to confirm.");
@@ -159,6 +152,89 @@ export default function Auth() {
     setLoading(false);
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      emailSchema.parse(email);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+        return;
+      }
+    }
+
+    setLoading(true);
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth#type=recovery`,
+    });
+
+    if (error) {
+      toast.error(error.message);
+      setLoading(false);
+    } else {
+      // Always show success message (for security, don't reveal if email exists)
+      setResetEmailSent(true);
+      setLoading(false);
+      // Don't show toast here, we'll show a message in the UI instead
+    }
+  };
+
+  // Check if we're handling a password reset callback
+  useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const type = hashParams.get('type');
+    const accessToken = hashParams.get('access_token');
+    
+    if (type === 'recovery' && accessToken) {
+      // User clicked password reset link, show password reset form
+      setShowResetPassword(true);
+      setHasResetToken(true); // User came from email link
+      // Clear the hash from URL but keep the access token in session
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+    
+    // Also check query params (in case redirect uses query instead of hash)
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryType = urlParams.get('type');
+    if (queryType === 'recovery' && accessToken) {
+      setShowResetPassword(true);
+      setHasResetToken(true);
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      passwordSchema.parse(password);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+        return;
+      }
+    }
+
+    setLoading(true);
+    
+    const { error } = await supabase.auth.updateUser({
+      password: password,
+    });
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Password updated successfully! You can now sign in.");
+      setShowResetPassword(false);
+      setResetEmailSent(false);
+      setHasResetToken(false);
+      setPassword("");
+    }
+    setLoading(false);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-background p-4">
       <div className="w-full max-w-md animate-fade-in">
@@ -184,34 +260,156 @@ export default function Auth() {
               </TabsList>
 
               <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
+                {showResetPassword && hasResetToken ? (
+                  // Show password update form only when user arrives from email link
+                  <form onSubmit={handleUpdatePassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-password">New Password</Label>
+                      <Input
+                        id="reset-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        minLength={6}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Password must be at least 6 characters
+                      </p>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Update Password
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => {
+                        setShowResetPassword(false);
+                        setResetEmailSent(false);
+                        setHasResetToken(false);
+                        setPassword("");
+                      }}
+                    >
+                      Back to Sign In
+                    </Button>
+                  </form>
+                ) : showResetPassword && resetEmailSent ? (
+                  // Show confirmation message after sending reset email
+                  <div className="space-y-4">
+                    <div className="p-4 bg-muted rounded-md">
+                      <p className="text-sm text-foreground font-medium mb-2">
+                        Check your email
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        If an account with <strong>{email}</strong> exists, we've sent you a password reset link. 
+                        Please check your inbox and click the link to reset your password.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setShowResetPassword(false);
+                        setResetEmailSent(false);
+                        setEmail("");
+                      }}
+                    >
+                      Back to Sign In
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full text-sm"
+                      onClick={() => {
+                        setResetEmailSent(false);
+                        setEmail("");
+                      }}
+                    >
+                      Didn't receive the email? Try again
+                    </Button>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sign In
-                  </Button>
-                </form>
+                ) : showResetPassword ? (
+                  // Show email input form
+                  <form onSubmit={handleResetPassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email">Email</Label>
+                      <Input
+                        id="reset-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter your email address and we'll send you a password reset link
+                      </p>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Send Reset Link
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full"
+                      onClick={() => {
+                        setShowResetPassword(false);
+                        setResetEmailSent(false);
+                        setHasResetToken(false);
+                        setEmail("");
+                      }}
+                    >
+                      Back to Sign In
+                    </Button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-email">Email</Label>
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="signin-password">Password</Label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowResetPassword(true);
+                            setResetEmailSent(false);
+                            setHasResetToken(false);
+                          }}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Sign In
+                    </Button>
+                  </form>
+                )}
               </TabsContent>
 
               <TabsContent value="signup">
