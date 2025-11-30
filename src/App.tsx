@@ -53,22 +53,37 @@ const App = () => {
       }
     }
     
-    // Check if there's an OAuth code in query parameters (Google OAuth with PKCE)
+    // Check if there's an OAuth code in query parameters (PKCE flow - magic links and Google OAuth)
     const urlParams = new URLSearchParams(window.location.search);
     const oauthCode = urlParams.get('code');
     const error = urlParams.get('error');
     
     if (oauthCode) {
-      // Supabase will automatically exchange the code for tokens with PKCE flow
-      // Wait for the session to be established, then clear the query params
-      setTimeout(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session) {
-            // Clear the code from URL after successful authentication
+      // Explicitly exchange the code for a session (required for PKCE flow)
+      console.log('Exchanging OAuth code for session...');
+      supabase.auth.exchangeCodeForSession(oauthCode)
+        .then(({ data, error: exchangeError }) => {
+          if (exchangeError) {
+            console.error('Error exchanging code for session:', exchangeError);
+            // Clear the code from URL even on error
+            window.history.replaceState(null, '', window.location.pathname);
+            return;
+          }
+          
+          if (data?.session) {
+            console.log('Successfully exchanged code for session');
+            // Clear the code from URL after successful exchange
+            window.history.replaceState(null, '', window.location.pathname);
+          } else {
+            console.warn('Code exchanged but no session received');
             window.history.replaceState(null, '', window.location.pathname);
           }
+        })
+        .catch((err) => {
+          console.error('Error in code exchange:', err);
+          // Clear the code from URL on error
+          window.history.replaceState(null, '', window.location.pathname);
         });
-      }, 1000);
     }
     
     if (error) {
