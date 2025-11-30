@@ -181,7 +181,7 @@ export default function Auth() {
     }
   };
 
-  // Check if we're handling a password reset callback
+  // Check if we're handling a password reset or magic link callback
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const type = hashParams.get('type');
@@ -193,6 +193,12 @@ export default function Auth() {
       setHasResetToken(true); // User came from email link
       // Clear the hash from URL but keep the access token in session
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    } else if (type === 'magiclink' && accessToken) {
+      // User clicked magic link, Supabase will handle the session automatically
+      // Just clear the hash from URL after a brief delay to allow Supabase to process it
+      setTimeout(() => {
+        window.history.replaceState(null, '', window.location.pathname);
+      }, 100);
     }
     
     // Also check query params (in case redirect uses query instead of hash)
@@ -202,6 +208,11 @@ export default function Auth() {
       setShowResetPassword(true);
       setHasResetToken(true);
       window.history.replaceState(null, '', window.location.pathname);
+    } else if (queryType === 'magiclink' && accessToken) {
+      // Magic link via query params
+      setTimeout(() => {
+        window.history.replaceState(null, '', window.location.pathname);
+      }, 100);
     }
   }, []);
 

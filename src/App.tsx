@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { UserRoleProvider } from "./contexts/UserRoleContext";
+import { supabase } from "./integrations/supabase/client";
+import { useEffect } from "react";
 import Landing from "./pages/Landing";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -30,13 +32,35 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <BrowserRouter>
-        <UserRoleProvider>
-          <Routes>
+const App = () => {
+  // Handle hash-based auth tokens (for magic links and OAuth)
+  useEffect(() => {
+    // Check if there's a hash with auth tokens
+    if (window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const type = hashParams.get('type');
+      
+      if (accessToken) {
+        // Supabase will automatically handle this via detectSessionInUrl
+        // Wait a moment for Supabase to process the token, then clear the hash
+        setTimeout(() => {
+          supabase.auth.getSession().then(() => {
+            // Clear the hash from URL after processing
+            window.history.replaceState(null, '', window.location.pathname);
+          });
+        }, 500);
+      }
+    }
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <BrowserRouter>
+          <UserRoleProvider>
+            <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/auth" element={<Auth />} />
@@ -140,11 +164,12 @@ const App = () => (
             </ProtectedRoute>
           } />
           <Route path="*" element={<NotFound />} />
-        </Routes>
-        </UserRoleProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+            </Routes>
+          </UserRoleProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
