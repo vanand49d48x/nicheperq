@@ -33,9 +33,9 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Handle hash-based auth tokens (for magic links and OAuth)
+  // Handle hash-based auth tokens (for magic links) and OAuth codes (for Google OAuth)
   useEffect(() => {
-    // Check if there's a hash with auth tokens
+    // Check if there's a hash with auth tokens (magic links)
     if (window.location.hash) {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
@@ -51,6 +51,31 @@ const App = () => {
           });
         }, 500);
       }
+    }
+    
+    // Check if there's an OAuth code in query parameters (Google OAuth with PKCE)
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthCode = urlParams.get('code');
+    const error = urlParams.get('error');
+    
+    if (oauthCode) {
+      // Supabase will automatically exchange the code for tokens with PKCE flow
+      // Wait for the session to be established, then clear the query params
+      setTimeout(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            // Clear the code from URL after successful authentication
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        });
+      }, 1000);
+    }
+    
+    if (error) {
+      // Handle OAuth errors
+      console.error('OAuth error:', error);
+      // Clear error from URL
+      window.history.replaceState(null, '', window.location.pathname);
     }
   }, []);
 
